@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bottin des membres — RSN</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <style>
+        :root {
+            --rsn-primary: #1a365d;
+            --rsn-secondary: #2b6cb0;
+            --rsn-accent: #3182ce;
+            --rsn-light: #ebf4ff;
+            --rsn-lighter: #f7fafc;
+            --rsn-border: #e2e8f0;
+            --rsn-text: #2d3748;
+            --rsn-muted: #718096;
+            --rsn-white: #ffffff;
+            --rsn-card-bg: #ffffff;
+            --rsn-body-bg: #f7fafc;
+            --rsn-tag-regulier: #2b6cb0;
+            --rsn-tag-etudiant: #d69e2e;
+            --rsn-tag-partenaire: #38a169;
+            --radius: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        /* ─── DARK MODE ─── */
+        [data-theme="dark"] {
+            --rsn-primary: #2b6cb0;
+            --rsn-secondary: #3182ce;
+            --rsn-accent: #63b3ed;
+            --rsn-light: #1e2a3a;
+            --rsn-lighter: #0f1724;
+            --rsn-border: #2d3748;
+            --rsn-text: #e2e8f0;
+            --rsn-muted: #a0aec0;
+            --rsn-white: #1a202c;
+            --rsn-card-bg: #1e2740;
+            --rsn-body-bg: #0f1724;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        [data-theme="dark"] .header {
+            background: linear-gradient(135deg, #0f1724 0%, #1a365d 100%);
+        }
+        [data-theme="dark"] .members-table th {
+            background: #1a365d;
+        }
+        [data-theme="dark"] .members-table th:hover {
+            background: #2b6cb0;
+        }
+        [data-theme="dark"] .axe-chip { background: #1e2a3a; color: #63b3ed; }
+        [data-theme="dark"] .principe-chip { background: #2d2a1a; color: #ecc94b; }
+        [data-theme="dark"] .action-chip { background: #1a2d1a; color: #68d391; }
+        [data-theme="dark"] .search-input { background: var(--rsn-card-bg); color: var(--rsn-text); }
+        [data-theme="dark"] .filter-group select { background: var(--rsn-card-bg); color: var(--rsn-text); }
+        [data-theme="dark"] .page-btn { background: var(--rsn-card-bg); color: var(--rsn-text); }
+        [data-theme="dark"] .page-btn.active { background: var(--rsn-accent); border-color: var(--rsn-accent); color: #0f1724; }
+        [data-theme="dark"] .view-btn { background: var(--rsn-card-bg); color: var(--rsn-muted); }
+        [data-theme="dark"] .view-btn.active { background: var(--rsn-accent); color: #0f1724; }
+        [data-theme="dark"] .reset-btn { background: var(--rsn-card-bg); color: var(--rsn-muted); }
+        [data-theme="dark"] .upload-area { background: var(--rsn-card-bg); }
+        [data-theme="dark"] .leaflet-popup-content-wrapper { background: var(--rsn-card-bg); color: var(--rsn-text); }
+        [data-theme="dark"] .leaflet-popup-tip { background: var(--rsn-card-bg); }
+        [data-theme="dark"] .card-link { color: var(--rsn-accent); }
+        [data-theme="dark"] .card-email a { color: var(--rsn-accent); }
+        [data-theme="dark"] .ct { opacity: 0.9; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--rsn-body-bg);
+            color: var(--rsn-text);
+            line-height: 1.6;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ─── HEADER ─── */
+        .header {
+            background: linear-gradient(135deg, var(--rsn-primary) 0%, var(--rsn-secondary) 100%);
+            color: white;
+            padding: 1.5rem 1.5rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .header-logo {
+            height: 60px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+        .header-title h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .header-title p {
+            opacity: 0.8;
+            font-size: 0.85rem;
+        }
+        .header-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .header-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.25); }
+        .header-btn svg { width: 14px; height: 14px; }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: 700; }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; }
+
+        /* ─── CONTROLS ─── */
+        .controls { max-width: 1200px; margin: -1rem auto 0; padding: 0 1rem; position: relative; z-index: 10; }
+        .search-box { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 1rem 1.25rem; margin-bottom: 0.75rem; transition: background 0.3s; }
+        .search-input-wrapper { position: relative; }
+        .search-input-wrapper svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--rsn-muted); }
+        .search-input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 2px solid var(--rsn-border); border-radius: var(--radius); font-size: 1rem; outline: none; transition: border-color 0.2s, background 0.3s, color 0.3s; }
+        .search-input:focus { border-color: var(--rsn-accent); }
+        .search-input::placeholder { color: var(--rsn-muted); }
+
+        .filters-row { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 0.75rem 1.25rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; transition: background 0.3s; }
+        .filter-group { flex: 1; min-width: 160px; }
+        .filter-group label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--rsn-muted); margin-bottom: 0.2rem; }
+        .filter-group select { width: 100%; padding: 0.45rem 0.6rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; font-size: 0.82rem; background: var(--rsn-card-bg); color: var(--rsn-text); cursor: pointer; outline: none; transition: background 0.3s, color 0.3s; }
+        .filter-group select:focus { border-color: var(--rsn-accent); }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; }
+        .results-count { font-size: 0.9rem; color: var(--rsn-muted); }
+        .results-count strong { color: var(--rsn-text); }
+        .view-toggle { display: flex; gap: 0; border: 1.5px solid var(--rsn-border); border-radius: 6px; overflow: hidden; }
+        .view-btn { padding: 0.4rem 0.75rem; border: none; background: var(--rsn-card-bg); cursor: pointer; font-size: 0.85rem; color: var(--rsn-muted); display: flex; align-items: center; gap: 0.3rem; transition: all 0.15s; }
+        .view-btn.active { background: var(--rsn-primary); color: white; }
+        .view-btn:not(:last-child) { border-right: 1.5px solid var(--rsn-border); }
+        .reset-btn { padding: 0.4rem 0.9rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; background: var(--rsn-card-bg); color: var(--rsn-muted); cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
+        .reset-btn:hover { border-color: var(--rsn-accent); color: var(--rsn-accent); }
+
+        /* ─── CONTENT ─── */
+        .content { max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem 2rem; }
+
+        /* ─── CARDS ─── */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
+        .member-card { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 1.25rem; transition: box-shadow 0.2s, transform 0.15s, background 0.3s; border-left: 4px solid var(--rsn-accent); }
+        .member-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        .member-card.type-regulier { border-left-color: var(--rsn-tag-regulier); }
+        .member-card.type-etudiant { border-left-color: var(--rsn-tag-etudiant); }
+        .member-card.type-partenaire { border-left-color: var(--rsn-tag-partenaire); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem; gap: 0.5rem; }
+        .card-name { font-size: 1.1rem; font-weight: 600; color: var(--rsn-accent); }
+        .card-tag { font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 50px; color: white; white-space: nowrap; flex-shrink: 0; }
+        .tag-regulier { background: var(--rsn-tag-regulier); }
+        .tag-etudiant { background: var(--rsn-tag-etudiant); }
+        .tag-partenaire { background: var(--rsn-tag-partenaire); }
+        .card-institution { font-size: 0.88rem; color: var(--rsn-muted); margin-bottom: 0.4rem; }
+        .card-email { font-size: 0.8rem; margin-bottom: 0.4rem; }
+        .card-email a { color: var(--rsn-accent); text-decoration: none; }
+        .card-email a:hover { text-decoration: underline; }
+        .card-details { display: flex; flex-direction: column; gap: 0.25rem; }
+        .card-detail { font-size: 0.82rem; color: var(--rsn-text); display: flex; align-items: flex-start; gap: 0.4rem; }
+        .card-detail .dl { font-weight: 600; color: var(--rsn-muted); min-width: 70px; flex-shrink: 0; }
+        .card-axes, .card-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+        .card-chips-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; align-items: center; }
+        .chip-label { font-size: 0.66rem; font-weight: 700; color: var(--rsn-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-right: -0.1rem; }
+        .axe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: var(--rsn-light); color: var(--rsn-secondary); white-space: nowrap; }
+        .principe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #fefcbf; color: #975a16; white-space: nowrap; }
+        .action-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #c6f6d5; color: #276749; white-space: nowrap; }
+        .card-links { display: flex; gap: 0.75rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--rsn-border); flex-wrap: wrap; }
+        .card-link { font-size: 0.78rem; color: var(--rsn-accent); text-decoration: none; display: flex; align-items: center; gap: 0.2rem; }
+        .card-link:hover { text-decoration: underline; }
+        .card-expand-btn { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0; margin-top: 0.3rem; }
+        .card-expand-btn:hover { text-decoration: underline; }
+        .card-extra { display: none; }
+        .card-extra.visible { display: block; margin-top: 0.5rem; }
+
+        /* ─── TABLE ─── */
+        .table-wrapper { overflow-x: auto; background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); transition: background 0.3s; }
+        .members-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+        .members-table th { background: var(--rsn-primary); color: white; padding: 0.6rem 0.65rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; position: sticky; top: 0; cursor: pointer; white-space: nowrap; user-select: none; }
+        .members-table th:hover { background: var(--rsn-secondary); }
+        .members-table th .sa { margin-left: 0.2rem; opacity: 0.5; }
+        .members-table th.sorted .sa { opacity: 1; }
+        .members-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--rsn-border); vertical-align: top; }
+        .members-table tr:hover td { background: var(--rsn-light); }
+        .members-table .ct { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 4px; color: white; }
+
+        /* ─── PAGINATION ─── */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; }
+        .page-btn { padding: 0.4rem 0.75rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; background: var(--rsn-card-bg); cursor: pointer; font-size: 0.85rem; color: var(--rsn-text); transition: all 0.15s; }
+        .page-btn:hover:not(:disabled) { border-color: var(--rsn-accent); color: var(--rsn-accent); }
+        .page-btn.active { background: var(--rsn-primary); border-color: var(--rsn-primary); color: white; }
+        .page-btn:disabled { opacity: 0.4; cursor: default; }
+
+        /* ─── EMPTY ─── */
+        .empty-state { text-align: center; padding: 3rem 1rem; color: var(--rsn-muted); }
+        .empty-state svg { margin-bottom: 1rem; opacity: 0.4; }
+        .empty-state h3 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--rsn-text); }
+
+        /* ─── UPLOAD ─── */
+        .upload-zone { max-width: 1200px; margin: 1rem auto; padding: 0 1rem; }
+        .upload-area { border: 2px dashed var(--rsn-border); border-radius: var(--radius); padding: 1.25rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--rsn-card-bg); }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--rsn-accent); background: var(--rsn-light); }
+        .upload-area p { color: var(--rsn-muted); font-size: 0.88rem; }
+        .file-input { display: none; }
+
+        /* ─── MAP ─── */
+        #mapView { height: 550px; border-radius: var(--radius); box-shadow: var(--shadow-sm); z-index: 1; }
+        .map-legend { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.82rem; color: var(--rsn-muted); display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; transition: background 0.3s; }
+        .map-legend-item { display: flex; align-items: center; gap: 0.4rem; }
+        .map-legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .map-stats { font-weight: 600; color: var(--rsn-text); }
+        .leaflet-popup-content { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.85rem; line-height: 1.5; }
+        .leaflet-popup-content strong { color: var(--rsn-primary); }
+        .popup-inst-name { font-size: 0.95rem; font-weight: 600; color: var(--rsn-accent); margin-bottom: 0.3rem; }
+        .popup-count { font-size: 1.4rem; font-weight: 700; color: var(--rsn-accent); }
+        .popup-type-row { font-size: 0.78rem; color: var(--rsn-muted); }
+        .marker-cluster-custom { background: rgba(43, 108, 176, 0.15); border-radius: 50%; }
+        .marker-cluster-custom div { background: var(--rsn-secondary); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+        .hidden { display: none !important; }
+        @media (max-width: 768px) {
+            .header-top { flex-direction: column; gap: 0.5rem; }
+            .header-title h1 { font-size: 1.3rem; }
+            .stats-bar { gap: 1rem; }
+            .filters-row { flex-direction: column; gap: 0.5rem; }
+            .filter-group { min-width: 100%; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-wrap: wrap; gap: 0.5rem; }
+            .header-controls { position: static; justify-content: center; margin-top: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-controls">
+        <button class="header-btn" id="btnLang" onclick="toggleLang()" title="Switch language">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span id="langLabel">EN</span>
+        </button>
+        <button class="header-btn" id="btnTheme" onclick="toggleTheme()">
+            <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+    </div>
+    <div class="header-top">
+        <img class="header-logo" src="L_RSN_FR_RGB (3).png" alt="Logo RSN" onerror="this.style.display='none'">
+        <div class="header-title">
+            <h1 data-i18n="title">Bottin des membres</h1>
+            <p>Réseau Santé Numérique</p>
+        </div>
+    </div>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-number" id="totalMembers">—</div><div class="stat-label" data-i18n="members">Membres</div></div>
+        <div class="stat"><div class="stat-number" id="totalInstitutions">—</div><div class="stat-label" data-i18n="institutions">Institutions</div></div>
+        <div class="stat"><div class="stat-number" id="totalRegulier">—</div><div class="stat-label" data-i18n="regular_pl">Réguliers</div></div>
+        <div class="stat"><div class="stat-number" id="totalEtudiant">—</div><div class="stat-label" data-i18n="student_pl">Étudiants</div></div>
+        <div class="stat"><div class="stat-number" id="totalPartenaire">—</div><div class="stat-label" data-i18n="partner_pl">Partenaires</div></div>
+    </div>
+</div>
+
+<div class="controls" id="controlsBlock">
+    <div class="search-box" id="searchBox">
+        <div class="search-input-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, expertise, projet...">
+        </div>
+    </div>
+    <div class="filters-row" id="filtersRow">
+        <div class="filter-group"><label data-i18n="filter_type">Type d'adhésion</label><select id="filterType"><option value="" data-i18n="all_m">Tous</option></select></div>
+        <div class="filter-group"><label data-i18n="filter_region">Région</label><select id="filterRegion"><option value="" data-i18n="all_f">Toutes</option></select></div>
+        <div class="filter-group"><label data-i18n="filter_status">Statut</label><select id="filterStatut"><option value="" data-i18n="all_m">Tous</option></select></div>
+        <div class="filter-group"><label data-i18n="filter_axis">Axe d'intérêt</label><select id="filterAxe"><option value="" data-i18n="all_m">Tous</option></select></div>
+        <button class="reset-btn" id="resetFilters" data-i18n="reset">Réinitialiser</button>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="results-count" id="resultsBar"><strong id="filteredCount">0</strong> <span data-i18n="members_shown">membre(s) affiché(s)</span></div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+        <div class="view-toggle">
+            <button class="view-btn active" id="btnCards"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> <span data-i18n="view_cards">Cartes</span></button>
+            <button class="view-btn" id="btnTable"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> <span data-i18n="view_table">Tableau</span></button>
+            <button class="view-btn" id="btnMap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg> <span data-i18n="view_map">Carte</span></button>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div id="cardsView" class="cards-grid"></div>
+    <div id="tableView" class="table-wrapper hidden"></div>
+    <div id="mapContainer" class="hidden">
+        <div id="mapView"></div>
+        <div class="map-legend">
+            <span class="map-stats" id="mapStats">—</span>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-regulier)"></div> <span data-i18n="regular">Régulier</span></div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-etudiant)"></div> <span data-i18n="student">Étudiant</span></div>
+            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-partenaire)"></div> <span data-i18n="partner">Partenaire</span></div>
+            <span style="font-size:0.75rem;color:var(--rsn-muted);margin-left:auto;" id="mapCoverage">—</span>
+        </div>
+    </div>
+    <div id="emptyState" class="empty-state hidden">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <h3 data-i18n="no_results">Aucun membre trouvé</h3>
+        <p data-i18n="no_results_hint">Essayez de modifier vos critères de recherche ou vos filtres.</p>
+    </div>
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<div class="upload-zone">
+    <div class="upload-area" id="uploadArea">
+        <p><strong data-i18n="upload_title">Mettre à jour les données :</strong> <span data-i18n="upload_hint">glissez un fichier CSV ici ou cliquez pour sélectionner</span></p>
+        <p style="font-size:0.72rem;margin-top:0.25rem;color:#a0aec0;" data-i18n="upload_format">Format attendu : CSV exporté de la BD membres (encodage UTF-8)</p>
+        <input type="file" class="file-input" id="csvFileInput" accept=".csv">
+    </div>
+</div>
+
+<script>
+// ─── I18N ───
+const I18N = {
+    fr: {
+        title: 'Bottin des membres',
+        members: 'Membres', institutions: 'Institutions',
+        regular: 'Régulier', regular_pl: 'Réguliers',
+        student: 'Étudiant', student_pl: 'Étudiants',
+        partner: 'Partenaire', partner_pl: 'Partenaires',
+        search_placeholder: 'Rechercher par nom, institution, thème, expertise, projet...',
+        filter_type: "Type d'adhésion", filter_region: 'Région',
+        filter_status: 'Statut', filter_axis: "Axe d'intérêt",
+        all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
+        members_shown: 'membre(s) affiché(s)',
+        view_cards: 'Cartes', view_table: 'Tableau', view_map: 'Carte',
+        no_results: 'Aucun membre trouvé',
+        no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
+        upload_title: 'Mettre à jour les données :',
+        upload_hint: 'glissez un fichier CSV ici ou cliquez pour sélectionner',
+        upload_format: 'Format attendu : CSV exporté de la BD membres (encodage UTF-8)',
+        // Card / table labels
+        lbl_status: 'Statut', lbl_expertise: 'Expertise', lbl_network: 'Réseau',
+        lbl_project: 'Projet', lbl_students: 'Étudiants',
+        lbl_other_axes: 'Autres axes', lbl_other_principles: 'Autres principes',
+        lbl_other_actions: 'Autres actions',
+        lbl_see_more: 'Voir plus', lbl_see_less: 'Voir moins',
+        lbl_no_institution: 'Institution non renseignée',
+        // Table headers
+        th_name: 'Nom', th_institution: 'Institution', th_email: 'Email',
+        th_status: 'Statut', th_type: 'Type', th_axis: 'Axe prioritaire',
+        th_principle: 'Principe', th_action: "Champ d'action",
+        th_expertise: 'Expertise', th_links: 'Liens',
+        // Map
+        map_geolocated: 'membres géolocalisés',
+        map_coverage: 'Couverture',
+        map_institutions_on: 'institutions sur',
+        map_member: 'membre', map_members: 'membres',
+        map_regular: 'régulier', map_regulars: 'réguliers',
+        map_student_s: 'étudiant', map_students_s: 'étudiants',
+        map_partner_s: 'partenaire', map_partners_s: 'partenaires',
+        map_loading: 'Chargement de la carte... (nécessite une connexion internet)',
+        prev: '← Préc.', next: 'Suiv. →'
+    },
+    en: {
+        title: 'Member Directory',
+        members: 'Members', institutions: 'Institutions',
+        regular: 'Regular', regular_pl: 'Regular',
+        student: 'Student', student_pl: 'Students',
+        partner: 'Partner', partner_pl: 'Partners',
+        search_placeholder: 'Search by name, institution, theme, expertise, project...',
+        filter_type: 'Membership type', filter_region: 'Region',
+        filter_status: 'Status', filter_axis: 'Axis of interest',
+        all_m: 'All', all_f: 'All', reset: 'Reset',
+        members_shown: 'member(s) displayed',
+        view_cards: 'Cards', view_table: 'Table', view_map: 'Map',
+        no_results: 'No members found',
+        no_results_hint: 'Try adjusting your search criteria or filters.',
+        upload_title: 'Update data:',
+        upload_hint: 'drag a CSV file here or click to select',
+        upload_format: 'Expected format: CSV exported from the members database (UTF-8 encoding)',
+        lbl_status: 'Status', lbl_expertise: 'Expertise', lbl_network: 'Network',
+        lbl_project: 'Project', lbl_students: 'Students',
+        lbl_other_axes: 'Other axes', lbl_other_principles: 'Other principles',
+        lbl_other_actions: 'Other actions',
+        lbl_see_more: 'See more', lbl_see_less: 'See less',
+        lbl_no_institution: 'Institution not provided',
+        th_name: 'Name', th_institution: 'Institution', th_email: 'Email',
+        th_status: 'Status', th_type: 'Type', th_axis: 'Primary axis',
+        th_principle: 'Principle', th_action: 'Field of action',
+        th_expertise: 'Expertise', th_links: 'Links',
+        map_geolocated: 'geolocated members',
+        map_coverage: 'Coverage',
+        map_institutions_on: 'institutions out of',
+        map_member: 'member', map_members: 'members',
+        map_regular: 'regular', map_regulars: 'regular',
+        map_student_s: 'student', map_students_s: 'students',
+        map_partner_s: 'partner', map_partners_s: 'partners',
+        map_loading: 'Loading map... (requires internet connection)',
+        prev: '← Prev', next: 'Next →'
+    }
+};
+
+let currentLang = 'fr';
+function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fr[key]) || key; }
+
+function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    document.getElementById('langLabel').textContent = currentLang === 'fr' ? 'EN' : 'FR';
+    document.documentElement.lang = currentLang;
+}
+
+function toggleLang() {
+    currentLang = currentLang === 'fr' ? 'en' : 'fr';
+    applyI18n();
+    if (allMembers.length) render();
+}
+
+// ─── THEME ───
+function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+    document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+    localStorage.setItem('rsn-theme', isDark ? 'light' : 'dark');
+}
+// Init theme
+(function(){
+    const saved = localStorage.getItem('rsn-theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('iconSun').classList.add('hidden');
+        document.getElementById('iconMoon').classList.remove('hidden');
+    }
+})();
+
+const CONFIG = {
+    PER_PAGE: 24,
+    COL: {
+        prenom: 'Prénom', nom: 'Nom de la famille',
+        email: 'E-mail / Courriel', email2: 'Autre courriel',
+        statut: 'Statut actuel', institution: 'Institution / organisation 1',
+        type: "Type d'adhesion", reseau: 'Réseau 1',
+        expertise: 'Expertise', themes: "Thèmes d'intérêt",
+        axe1: "1e Axe d'intérêt", axe2: "2e Axe d'intérêt",
+        axe3: "3e Axe d'intérêt", axe4: "4e Axe d'intérêt",
+        pf1: "1è Principles fondateurs", pf2: "2è Principles fondateurs",
+        pf3: "3è Principles fondateurs", pf4: "4è Principles fondateurs",
+        pf5: "5è Principles fondateurs",
+        ca1: "1è Champs d'action", ca2: "2è Champs d'action", ca3: "3è Champs d'action",
+        projet: 'Projet de recherche', etudiants: 'Étudiant.e.s',
+        refere: 'Référée par', droitVote: 'Droit de vote',
+        orcid: 'ORCID', cv: 'CV / LinkedIn',
+        evaluateur: 'Évaluateur du RSN - nouv. formulaire',
+        profilPublic: 'Autorisez-vous le RSN à vous créer un profil de membre public'
+    }
+};
+
+let allMembers = [], filteredMembers = [], currentPage = 1, currentView = 'cards', sortCol = null, sortDir = 'asc';
+
+// ─── CSV PARSER ───
+function parseCSV(text) {
+    const rows = []; let cur = '', inQ = false, row = [];
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i], n = text[i+1];
+        if (inQ) { if (c==='"'&&n==='"'){cur+='"';i++} else if(c==='"'){inQ=false} else{cur+=c} }
+        else { if(c==='"'){inQ=true} else if(c===','){row.push(cur.trim());cur=''} else if(c==='\n'||(c==='\r'&&n==='\n')){row.push(cur.trim());cur='';if(row.length>1||row[0]!=='')rows.push(row);row=[];if(c==='\r')i++} else{cur+=c} }
+    }
+    if(cur||row.length>0){row.push(cur.trim());if(row.length>1||row[0]!=='')rows.push(row)}
+    return rows;
+}
+function csvToObjects(text) {
+    const rows = parseCSV(text);
+    if (rows.length < 2) return [];
+    const hdrs = rows[0].map(h => h.trim());
+    return rows.slice(1).map(row => {
+        const o = {};
+        hdrs.forEach((h,i) => { o[h] = (row[i]||'').trim(); });
+        return o;
+    });
+}
+
+// ─── REGION MAPPING ───
+const REGION_MAP = {
+    'Montréal': ['Montréal','McGill','Concordia','HEC Montréal','Polytechnique','UQAM','ETS','MUHC','CHUM','CHU Sainte-Justine','Douglas','INRS','ESPUM','MILA','Jewish General','CIUSSS du Centre-Ouest','CIUSSS du Nord-de-l','CIUSSS de l\'Est','Sacré-Coeur','Philippe-Pinel','CRIUGM','MNI','ICM','Montreal Children','CRCHUM','INESSS','FRQ','MEDTEQ','Cégep du Vieux Montréal','Cégep Marie Victorin','Armand-Frappier','INPLPP','Centre de médecine comportementale','CMCM','D3SM','STATQAM','CRDP','CReSP','CEPPP','Urgences-santé','Videotron','AWS','Axelys','Collège LaSalle','optométrie','Pharmacie','RSJQ','RQSPAL','RBIQ','RRSPQ','RRCancer','RQRM','CMDO','MICE','REPAR','RTSA','REED','RRSV','AMRQ','AIRS','Impulsions','Strataide','Wikimedica','OBVIA','RSN','Santé Numérique','Passerelle','OROT','MaSanté','StatSciences','Numana','Careteam','Universus','CATALIS','RQ-SGIG','Centre de médecine','NIM Intelliance','CÉAMS','CANSSI'],
+    'Québec (Capitale-Nationale)': ['Université Laval','CHU de Québec','IUCPQ','CR-IUCPQ','VITAM','CIRRIS','MSSS','INSPQ','Santé Québec','Capitale-Nationale','ENAP','TÉLUQ','Industrial Alliance','INTER','CRDM','OBVIA'],
+    'Estrie': ['Sherbrooke','CRCHUS','CHUS'],
+    'Outaouais': ['UQO','Outaouais'],
+    'Saguenay–Lac-Saint-Jean': ['UQAC','Chicoutimi','jounquiere','Saguenay'],
+    'Bas-Saint-Laurent': ['UQAR','Rimouski','Bas-Saint-Laurent'],
+    'Mauricie–Centre-du-Québec': ['UQTR','Trois-Rivières','Mauricie','Living Lab Éclair'],
+    'Chaudière-Appalaches': ['Chaudière-Appalaches'],
+    'Nord-du-Québec': ['Baie-James'],
+    'Hors Québec': ['Ottawa','Madagascar','Thessaloniki','Saint-Etienne','Poitiers','Weill Cornell','Hariri','INEAS','CERRHUD','Guinée','KI-ZERBO','Manitoba','Hasso Plattner','ENOLL','Canada Health Infoway']
+};
+function getRegion(inst) {
+    if (!inst) return '';
+    const ni = inst.replace(/[\u2018\u2019\u2032]/g, "'").toLowerCase();
+    // Check Hors Québec first (higher priority for Ottawa, international)
+    for (const kw of REGION_MAP['Hors Québec']) {
+        if (ni.includes(kw.toLowerCase())) return 'Hors Québec';
+    }
+    // Then check other regions
+    for (const [region, keywords] of Object.entries(REGION_MAP)) {
+        if (region === 'Hors Québec') continue;
+        for (const kw of keywords) {
+            if (ni.includes(kw.toLowerCase())) return region;
+        }
+    }
+    return '';
+}
+
+// ─── STATUT GROUPING ───
+function groupStatut(raw) {
+    if (!raw) return '';
+    const s = raw.toLowerCase();
+    if (/chercheu|researcher|physician|clinici|radiologiste|enseignant chercheur|professeu/i.test(s)) return 'Chercheur·e';
+    if (/[ée]tudiant|student|doctorat|ma[iî]trise|baccalaur|postdoc|stagiaire/i.test(s)) return 'Étudiant·e';
+    if (/professionnel|research (associate|staff)|associé.*recherche|coordonn|transcripti|analyste|informatics|open science/i.test(s)) return 'Professionnel·le';
+    if (/gestionnaire|cadre|chef|cnio|affaires professorales|member of the rsn/i.test(s)) return 'Gestionnaire / Cadre';
+    if (/industrie|partenaire|patient|citoyen|organisa|présidente/i.test(s)) return 'Industrie / Partenaire';
+    return 'Autre';
+}
+
+// ─── DATA LOADING ───
+function loadMembers(data) {
+    const C = CONFIG.COL;
+    allMembers = data.filter(m => Object.values(m).some(v => v && v.trim())).map((m, i) => {
+        const prenom = m[C.prenom]||'', nom = m[C.nom]||'';
+        const name = [prenom, nom].filter(Boolean).join(' ') || `Membre #${i+1}`;
+        const axes = [m[C.axe1],m[C.axe2],m[C.axe3],m[C.axe4]].filter(Boolean).map(a=>a.trim());
+        const principes = [m[C.pf1],m[C.pf2],m[C.pf3],m[C.pf4],m[C.pf5]].filter(Boolean).map(a=>a.trim());
+        const champsAction = [m[C.ca1],m[C.ca2],m[C.ca3]].filter(Boolean).map(a=>a.trim());
+        let typeRaw = (m[C.type]||'').trim(), typeNorm = 'autre';
+        if(/r[ée]gulier/i.test(typeRaw)) typeNorm='regulier';
+        else if(/[ée]tudiant/i.test(typeRaw)) typeNorm='etudiant';
+        else if(/partenaire/i.test(typeRaw)) typeNorm='partenaire';
+        const email = (m[C.email]||'').trim();
+        const institution = (m[C.institution]||'').trim();
+        const statut = (m[C.statut]||'').trim();
+        return {
+            name, prenom, nom, email, institution, statut,
+            statutGroup: groupStatut(statut),
+            region: getRegion(institution),
+            type: typeRaw, typeNorm,
+            themes: (m[C.themes]||'').trim(),
+            expertise: (m[C.expertise]||'').trim(),
+            axes, principes, champsAction,
+            projet: (m[C.projet]||'').trim(),
+            orcid: (m[C.orcid]||'').trim(),
+            cv: (m[C.cv]||'').trim(),
+            reseau: (m[C.reseau]||'').trim(),
+            etudiants: (m[C.etudiants]||'').trim(),
+            evaluateur: (m[C.evaluateur]||'').trim(),
+            _search: [name, email, institution, statut, typeRaw,
+                m[C.themes], m[C.expertise], m[C.projet], ...axes, ...principes,
+                ...champsAction, m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
+        };
+    });
+    updateStats(); populateFilters(); applyFilters();
+}
+
+function updateStats() {
+    const $ = id => document.getElementById(id);
+    $('totalMembers').textContent = allMembers.length;
+    $('totalInstitutions').textContent = new Set(allMembers.map(m=>m.institution).filter(Boolean)).size;
+    $('totalRegulier').textContent = allMembers.filter(m=>m.typeNorm==='regulier').length;
+    $('totalEtudiant').textContent = allMembers.filter(m=>m.typeNorm==='etudiant').length;
+    $('totalPartenaire').textContent = allMembers.filter(m=>m.typeNorm==='partenaire').length;
+}
+
+function populateFilters() {
+    popSel('filterType', allMembers.map(m=>m.type));
+    popSel('filterRegion', allMembers.map(m=>m.region));
+    popSel('filterStatut', allMembers.map(m=>m.statutGroup));
+    popSel('filterAxe', allMembers.flatMap(m=>m.axes));
+}
+function popSel(id, vals) {
+    const sel = document.getElementById(id), first = sel.options[0].textContent;
+    const counts = {};
+    vals.filter(Boolean).forEach(v => { counts[v]=(counts[v]||0)+1; });
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    sel.innerHTML = `<option value="">${first}</option>`;
+    sorted.forEach(([v,c]) => { const o=document.createElement('option'); o.value=v; o.textContent=`${v} (${c})`; sel.appendChild(o); });
+}
+
+function applyFilters() {
+    const s = document.getElementById('searchInput').value.toLowerCase().trim();
+    const ft = document.getElementById('filterType').value;
+    const fr = document.getElementById('filterRegion').value;
+    const fs = document.getElementById('filterStatut').value;
+    const fa = document.getElementById('filterAxe').value;
+    filteredMembers = allMembers.filter(m => {
+        if(s && !m._search.includes(s)) return false;
+        if(ft && m.type!==ft) return false;
+        if(fr && m.region!==fr) return false;
+        if(fs && m.statutGroup!==fs) return false;
+        if(fa && !m.axes.includes(fa)) return false;
+        return true;
+    });
+    if(sortCol) { filteredMembers.sort((a,b)=>{ const cmp=(a[sortCol]||'').toLowerCase().localeCompare((b[sortCol]||'').toLowerCase(),'fr'); return sortDir==='asc'?cmp:-cmp; }); }
+    currentPage=1;
+    document.getElementById('filteredCount').textContent = filteredMembers.length;
+    render();
+}
+
+function render() {
+    const cv=document.getElementById('cardsView'), tv=document.getElementById('tableView'), mc=document.getElementById('mapContainer');
+    cv.classList.add('hidden'); tv.classList.add('hidden'); mc.classList.add('hidden');
+    if(currentView==='map') {
+        mc.classList.remove('hidden'); renderMap();
+    } else if(currentView==='cards') {
+        renderCards(); cv.classList.remove('hidden');
+    } else {
+        renderTable(); tv.classList.remove('hidden');
+    }
+    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || currentView==='map');
+    document.getElementById('pagination').classList.toggle('hidden', currentView==='map');
+    if(currentView!=='map') renderPag();
+}
+function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
+function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function trunc(s,n){ if(!s||s.length<=n)return s; return s.slice(0,n)+'…'; }
+
+function renderCards() {
+    const el=document.getElementById('cardsView'), items=pgItems();
+    if(!items.length){el.innerHTML='';return;}
+    el.innerHTML = items.map((m,i) => {
+        const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
+        const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /,'') : '';
+        const pf1 = m.principes[0] || '';
+        const ca1 = m.champsAction[0] || '';
+        const eid = `ex-${i}`;
+        const expertiseText = m.themes || m.expertise || '';
+        let links=[];
+        if(m.orcid) links.push(`<a class="card-link" href="https://orcid.org/${m.orcid}" target="_blank">ORCID</a>`);
+        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+        const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
+        let chips = [];
+        if(ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
+        if(pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
+        if(ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
+        const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+        let exParts=[];
+        if(m.projet) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_project')}</span><span>${esc(trunc(m.projet,250))}</span></div>`);
+        if(m.etudiants) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
+        if(m.axes.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_axes')}</span><span>${m.axes.slice(1).map(a=>esc(a.replace(/Axe \d+ - /,''))).join(', ')}</span></div>`);
+        if(m.principes.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_principles')}</span><span>${m.principes.slice(1).map(p=>esc(p)).join(', ')}</span></div>`);
+        if(m.champsAction.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_actions')}</span><span>${m.champsAction.slice(1).map(c=>esc(c)).join(', ')}</span></div>`);
+        const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${t('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
+        return `<div class="member-card ${cc}">
+            <div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
+            <div class="card-institution">${esc(m.institution||t('lbl_no_institution'))}</div>
+            ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
+            <div class="card-details">
+                ${m.statut?`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
+                ${expertiseText?`<div class="card-detail"><span class="dl">${t('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
+                ${m.reseau?`<div class="card-detail"><span class="dl">${t('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
+            </div>
+            ${chipsHtml}
+            ${exH}${lnkH}
+        </div>`;
+    }).join('');
+}
+function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?t('lbl_see_less'):t('lbl_see_more'); }
+
+function renderTable() {
+    const el=document.getElementById('tableView'), items=pgItems();
+    const mth=(c,l)=>{ const a=sortCol===c?(sortDir==='asc'?'▲':'▼'):'⇅'; return `<th class="${sortCol===c?'sorted':''}" onclick="doSort('${c}')">${l} <span class="sa">${a}</span></th>`; };
+    const hd=`<tr>${mth('name',t('th_name'))}${mth('institution',t('th_institution'))}<th>${t('th_email')}</th>${mth('statut',t('th_status'))}${mth('type',t('th_type'))}<th>${t('th_axis')}</th><th>${t('th_principle')}</th><th>${t('th_action')}</th><th>${t('th_expertise')}</th><th>${t('th_links')}</th></tr>`;
+    const bd=items.map(m=>{
+        const tc=`tag-${m.typeNorm}`;
+        const ax1=m.axes[0]?m.axes[0].replace(/Axe \d+ - /,''):'';
+        const pf1=m.principes[0]||'';
+        const ca1=m.champsAction[0]||'';
+        const th=m.themes||m.expertise||'';
+        let lk=[];
+        if(m.orcid) lk.push(`<a href="https://orcid.org/${m.orcid}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);
+        if(m.cv){const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">CV</a>`);}
+        return `<tr><td><strong>${esc(m.name)}</strong></td><td>${esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+    }).join('');
+    el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
+}
+
+function renderPag() {
+    const el=document.getElementById('pagination'), tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE);
+    if(tp<=1){el.innerHTML='';return;}
+    let h=`<button class="page-btn" onclick="goP(${currentPage-1})" ${currentPage===1?'disabled':''}>${t('prev')}</button>`;
+    const pgs=new Set([1,tp]); for(let i=Math.max(1,currentPage-2);i<=Math.min(tp,currentPage+2);i++)pgs.add(i);
+    let prev=0; [...pgs].sort((a,b)=>a-b).forEach(p=>{ if(p-prev>1)h+=`<span style="color:var(--rsn-muted)">…</span>`; h+=`<button class="page-btn ${p===currentPage?'active':''}" onclick="goP(${p})">${p}</button>`; prev=p; });
+    h+=`<button class="page-btn" onclick="goP(${currentPage+1})" ${currentPage===tp?'disabled':''}>${t('next')}</button>`;
+    el.innerHTML=h;
+}
+function goP(p){ const tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE); if(p<1||p>tp)return; currentPage=p; render(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
+function doSort(c){ if(sortCol===c){sortDir=sortDir==='asc'?'desc':'asc';}else{sortCol=c;sortDir='asc';} applyFilters(); }
+
+// ─── EVENTS ───
+let sTo; document.getElementById('searchInput').addEventListener('input',()=>{clearTimeout(sTo);sTo=setTimeout(applyFilters,200);});
+['filterType','filterRegion','filterStatut','filterAxe'].forEach(id=>{document.getElementById(id).addEventListener('change',applyFilters);});
+document.getElementById('resetFilters').addEventListener('click',()=>{
+    document.getElementById('searchInput').value='';
+    ['filterType','filterRegion','filterStatut','filterAxe'].forEach(id=>{document.getElementById(id).value='';});
+    sortCol=null;sortDir='asc';applyFilters();
+});
+function setView(v) {
+    currentView = v;
+    ['btnCards','btnTable','btnMap'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById(v==='cards'?'btnCards':v==='table'?'btnTable':'btnMap').classList.add('active');
+    render();
+}
+document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
+document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
+document.getElementById('btnMap').addEventListener('click',()=>setView('map'));
+
+// ─── FILE UPLOAD ───
+const ua=document.getElementById('uploadArea'),fi=document.getElementById('csvFileInput');
+ua.addEventListener('click',()=>fi.click());
+ua.addEventListener('dragover',e=>{e.preventDefault();ua.classList.add('dragover');});
+ua.addEventListener('dragleave',()=>ua.classList.remove('dragover'));
+ua.addEventListener('drop',e=>{e.preventDefault();ua.classList.remove('dragover');if(e.dataTransfer.files[0])readF(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files[0])readF(e.target.files[0]);});
+function readF(file){
+    const r=new FileReader();
+    r.onload=e=>{try{const d=csvToObjects(e.target.result);if(!d.length){alert('Fichier vide ou format inattendu.');return;}loadMembers(d);ua.querySelector('p').innerHTML=`<strong>✓ ${file.name}</strong> — ${d.length} membres chargés`;}catch(err){alert('Erreur: '+err.message);}};
+    r.readAsText(file,'UTF-8');
+}
+
+// ─── MAP ───
+let map = null, clusterGroup = null;
+const GEOCODE = {
+    'McGill University': [45.5048, -73.5772],
+    'Université Laval': [46.7808, -71.2758],
+    'Université de Montréal': [45.5017, -73.6162],
+    'Université de montréal': [45.5017, -73.6162],
+    'Université de Sherbrooke': [45.3784, -71.9294],
+    'Concordia University': [45.4953, -73.5788],
+    'UQAM - Université du Québec à Montréal': [45.5088, -73.5688],
+    'HEC Montréal': [45.5024, -73.6180],
+    'Polytechnique Montréal': [45.5048, -73.6130],
+    'UQAC - Université du Québec à Chicoutimi': [48.4190, -71.0526],
+    'UQO - Université du Québec en Outaouais': [45.4264, -75.7388],
+    'UQAR - Université du Québec à Rimouski': [48.4510, -68.5193],
+    'UQTR - Université du Québec à Trois-Rivières': [46.3498, -72.5800],
+    'ETS - École de technologie supérieure': [45.4945, -73.5627],
+    'INRS - Institut national de la recherche scientifique': [45.5177, -73.6160],
+    'ENAP - École nationale d\'administration publique': [46.8100, -71.2260],
+    'Université TÉLUQ': [46.8120, -71.2250],
+    'ESPUM - École de santé publique de l\'Université de Montréal': [45.5054, -73.6200],
+    'École de santé publique de l\'Université de Montréal': [45.5054, -73.6200],
+    'Université d\'Ottawa': [45.4231, -75.6831],
+    'UQAC': [48.4190, -71.0526],
+    'MUHC - McGill University Health Centre': [45.4728, -73.6012],
+    'CHUM - Centre hospitalier de l\'Université de Montréal': [45.5115, -73.5570],
+    'CHU Sainte-Justine': [45.5012, -73.6242],
+    'Douglas Research Centre': [45.4380, -73.5912],
+    'CRCHUM - Centre de Recherche du CHUM': [45.5115, -73.5570],
+    'CRCHUM - Centre de recherche du CHUM': [45.5115, -73.5570],
+    'RI-MUHC - Research Institute of McGill University Health Centre': [45.4728, -73.6012],
+    'RI-MUHC': [45.4728, -73.6012],
+    'CRCHU SJ - Centre de recherche Azrieli du CHU Sainte-Justine': [45.5012, -73.6242],
+    'ICM - Institut de Cardiologie de Montréal': [45.5445, -73.5530],
+    'CRIUGM - Centre de recherche institut universitaire de gêriatrie de Montréal': [45.5309, -73.6169],
+    'MNI - Montréal Neurologicial Institute': [45.5087, -73.5782],
+    'Montreal Children\'s Hospital': [45.4728, -73.6012],
+    'Hôpital du Sacré-Coeur de Montréal; Centre de recherche du CIUSSS du Nord-de-l\'Île-de-Montréal': [45.5398, -73.7070],
+    'INPLPP - Institut national de Psychiatrie légale Philippe-Pinel': [45.5887, -73.5340],
+    'Institut en psychiatrie légale Philippe-Pinel': [45.5887, -73.5340],
+    'D3SM - Douglas Data and Digital Science for Mental Health; Douglas Research Centre': [45.4380, -73.5912],
+    'Douglas Mental Health University Institure': [45.4380, -73.5912],
+    'Centre de médecine comportementale de Montréal': [45.5017, -73.5673],
+    'CMCM - Centre de médecine comportementale de Montréal': [45.5017, -73.5673],
+    'CIUSSS du Centre-Ouest de l\'île de Montréal; Santé Québec': [45.4920, -73.6330],
+    'CIUSSS du Centre-Ouest de l\'île de Montréal': [45.4920, -73.6330],
+    'CIUSSS du Centre-Ouest de l\'île de Montréal; Jewish General Hospital': [45.4920, -73.6330],
+    'CIUSSS du Nord-de-l\'Île-de-Montréal': [45.5593, -73.6740],
+    'CIUSSS du Nord-de-l\'île-de-Montréal - Centre d\'innovation NIM Intelliance': [45.5593, -73.6740],
+    'CIUSSS de l\'Est de l\'île de Montréal': [45.5771, -73.5333],
+    'CIUSSS de l\'Est de l\'île de Montréal; Université de Montréal': [45.5771, -73.5333],
+    'CIUSSS de la Capitale-Nationale': [46.8230, -71.2520],
+    'CISSS de Chaudière-Appalaches': [46.6020, -71.1750],
+    'CISSS de l\'Outaouais': [45.4400, -75.7400],
+    'CISSS du Bas-Saint-Laurent': [48.4340, -68.5100],
+    'CIUSSS de la Mauricie-et-du-Centre-du-Québec': [46.3500, -72.5500],
+    'CHU de Québec-Université Laval - Centre hospitalier universitaire de Québec-Université Laval': [46.7660, -71.2770],
+    'CHU de Québec - Université Laval': [46.7660, -71.2770],
+    'CRCHUS - Centre de recherche du CHUS': [45.3793, -71.9260],
+    'IUCPQ - Institut Universitaire de cardiologie et de pneumologie de Québec': [46.7698, -71.3082],
+    'CR-IUCPQ - Centre de recherche de l\'Institut universitaire de cardiologie et de pneumologie de Québec': [46.7698, -71.3082],
+    'VITAM': [46.8460, -71.2840],
+    'CIRRIS': [46.7850, -71.3150],
+    'MSSS - Ministère de la Santé et des Services sociaux': [46.8140, -71.2220],
+    'INSPQ - Institut national de santé publique du Québec; Directions régionales de santé publique de Laval et de la Gaspésie': [46.8140, -71.2220],
+    'INESSS - Institut national d\'excellence en santé et en services sociaux': [45.5017, -73.5700],
+    'FRQ - Fonds de recherche du Québec': [45.5017, -73.5673],
+    'Santé Québec': [46.8140, -71.2220],
+    'Université de Montréal; CHUM - Centre hospitalier de l\'Université de Montréal': [45.5017, -73.6162],
+    'Université de Montréal; MILA - Montréal Institute of Learning Algorithms': [45.5295, -73.6192],
+    'Université de Montréal; ICM - Institut de cardiologie de Montréal': [45.5017, -73.6162],
+    'Université de Montréal; Université de Sherbrooke': [45.5017, -73.6162],
+    'Université de Montréal; Université Laval': [45.5017, -73.6162],
+    'Université de Montréal; CRIUGM - Centre de recherche l\'Institut universitaire de gériatrie de Montréal': [45.5309, -73.6169],
+    'Université de Montréal; CRIUGM - Centre de recherche de l\'Institut Universitaire de Gériatrie de Montréal': [45.5309, -73.6169],
+    'Université de Montréal; CRA-CHUSJ - Centre de recherche Azrieli du CHU SJ; MILA - Montréal Institute of Learning Algorithms': [45.5017, -73.6162],
+    'CRCHUM - Centre de Recherche du CHUM; Université de Montréal': [45.5115, -73.5570],
+    'CHUM - Centre hospitalier de l\'Université de Montréal; Université de Montréal': [45.5115, -73.5570],
+    'CHU Sainte-Justine; Université de Montréal': [45.5012, -73.6242],
+    'McGill University; MILA - Montréal Institute of Learning Algorithms': [45.5295, -73.6192],
+    'McGill University; RI-MUHC - Research Institute of McGill University Health Centre': [45.4728, -73.6012],
+    'McGill University; MUHC - McGill University Health Centre': [45.4728, -73.6012],
+    'McGill University; CRDP - Centre de recherche en droit public': [45.5048, -73.5772],
+    'McGill University; CDSI - Computational & Data Systems Initiative': [45.5048, -73.5772],
+    'McGill University; RUISSS - Réseau Universitaire Intégré de Santé et de Services Sociaux': [45.5048, -73.5772],
+    'McGill University; Collège LaSalle': [45.5048, -73.5772],
+    'Université de Sherbrooke; CRCHUS - Centre de recherche du CHUS': [45.3784, -71.9294],
+    'Université Laval; CISSS de Chaudière-Appalaches': [46.7808, -71.2758],
+    'Université Laval; CRCHU de Québec - Université Laval (FRQS)': [46.7808, -71.2758],
+    'Université McGill; Institut de recherche du Centre Universitaire de Santé McGill; CHU Sainte-Justine': [45.4728, -73.6012],
+    'UQAM - Université du Québec à Montréal; STATQAM - Centre de recherche facultaire en statistiques et sciences des données': [45.5088, -73.5688],
+    'UQO - Université du Québec en Outaouais; CISSS de l\'Outaouais': [45.4264, -75.7388],
+    'ETS - École de technologie supérieure; CRCHU SJ - Centre de recherche Azrieli du CHU Sainte-Justine': [45.4945, -73.5627],
+    'ESPUM - École de santé publique de l\'Université de Montréal; CHUM - Centre hospitalier de l\'Université de Montréal': [45.5054, -73.6200],
+    'CR-IUCPQ - Centre de recherche de l\'Institut universitaire de cardiologie et de pneumologie de Québec; Université Laval': [46.7698, -71.3082],
+    'ETS; Santé Québec': [45.4945, -73.5627],
+    'RSN - Réseau Santé Numérique; RI-MUHC - Research Institute of McGill University Health Centre': [45.4728, -73.6012],
+    'Unité de soutien SSA; Université Laval': [46.7808, -71.2758],
+    'CHUS - Centre hospitalier universitaire de sherbrooke; Collège des médecins du Québec': [45.3793, -71.9260],
+    'Living Lab ÉclairAGE; UQTR - Université du Québec à Trois Rivières': [46.3498, -72.5800],
+    'VITAM, Precrisa, CEPPP - Center of Excellence on Partnership with Patients and Public': [46.8460, -71.2840],
+    'CE P-DSN - Centre d\'expertise Programme Dossier santé numérique; CIUSSS de la Mauricie-et-du-Centre-du-Québec': [46.3500, -72.5500],
+    'Hasso Plattner Institute, Digital Health Cluster': [52.3934, 13.1313],
+    'CIUSSS du Nord-de-l\'île-de-Montréal - Centre d\'innovation NIM Intelliance, CÉAMS - Centre d\'études avancées en médecine du sommeil, Université de Montréal': [45.5593, -73.6740],
+    'Department of Psychiatry, McGill University': [45.5048, -73.5772],
+    'Health Technology Assessment Unit of the MUHC - McGill University Health Center': [45.4728, -73.6012],
+    'Faculté de Pharmacie, Université de Montréal': [45.5017, -73.6162],
+    'Centre Armand-Frappier Santé Biotechnologie de l\'INRS': [45.5820, -73.7487],
+    'École d\'optométrie Université de Montréal': [45.5017, -73.6162],
+    'Cégep du Vieux Montréal; Université de Montréal': [45.5170, -73.5613],
+    'Cégep Marie Victorin': [45.5841, -73.5987],
+    'Cégep jounquiere': [48.4135, -71.2575],
+    'RSJQ - Réseau santé justice du Québec': [45.5017, -73.5673],
+    'RQSPAL - Réseau québécois de recherche en soins palliatifs et de fin de vie': [45.5017, -73.5673],
+    'RBIQ - Réseau de bioimagerie du Québec': [45.5017, -73.5673],
+    'OBVIA - Observatoire international sur les impacts sociétaux de l\'IA et du numérique': [46.7808, -71.2758],
+    'STATQAM - Centre de recherche facultaire en statistiques et sciences des données': [45.5088, -73.5688],
+    'CRDP - Centre de recherche en droit public': [45.5017, -73.6162],
+    'CReSP - Centre de recherche en santé publique': [45.5115, -73.5570],
+    'CEPPP - Centre d\'excellence sur le partenariat avec les patients et le public': [45.5115, -73.5570],
+    'Centre de recherche du CISSS de Chaudière-Appalaches': [46.6020, -71.1750],
+    'CRSSS de la Baie-James': [49.7868, -74.2255],
+    'RRSPQ - Réseau de recherche en santé des populations du Québec': [45.5017, -73.5673],
+    'RRCancer - Réseau de recherche sur le cancer du FRQS': [45.5017, -73.5673],
+    'RQRM - Réseau Québécois de recherche sur les médicaments': [45.5017, -73.5673],
+    'CMDO - Réseau de recherche sur la santé cardiométabolique': [45.5017, -73.5673],
+    'MICE - Réseau maladies infectieuses chroniques et émergentes': [45.5017, -73.5673],
+    'REPAR - Réseau provincial de recherche en adaptation réadaptation': [45.5017, -73.5673],
+    'RTSA - Réseau pour transformer les soins en autisme': [45.5017, -73.5673],
+    'REED - Réseau d\'expertise en éthique de données': [45.5017, -73.5673],
+    'INTER - Regroupement stratégique sur l\'Ingénierie de technologies interactives en réadaptatio': [46.7808, -71.2758],
+    'RRSV - Réseau de recherche en santé de la vision': [45.5017, -73.5673],
+    'AMRQ - AntiMicrobial Resistance Québec': [45.5017, -73.5673],
+    'AIRS - Air, Intersectorialité, recherche respiratoire et sonore': [45.5017, -73.5673],
+    'RQ-SGIG - Réseau Québécois d\'innovation en sciences du génome': [45.5017, -73.5673],
+    'CANSSI - Canadian Statistical Sciences Institute': [49.2606, -123.2460],
+    'MEDTEQ+': [45.5317, -73.6228],
+    'CATALIS QUEBEC': [46.8140, -71.2220],
+    'Canada Health Infoway': [45.4215, -75.6972],
+    'Wikimedica': [46.7808, -71.2758],
+    'Urgences-santé': [45.5394, -73.6121],
+    'Passerelle - L\'Entité nationale de formation de la Stratégie de recherche axée sur le patient': [45.5017, -73.5673],
+    'Axelys': [45.5017, -73.5673],
+    'Université Catholique de Madagascar': [-18.9147, 47.5235],
+    'Aristotle University of Thessaloniki; ENOLL - European Network of Living Labs': [40.6324, 22.9574],
+    'Ecole des Mines de Saint-Etienne': [45.4298, 4.4078],
+    'Université de Poitiers': [46.5827, 0.3442],
+    'Weill Cornell Medical College': [40.7649, -73.9549],
+    'Rafik B. Hariri Institute for Computing and Computational Science & Engineering': [42.3496, -71.1026],
+    'INEAS - Instance Nationale de l\'Evaluation & de l\'Accreditation en Santé': [36.8065, 10.1815],
+    'CERRHUD - Centre de recherche en reproduction humaine et en démographie': [6.3654, 2.4183],
+    'Clinique Guinée Santé au Travail': [9.5370, -13.6785],
+    'Université Joseph KI-ZERBO': [12.3686, -1.4973],
+    'Collectif LGBTQ* du Manitoba': [49.8951, -97.1384],
+    'Industrial Alliance Financial Group': [46.8102, -71.2084],
+    'AWS Canada - Amazon Web Services': [45.5017, -73.5673],
+    'Videotron': [45.5017, -73.5673]
+};
+
+function renderMap() {
+    if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${t('map_loading')}</p>`; return; }
+    if (!map) {
+        map = L.map('mapView').setView([47.0, -71.5], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18
+        }).addTo(map);
+    }
+    if (clusterGroup) { map.removeLayer(clusterGroup); }
+    clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 45,
+        iconCreateFunction: function(cluster) {
+            const count = cluster.getChildCount();
+            let size = count < 10 ? 36 : count < 30 ? 44 : count < 80 ? 52 : 60;
+            return L.divIcon({
+                html: '<div style="width:'+(size-8)+'px;height:'+(size-8)+'px;">'+count+'</div>',
+                className: 'marker-cluster-custom',
+                iconSize: L.point(size, size)
+            });
+        }
+    });
+    const byInst = {};
+    let mapped = 0;
+    filteredMembers.forEach(m => {
+        if (!m.institution) return;
+        if (!byInst[m.institution]) byInst[m.institution] = { members: [], coords: null };
+        byInst[m.institution].members.push(m);
+    });
+    const norm = s => s.replace(/[\u2018\u2019\u2032]/g, "'").replace(/[\u201C\u201D]/g, '"');
+    Object.keys(byInst).forEach(inst => {
+        if (GEOCODE[inst]) { byInst[inst].coords = GEOCODE[inst]; return; }
+        const ni = norm(inst);
+        if (GEOCODE[ni]) { byInst[inst].coords = GEOCODE[ni]; return; }
+        const lower = ni.toLowerCase();
+        for (const [key, coords] of Object.entries(GEOCODE)) {
+            const nk = norm(key).toLowerCase();
+            if (lower.includes(nk) || nk.includes(lower)) {
+                byInst[inst].coords = coords; return;
+            }
+        }
+    });
+    // Deterministic hash for stable jitter
+    function hashStr(s) { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }
+    Object.entries(byInst).forEach(([inst, data]) => {
+        if (!data.coords) return;
+        const n = data.members.length;
+        mapped += n;
+        const types = { regulier: 0, etudiant: 0, partenaire: 0 };
+        data.members.forEach(m => { if (types[m.typeNorm] !== undefined) types[m.typeNorm]++; });
+        let typeParts = [];
+        if (types.regulier) typeParts.push(`<span style="color:var(--rsn-tag-regulier)">${types.regulier} ${types.regulier>1?t('map_regulars'):t('map_regular')}</span>`);
+        if (types.etudiant) typeParts.push(`<span style="color:var(--rsn-tag-etudiant)">${types.etudiant} ${types.etudiant>1?t('map_students_s'):t('map_student_s')}</span>`);
+        if (types.partenaire) typeParts.push(`<span style="color:var(--rsn-tag-partenaire)">${types.partenaire} ${types.partenaire>1?t('map_partners_s'):t('map_partner_s')}</span>`);
+        // Deterministic jitter based on institution name
+        const h = hashStr(inst);
+        const lat = data.coords[0] + ((h % 1000) / 1000 - 0.5) * 0.004;
+        const lng = data.coords[1] + (((h >> 10) % 1000) / 1000 - 0.5) * 0.004;
+        const marker = L.circleMarker([lat, lng], {
+            radius: Math.min(6 + Math.sqrt(n) * 3, 20),
+            fillColor: '#2b6cb0', color: '#1a365d',
+            weight: 1.5, opacity: 0.9, fillOpacity: 0.6
+        });
+        // Build member names list for popup
+        const namesList = data.members.slice(0, 15).map(m => `<div style="font-size:0.78rem;padding:1px 0;">${esc(m.name)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
+        const moreNames = n > 15 ? `<div style="font-size:0.72rem;color:var(--rsn-muted);margin-top:2px;">+ ${n-15} ${t('map_members')}…</div>` : '';
+        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:180px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}${moreNames}</div>`, { maxWidth: 300 });
+        clusterGroup.addLayer(marker);
+    });
+    map.addLayer(clusterGroup);
+    document.getElementById('mapStats').textContent = `${mapped} ${t('map_geolocated')}`;
+    const pct = filteredMembers.length > 0 ? Math.round(mapped / filteredMembers.length * 100) : 0;
+    const instMapped = Object.keys(byInst).filter(k=>byInst[k].coords).length;
+    const instTotal = Object.keys(byInst).length;
+    document.getElementById('mapCoverage').textContent = `${t('map_coverage')} : ${pct}% (${instMapped} ${t('map_institutions_on')} ${instTotal})`;
+    if (clusterGroup.getLayers().length > 0) {
+        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.fitBounds(clusterGroup.getBounds().pad(0.1)), 200);
+    }
+}
+
+// ─── AUTO-LOAD ───
+(function(){
+    const names = ['RSN_BD_AllMembers(ALL (new))2.csv', 'RSN_BD_AllMembers(ALL (new)).csv', 'membres.csv'];
+    function tryNext(i) {
+        if (i >= names.length) {
+            ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
+            return;
+        }
+        fetch(names[i]).then(r=>{if(!r.ok)throw 0;return r.text();}).then(txt=>{
+            const d=csvToObjects(txt);
+            if(d.length>0){loadMembers(d);ua.querySelector('p').innerHTML=`<strong>✓ ${currentLang==='fr'?'Données chargées automatiquement':'Data loaded automatically'}</strong> — ${d.length} membres`;}
+            else tryNext(i+1);
+        }).catch(()=>tryNext(i+1));
+    }
+    tryNext(0);
+})();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+</body>
+</html>
