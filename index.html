@@ -153,10 +153,27 @@
         .search-input::placeholder { color: var(--rsn-muted); }
 
         .filters-row { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 0.75rem 1.25rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; transition: background 0.3s; }
-        .filter-group { flex: 1; min-width: 160px; }
+        .filter-group { flex: 1; min-width: 160px; position: relative; }
         .filter-group label { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--rsn-muted); margin-bottom: 0.2rem; }
         .filter-group select { width: 100%; padding: 0.45rem 0.6rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; font-size: 0.82rem; background: var(--rsn-card-bg); color: var(--rsn-text); cursor: pointer; outline: none; transition: background 0.3s, color 0.3s; }
         .filter-group select:focus { border-color: var(--rsn-accent); }
+        /* ─── MULTI-SELECT DROPDOWNS ─── */
+        .ms-btn { width: 100%; padding: 0.45rem 0.6rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; font-size: 0.82rem; background: var(--rsn-card-bg); color: var(--rsn-text); cursor: pointer; outline: none; transition: all 0.2s; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; }
+        .ms-btn:hover, .ms-btn.open { border-color: var(--rsn-accent); }
+        .ms-btn .ms-arrow { font-size: 0.6rem; opacity: 0.5; flex-shrink: 0; }
+        .ms-btn .ms-count { background: var(--rsn-accent); color: white; font-size: 0.65rem; padding: 0.05rem 0.35rem; border-radius: 50px; font-weight: 700; flex-shrink: 0; }
+        .ms-panel { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: var(--rsn-card-bg); border: 1.5px solid var(--rsn-border); border-radius: 6px; box-shadow: var(--shadow-md); margin-top: 2px; max-height: 260px; overflow-y: auto; }
+        .ms-panel.open { display: block; }
+        .ms-item { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.8rem; transition: background 0.1s; }
+        .ms-item:hover { background: var(--rsn-light); }
+        .ms-item input[type="checkbox"] { accent-color: var(--rsn-accent); margin: 0; cursor: pointer; }
+        .ms-item label { cursor: pointer; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ms-item .ms-item-count { color: var(--rsn-muted); font-size: 0.72rem; flex-shrink: 0; }
+        .ms-sep { border-top: 1px solid var(--rsn-border); margin: 0.2rem 0; }
+        .ms-group-label { padding: 0.3rem 0.6rem 0.15rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--rsn-muted); }
+        [data-theme="dark"] .ms-btn { background: var(--rsn-card-bg); color: var(--rsn-text); }
+        [data-theme="dark"] .ms-panel { background: var(--rsn-card-bg); }
+        [data-theme="dark"] .ms-item:hover { background: var(--rsn-light); }
 
         .toolbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; }
         .results-count { font-size: 0.9rem; color: var(--rsn-muted); }
@@ -346,10 +363,10 @@
         </div>
     </div>
     <div class="filters-row" id="filtersRow">
-        <div class="filter-group"><label data-i18n="filter_type">Type d'adhésion</label><select id="filterType"><option value="" data-i18n="all_m">Tous</option></select></div>
-        <div class="filter-group"><label data-i18n="filter_region">Région</label><select id="filterRegion"><option value="" data-i18n="all_f">Toutes</option></select></div>
-        <div class="filter-group"><label data-i18n="filter_status">Statut</label><select id="filterStatut"><option value="" data-i18n="all_m">Tous</option></select></div>
-        <div class="filter-group"><label data-i18n="filter_axis">Axe d'intérêt</label><select id="filterAxe"><option value="" data-i18n="all_m">Tous</option></select></div>
+        <div class="filter-group"><label data-i18n="filter_type">Type d'adhésion</label><div id="filterType" class="ms-wrap"></div></div>
+        <div class="filter-group"><label data-i18n="filter_region">Région</label><div id="filterRegion" class="ms-wrap"></div></div>
+        <div class="filter-group"><label data-i18n="filter_status">Statut</label><div id="filterStatut" class="ms-wrap"></div></div>
+        <div class="filter-group"><label data-i18n="filter_focus">Axe / Principe / Champ</label><div id="filterFocus" class="ms-wrap"></div></div>
         <button class="reset-btn" id="resetFilters" data-i18n="reset">Réinitialiser</button>
     </div>
 </div>
@@ -405,7 +422,7 @@ const I18N = {
         partner: 'Partenaire', partner_pl: 'Partenaires',
         search_placeholder: 'Rechercher par nom, institution, thème, expertise, projet...',
         filter_type: "Type d'adhésion", filter_region: 'Région',
-        filter_status: 'Statut', filter_axis: "Axe d'intérêt",
+        filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
         view_cards: 'Cartes', view_table: 'Tableau', view_map: 'Carte',
@@ -447,7 +464,7 @@ const I18N = {
         partner: 'Partner', partner_pl: 'Partners',
         search_placeholder: 'Search by name, institution, theme, expertise, project...',
         filter_type: 'Membership type', filter_region: 'Region',
-        filter_status: 'Status', filter_axis: 'Axis of interest',
+        filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
         view_cards: 'Cards', view_table: 'Table', view_map: 'Map',
@@ -658,8 +675,8 @@ function loadMembers(data) {
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
             _search: [name, email, institution, statut, typeRaw,
-                m[C.themes], m[C.expertise], m[C.projet], ...axes, ...principes,
-                ...champsAction, m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
+                m[C.themes], m[C.expertise], m[C.projet], axes[0], principes[0],
+                champsAction[0], m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
         });
     });
     // Tri alphabétique par nom de famille par défaut
@@ -677,35 +694,81 @@ function updateStats() {
     $('totalPartenaire').textContent = allMembers.filter(m=>m.typeNorm==='partenaire').length + excludedStats.partenaire;
 }
 
-function populateFilters() {
-    popSel('filterType', allMembers.map(m=>m.type));
-    popSel('filterRegion', allMembers.map(m=>m.region));
-    popSel('filterStatut', allMembers.map(m=>m.statutGroup));
-    popSel('filterAxe', allMembers.flatMap(m=>m.axes));
+// ─── MULTI-SELECT FILTER SYSTEM ───
+const msState = { filterType: [], filterRegion: [], filterStatut: [], filterFocus: [] };
+
+function buildMS(id, items, allLabel) {
+    const wrap = document.getElementById(id);
+    wrap.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'ms-btn'; btn.type = 'button';
+    btn.innerHTML = `<span class="ms-label">${allLabel}</span><span class="ms-arrow">▼</span>`;
+    const panel = document.createElement('div');
+    panel.className = 'ms-panel';
+    items.forEach(({value, count, group}) => {
+        if (group) { const g = document.createElement('div'); g.className = 'ms-group-label'; g.textContent = group; panel.appendChild(g); const sep = document.createElement('div'); sep.className = 'ms-sep'; panel.appendChild(sep); return; }
+        const item = document.createElement('div'); item.className = 'ms-item';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value;
+        const lbl = document.createElement('label'); lbl.textContent = value;
+        const cnt = document.createElement('span'); cnt.className = 'ms-item-count'; cnt.textContent = count;
+        item.appendChild(cb); item.appendChild(lbl); item.appendChild(cnt);
+        item.addEventListener('click', e => { if (e.target !== cb) cb.checked = !cb.checked; updateMS(id, allLabel); applyFilters(); });
+        panel.appendChild(item);
+    });
+    btn.addEventListener('click', e => { e.stopPropagation(); closeAllMS(); panel.classList.toggle('open'); btn.classList.toggle('open'); });
+    wrap.appendChild(btn); wrap.appendChild(panel);
 }
-function popSel(id, vals) {
-    const sel = document.getElementById(id), first = sel.options[0].textContent;
-    const counts = {};
-    vals.filter(Boolean).forEach(v => { counts[v]=(counts[v]||0)+1; });
-    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-    sel.innerHTML = `<option value="">${first}</option>`;
-    sorted.forEach(([v,c]) => { const o=document.createElement('option'); o.value=v; o.textContent=`${v} (${c})`; sel.appendChild(o); });
+
+function updateMS(id, allLabel) {
+    const wrap = document.getElementById(id);
+    const cbs = wrap.querySelectorAll('input[type="checkbox"]:checked');
+    const vals = [...cbs].map(c => c.value);
+    msState[id] = vals;
+    const label = wrap.querySelector('.ms-label');
+    const btn = wrap.querySelector('.ms-btn');
+    const oldCount = btn.querySelector('.ms-count');
+    if (oldCount) oldCount.remove();
+    if (vals.length === 0) { label.textContent = allLabel; }
+    else if (vals.length === 1) { label.textContent = vals[0].length > 28 ? vals[0].slice(0,26)+'…' : vals[0]; }
+    else { label.textContent = vals[0].length > 20 ? vals[0].slice(0,18)+'…' : vals[0]; const badge = document.createElement('span'); badge.className = 'ms-count'; badge.textContent = '+' + (vals.length-1); btn.insertBefore(badge, btn.querySelector('.ms-arrow')); }
+}
+
+function closeAllMS() {
+    document.querySelectorAll('.ms-panel.open').forEach(p => { p.classList.remove('open'); p.previousElementSibling.classList.remove('open'); });
+}
+document.addEventListener('click', () => closeAllMS());
+
+function populateFilters() {
+    const countMap = (arr) => { const c = {}; arr.filter(Boolean).forEach(v => { c[v]=(c[v]||0)+1; }); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([v,n])=>({value:v,count:n})); };
+
+    buildMS('filterType', countMap(allMembers.map(m=>m.type)), t('all_m'));
+    buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), t('all_f'));
+    buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), t('all_m'));
+
+    // Focus filter: axes first, then principes, then champs — with group labels
+    const axeItems = countMap(allMembers.map(m=>m.axes[0]));
+    const principeItems = countMap(allMembers.map(m=>m.principes[0]));
+    const champItems = countMap(allMembers.map(m=>m.champsAction[0]));
+    const focusItems = [];
+    if (axeItems.length) { focusItems.push({group: t('th_axis')}); focusItems.push(...axeItems); }
+    if (principeItems.length) { focusItems.push({group: t('th_principle')}); focusItems.push(...principeItems); }
+    if (champItems.length) { focusItems.push({group: t('th_action')}); focusItems.push(...champItems); }
+    buildMS('filterFocus', focusItems, t('all_m'));
 }
 
 function applyFilters() {
     const s = document.getElementById('searchInput').value.toLowerCase().trim();
-    const ft = document.getElementById('filterType').value;
-    const fr = document.getElementById('filterRegion').value;
-    const fs = document.getElementById('filterStatut').value;
-    const fa = document.getElementById('filterAxe').value;
+    const ft = msState.filterType;
+    const fr = msState.filterRegion;
+    const fs = msState.filterStatut;
+    const fa = msState.filterFocus;
     filteredMembers = allMembers.filter(m => {
-        // Hide members who explicitly refused public profile
         if(m.consent==='non') return false;
         if(s && !m._search.includes(s)) return false;
-        if(ft && m.type!==ft) return false;
-        if(fr && m.region!==fr) return false;
-        if(fs && m.statutGroup!==fs) return false;
-        if(fa && !m.axes.includes(fa)) return false;
+        if(ft.length && !ft.includes(m.type)) return false;
+        if(fr.length && !fr.includes(m.region)) return false;
+        if(fs.length && !fs.includes(m.statutGroup)) return false;
+        if(fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
         return true;
     });
     if(sortCol) { filteredMembers.sort((a,b)=>{ const cmp=(a[sortCol]||'').toLowerCase().localeCompare((b[sortCol]||'').toLowerCase(),'fr'); return sortDir==='asc'?cmp:-cmp; }); }
@@ -754,9 +817,6 @@ function renderCards() {
         let exParts=[];
         if(m.projet) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_project')}</span><span>${esc(trunc(m.projet,250))}</span></div>`);
         if(m.etudiants) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
-        if(m.axes.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_axes')}</span><span>${m.axes.slice(1).map(a=>esc(a.replace(/Axe \d+ - /,''))).join(', ')}</span></div>`);
-        if(m.principes.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_principles')}</span><span>${m.principes.slice(1).map(p=>esc(p)).join(', ')}</span></div>`);
-        if(m.champsAction.length>1) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_other_actions')}</span><span>${m.champsAction.slice(1).map(c=>esc(c)).join(', ')}</span></div>`);
         const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${t('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
         // Consent & form badges
         const isPending = m.consent !== 'oui';
@@ -818,10 +878,14 @@ function doSort(c){ if(sortCol===c){sortDir=sortDir==='asc'?'desc':'asc';}else{s
 
 // ─── EVENTS ───
 let sTo; document.getElementById('searchInput').addEventListener('input',()=>{clearTimeout(sTo);sTo=setTimeout(applyFilters,200);});
-['filterType','filterRegion','filterStatut','filterAxe'].forEach(id=>{document.getElementById(id).addEventListener('change',applyFilters);});
 document.getElementById('resetFilters').addEventListener('click',()=>{
     document.getElementById('searchInput').value='';
-    ['filterType','filterRegion','filterStatut','filterAxe'].forEach(id=>{document.getElementById(id).value='';});
+    ['filterType','filterRegion','filterStatut','filterFocus'].forEach(id=>{
+        msState[id] = [];
+        const wrap = document.getElementById(id);
+        wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        updateMS(id, id==='filterRegion' ? t('all_f') : t('all_m'));
+    });
     sortCol=null;sortDir='asc';applyFilters();
 });
 function setView(v) {
