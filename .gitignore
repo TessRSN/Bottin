@@ -1,0 +1,15 @@
+# Source database (contains personal data)
+RSN_BD_AllMembers.xlsx
+
+# Unfiltered / intermediate CSVs
+all_members.csv
+new_all_members.csv
+RSN_BD_AllMembers*.csv
+Formulaire*.csv
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
