@@ -1,5 +1,7 @@
 # Bottin des membres — RSN (Réseau de santé numérique)
 
+**[Accéder au bottin en ligne](https://tessrsn.github.io/Bottin/)**
+
 Carte interactive et répertoire des membres du RSN. Le projet se compose de trois éléments : un script de conversion Excel → CSV, un script de préparation des données publiques, et une page HTML autonome qui affiche la carte et le bottin.
 
 ## Structure du projet
