@@ -302,6 +302,7 @@
             background: #e9d5ff;
             color: #6b21a8;
         }
+        a.badge-pending-consent:hover, a.badge-incomplete-form:hover { opacity: 0.8; text-decoration: underline; }
         [data-theme="dark"] .badge-pending-consent {
             background: #431407;
             color: #fdba74;
@@ -341,6 +342,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             <span id="langLabel">EN</span>
         </button>
+        <a class="header-btn" href="https://github.com/TessRSN/Bottin" target="_blank" rel="noopener" title="GitHub">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58 0-.28-.01-1.03-.02-2.03-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.19.7.8.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
         <button class="header-btn" id="btnTheme" onclick="toggleTheme()">
             <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -361,9 +365,6 @@
         <a class="header-cta cta-update" href="https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsmgcNltxdiFKtCT8xm4nBrpUMEoxRDlSMVpCRUUzTDU4VFpTMFM3OVMwSC4u&route=shorturl" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span data-i18n="cta_update">Mettre à jour mon profil</span>
-        </a>
-        <a class="header-cta cta-update" href="https://github.com/TessRSN/Bottin" target="_blank" rel="noopener" title="GitHub">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58 0-.28-.01-1.03-.02-2.03-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.19.7.8.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
         </a>
     </div>
     <div class="stats-bar">
@@ -432,6 +433,8 @@
 </div>
 
 <script>
+const UPDATE_FORM_URL = 'https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsmgcNltxdiFKtCT8xm4nBrpUMEoxRDlSMVpCRUUzTDU4VFpTMFM3OVMwSC4u&route=shorturl';
+
 // ─── I18N ───
 const I18N = {
     fr: {
@@ -844,8 +847,8 @@ function renderCards() {
         const isPending = m.consent !== 'oui';
         const pendingClass = isPending ? ' pending-consent' : '';
         let badges = [];
-        if(isPending) badges.push(`<span class="consent-badge badge-pending-consent">⏳ ${t('badge_pending_consent')}</span>`);
-        if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form">📋 ${t('badge_incomplete_form')}</span>`);
+        if(isPending) badges.push(`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-pending-consent" style="text-decoration:none;color:inherit;cursor:pointer">⏳ ${t('badge_pending_consent')}</a>`);
+        if(!m.formComplete) badges.push(`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-incomplete-form" style="text-decoration:none;color:inherit;cursor:pointer">📋 ${t('badge_incomplete_form')}</a>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
@@ -879,8 +882,8 @@ function renderTable() {
         if(m.orcid){const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);}
         if(m.cv){const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">CV</a>`);}
         let badges='';
-        if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;">⏳</span> `;
-        if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;">📋</span> `;
+        if(isPending) badges+=`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;text-decoration:none;color:inherit">⏳</a> `;
+        if(!m.formComplete) badges+=`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;text-decoration:none;color:inherit">📋</a> `;
         return `<tr class="${isPending?'pending-consent':''}"><td><strong>${esc(m.name)}</strong>${badges?' <br>'+badges:''}</td><td>${esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
