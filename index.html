@@ -132,7 +132,7 @@
         .header-btn:hover { background: rgba(255,255,255,0.25); }
         .header-btn svg { width: 14px; height: 14px; }
         .header-cta-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 0.6rem; }
-        .header-cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: all 0.2s; border: 2px solid transparent; }
+        .header-cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: all 0.2s; border: 2px solid transparent; cursor: pointer; font-family: inherit; }
         .header-cta svg { width: 16px; height: 16px; flex-shrink: 0; }
         .cta-join { background: #fff; color: var(--rsn-primary, #1e3a5f); }
         .cta-join:hover { background: #e8f0fe; }
@@ -332,7 +332,25 @@
             .toolbar { flex-wrap: wrap; gap: 0.5rem; }
             .header-controls { position: static; justify-content: center; margin-top: 0.75rem; }
         }
+        /* ─── QR Modal ─── */
+        .qr-overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s }
+        .qr-overlay.active { opacity:1;pointer-events:auto }
+        .qr-modal { background:var(--card-bg,#fff);border-radius:1rem;padding:2rem;max-width:420px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3);position:relative;transform:scale(.92);transition:transform .25s }
+        .qr-overlay.active .qr-modal { transform:scale(1) }
+        .qr-modal-close { position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text,#333);line-height:1 }
+        .qr-modal h3 { margin:0 0 .5rem;font-size:1.1rem }
+        .qr-modal p.qr-subtitle { margin:0 0 1.25rem;font-size:.85rem;color:#888 }
+        .qr-options { display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;align-items:flex-start }
+        .qr-option { display:flex;flex-direction:column;align-items:center;gap:.6rem;flex:1;min-width:150px }
+        .qr-option canvas { border-radius:.5rem }
+        .qr-option-label { font-weight:600;font-size:.85rem }
+        .qr-option-icon { width:32px;height:32px;color:var(--text,#333) }
+        .qr-option a.qr-btn { display:inline-block;padding:.55rem 1.5rem;border-radius:.5rem;background:#3182ce;color:#fff;text-decoration:none;font-size:.85rem;font-weight:600;transition:background .2s }
+        .qr-option a.qr-btn:hover { background:#2b6cb0 }
+        [data-theme="dark"] .qr-modal { background:#1e293b;color:#e2e8f0 }
+        [data-theme="dark"] .qr-option-icon { color:#e2e8f0 }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -358,14 +376,14 @@
         </div>
     </div>
     <div class="header-cta-row">
-        <a class="header-cta cta-join" href="https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsh7KLUHRaDdEtHOhp39lSJxURU80STZXM1VXVlNYMEg0RE9NVldBUkhDSi4u&origin=lprLink&route=shorturl" target="_blank" rel="noopener">
+        <button class="header-cta cta-join" onclick="openQrModal('join')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
             <span data-i18n="cta_join">Devenir membre</span>
-        </a>
-        <a class="header-cta cta-update" href="https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsmgcNltxdiFKtCT8xm4nBrpUMEoxRDlSMVpCRUUzTDU4VFpTMFM3OVMwSC4u&route=shorturl" target="_blank" rel="noopener">
+        </button>
+        <button class="header-cta cta-update" onclick="openQrModal('update')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span data-i18n="cta_update">Mettre à jour mon profil</span>
-        </a>
+        </button>
     </div>
     <div class="stats-bar">
         <div class="stat"><div class="stat-number" id="totalMembers">—</div><div class="stat-label" data-i18n="members">Membres</div></div>
@@ -432,8 +450,32 @@
     </div>
 </div>
 
+<!-- QR Modal -->
+<div class="qr-overlay" id="qrOverlay" onclick="if(event.target===this)closeQrModal()">
+    <div class="qr-modal">
+        <button class="qr-modal-close" onclick="closeQrModal()">&times;</button>
+        <h3 id="qrModalTitle"></h3>
+        <p class="qr-subtitle" id="qrModalSubtitle"></p>
+        <div class="qr-options">
+            <div class="qr-option">
+                <svg class="qr-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <div class="qr-option-label" data-i18n="qr_phone">Remplir sur mon cellulaire</div>
+                <div id="qrCodeContainer"></div>
+            </div>
+            <div class="qr-option">
+                <svg class="qr-option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <div class="qr-option-label" data-i18n="qr_online">Remplir en ligne</div>
+                <a id="qrOnlineLink" class="qr-btn" href="#" target="_blank" rel="noopener" data-i18n="qr_open">Ouvrir le formulaire</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const UPDATE_FORM_URL = 'https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsmgcNltxdiFKtCT8xm4nBrpUMEoxRDlSMVpCRUUzTDU4VFpTMFM3OVMwSC4u&route=shorturl';
+const JOIN_FORM_URL = 'https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsh7KLUHRaDdEtHOhp39lSJxURU80STZXM1VXVlNYMEg0RE9NVldBUkhDSi4u&origin=lprLink&route=shorturl';
+const JOIN_SHORT_URL = 'https://tessrsn.github.io/Bottin/join';
+const UPDATE_SHORT_URL = 'https://tessrsn.github.io/Bottin/update';
 
 // ─── I18N ───
 const I18N = {
@@ -478,7 +520,11 @@ const I18N = {
         badge_pending_consent: 'En attente de consentement',
         badge_incomplete_form: 'Nouveau formulaire non complété',
         prev: '← Préc.', next: 'Suiv. →',
-        cta_join: 'Devenir membre', cta_update: 'Mettre à jour mon profil'
+        cta_join: 'Devenir membre', cta_update: 'Mettre à jour mon profil',
+        qr_phone: 'Remplir sur mon cellulaire', qr_online: 'Remplir en ligne',
+        qr_open: 'Ouvrir le formulaire',
+        qr_title_join: 'Devenir membre du RSN', qr_subtitle_join: 'Scannez le QR code ou remplissez le formulaire en ligne',
+        qr_title_update: 'Mettre à jour mon profil', qr_subtitle_update: 'Scannez le QR code ou remplissez le formulaire en ligne'
     },
     en: {
         title: 'Member Directory',
@@ -518,12 +564,57 @@ const I18N = {
         badge_pending_consent: 'Pending consent',
         badge_incomplete_form: 'New form not completed',
         prev: '← Prev', next: 'Next →',
-        cta_join: 'Become a member', cta_update: 'Update my profile'
+        cta_join: 'Become a member', cta_update: 'Update my profile',
+        qr_phone: 'Fill on my phone', qr_online: 'Fill online',
+        qr_open: 'Open the form',
+        qr_title_join: 'Become an RSN member', qr_subtitle_join: 'Scan the QR code or fill out the form online',
+        qr_title_update: 'Update my profile', qr_subtitle_update: 'Scan the QR code or fill out the form online'
     }
 };
 
 let currentLang = 'fr';
 function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fr[key]) || key; }
+
+// ─── QR Modal ───
+function generateQR(container, text, size) {
+    container.innerHTML = '';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const qr = qrcode(0, 'L');
+    qr.addData(text);
+    qr.make();
+    const count = qr.getModuleCount();
+    const cellSize = Math.floor(size / count);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = cellSize * count;
+    canvas.style.borderRadius = '0.5rem';
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = isDark ? '#1e293b' : '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = isDark ? '#e2e8f0' : '#1a202c';
+    for (let r = 0; r < count; r++)
+        for (let c = 0; c < count; c++)
+            if (qr.isDark(r, c)) ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+    container.appendChild(canvas);
+}
+function openQrModal(type) {
+    const url = type === 'join' ? JOIN_FORM_URL : UPDATE_FORM_URL;
+    const shortUrl = type === 'join' ? JOIN_SHORT_URL : UPDATE_SHORT_URL;
+    const titleKey = type === 'join' ? 'qr_title_join' : 'qr_title_update';
+    const subtitleKey = type === 'join' ? 'qr_subtitle_join' : 'qr_subtitle_update';
+    document.getElementById('qrModalTitle').textContent = t(titleKey);
+    document.getElementById('qrModalSubtitle').textContent = t(subtitleKey);
+    document.getElementById('qrOnlineLink').href = url;
+    document.getElementById('qrOnlineLink').textContent = t('qr_open');
+    document.querySelectorAll('.qr-modal [data-i18n]').forEach(el => {
+        el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    generateQR(document.getElementById('qrCodeContainer'), shortUrl, 160);
+    document.getElementById('qrOverlay').classList.add('active');
+}
+function closeQrModal() {
+    document.getElementById('qrOverlay').classList.remove('active');
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeQrModal(); });
 
 function applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -847,8 +938,8 @@ function renderCards() {
         const isPending = m.consent !== 'oui';
         const pendingClass = isPending ? ' pending-consent' : '';
         let badges = [];
-        if(isPending) badges.push(`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-pending-consent" style="text-decoration:none;color:inherit;cursor:pointer">⏳ ${t('badge_pending_consent')}</a>`);
-        if(!m.formComplete) badges.push(`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-incomplete-form" style="text-decoration:none;color:inherit;cursor:pointer">📋 ${t('badge_incomplete_form')}</a>`);
+        if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="openQrModal('update')">⏳ ${t('badge_pending_consent')}</span>`);
+        if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="openQrModal('update')">📋 ${t('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
@@ -882,8 +973,8 @@ function renderTable() {
         if(m.orcid){const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);}
         if(m.cv){const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">CV</a>`);}
         let badges='';
-        if(isPending) badges+=`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;text-decoration:none;color:inherit">⏳</a> `;
-        if(!m.formComplete) badges+=`<a href="${UPDATE_FORM_URL}" target="_blank" rel="noopener" class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;text-decoration:none;color:inherit">📋</a> `;
+        if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="openQrModal('update')">⏳</span> `;
+        if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="openQrModal('update')">📋</span> `;
         return `<tr class="${isPending?'pending-consent':''}"><td><strong>${esc(m.name)}</strong>${badges?' <br>'+badges:''}</td><td>${esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
