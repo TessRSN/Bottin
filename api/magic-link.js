@@ -46,9 +46,7 @@ module.exports = async function handler(req, res) {
       const name = `${prenom} ${nom}`.trim() || 'Membre';
 
       const token = signToken(page.id, normalized);
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000';
+      const baseUrl = process.env.BASE_URL || 'https://bottin-gamma.vercel.app';
       const magicUrl = `${baseUrl}/edit.html?token=${token}`;
 
       await sendMagicLink(normalized, name, magicUrl, lang);
