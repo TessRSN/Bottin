@@ -153,7 +153,7 @@ module.exports = async function handler(req, res) {
 
     // Return CSV with caching
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate');
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
     res.setHeader('Content-Disposition', 'inline; filename="public_members.csv"');
     return res.status(200).send(csv);
   } catch (err) {
