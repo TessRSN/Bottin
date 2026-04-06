@@ -813,7 +813,7 @@ function loadMembers(data) {
         });
     });
     // Tri alphabétique par nom de famille par défaut
-    allMembers.sort((a,b) => (a.nom||'').localeCompare(b.nom||'','fr'));
+    allMembers.sort((a,b) => { const an=a.nom||a.prenom||''; const bn=b.nom||b.prenom||''; const c=an.localeCompare(bn,'fr'); return c!==0?c:(a.prenom||'').localeCompare(b.prenom||'','fr'); });
     updateStats(); populateFilters(); applyFilters(); restoreHash();
 }
 

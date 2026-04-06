@@ -4,5 +4,13 @@
       "path": "/api/export",
       "schedule": "0 6 * * *"
     }
+  ],
+  "headers": [
+    {
+      "source": "/(.*).html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    }
   ]
 }
