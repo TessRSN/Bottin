@@ -224,7 +224,6 @@ async function init() {
     if (result.expired) { showExpired(); return; }
     if (result.error || !result.ok) throw new Error('API error');
     profile = result.data;
-    profile = await resp.json();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('form').style.display = 'block';
     document.getElementById('f_prenom').value = profile.prenom || '';
