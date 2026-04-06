@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSN — Modifier mon profil</title>
+<style>
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --accent:#4299e1; --success:#48bb78; --radius:.5rem; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#63b3ed; } }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); padding:1rem; }
+  .container { max-width:640px; margin:2rem auto; }
+  h1 { font-size:1.4rem; color:var(--primary); margin-bottom:.25rem; }
+  .subtitle { color:var(--muted); font-size:.85rem; margin-bottom:2rem; }
+  .card { background:var(--card); border-radius:1rem; padding:1.5rem 2rem; box-shadow:0 2px 12px rgba(0,0,0,.08); margin-bottom:1.5rem; }
+  .section-title { font-size:.95rem; font-weight:700; color:var(--primary); margin-bottom:1rem; padding-bottom:.5rem; border-bottom:2px solid var(--border); }
+  .field { margin-bottom:1rem; }
+  label { display:block; font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.03em; }
+  input, textarea, select { width:100%; padding:.55rem .75rem; border:1.5px solid var(--border); border-radius:var(--radius); font-size:.9rem; background:var(--card); color:var(--text); outline:none; transition:border .2s; }
+  input:focus, textarea:focus, select:focus { border-color:var(--accent); }
+  textarea { resize:vertical; min-height:80px; }
+  .checkbox-group { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .chip { display:inline-flex; align-items:center; gap:.3rem; padding:.35rem .75rem; border-radius:2rem; font-size:.8rem; border:1.5px solid var(--border); cursor:pointer; transition:all .15s; user-select:none; }
+  .chip input { display:none; }
+  .chip.checked { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .actions { display:flex; gap:1rem; justify-content:center; margin-top:1.5rem; }
+  .btn { padding:.7rem 2rem; border:none; border-radius:var(--radius); font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { opacity:.85; }
+  .btn-secondary { background:var(--border); color:var(--text); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
+  @media (prefers-color-scheme:dark) { .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); } }
+  .consent-section label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
+  .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; }
+  .msg.success { display:block; background:#c6f6d5; color:#22543d; }
+  .msg.error { display:block; background:#fed7d7; color:#9b2c2c; }
+  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } }
+  .loading { text-align:center; padding:4rem; color:var(--muted); }
+  .expired { text-align:center; padding:4rem; }
+  .expired h2 { color:#e53e3e; margin-bottom:1rem; }
+  .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; z-index:10; }
+</style>
+</head>
+<body>
+<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+
+<div class="container" id="loading" style="display:none">
+  <div class="loading">Chargement de votre profil...</div>
+</div>
+
+<div class="container" id="expired" style="display:none">
+  <div class="expired">
+    <h2 id="expiredTitle">Lien expiré</h2>
+    <p id="expiredMsg">Ce lien de modification a expiré. Veuillez en demander un nouveau.</p>
+    <a href="/magic-link.html" class="btn btn-primary" style="display:inline-block;margin-top:1rem;text-decoration:none" id="expiredBtn">Demander un nouveau lien</a>
+  </div>
+</div>
+
+<div class="container" id="form" style="display:none">
+  <h1 id="title">Modifier mon profil</h1>
+  <p class="subtitle" id="subtitle">Modifiez uniquement les champs que vous souhaitez mettre à jour.</p>
+
+  <div id="msgBox" class="msg"></div>
+
+  <div class="card">
+    <div class="section-title" id="s_identity">Identité</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="field"><label id="l_prenom">Prénom</label><input id="f_prenom"></div>
+      <div class="field"><label id="l_nom">Nom</label><input id="f_nom"></div>
+    </div>
+    <div class="field"><label id="l_email">Courriel principal</label><input id="f_email" type="email"></div>
+    <div class="field"><label id="l_email2">Courriel secondaire</label><input id="f_email2" type="email"></div>
+    <div class="field"><label id="l_institution">Institution / Organisation</label><input id="f_institution"></div>
+    <div class="field"><label id="l_statut">Statut actuel</label><input id="f_statut"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" id="s_research">Recherche &amp; expertise</div>
+    <div class="field"><label id="l_expertise">Expertise</label><textarea id="f_expertise"></textarea></div>
+    <div class="field"><label id="l_themes">Thèmes d'intérêt</label><textarea id="f_themes"></textarea></div>
+    <div class="field"><label id="l_reseau">Réseau</label><input id="f_reseau"></div>
+    <div class="field"><label id="l_projet">Projet de recherche</label><textarea id="f_projet"></textarea></div>
+    <div class="field"><label id="l_etudiants">Étudiants</label><textarea id="f_etudiants"></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" id="s_axes">Axes, principes &amp; champs d'action</div>
+    <div class="field"><label id="l_axes">Axes d'intérêt</label><div class="checkbox-group" id="axes_group"></div></div>
+    <div class="field"><label id="l_principes">Principes fondateurs</label><div class="checkbox-group" id="principes_group"></div></div>
+    <div class="field"><label id="l_champs">Champs d'action</label><div class="checkbox-group" id="champs_group"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" id="s_links">Liens</div>
+    <div class="field"><label>ORCID</label><input id="f_orcid" placeholder="https://orcid.org/0000-..."></div>
+    <div class="field"><label>CV / LinkedIn</label><input id="f_cv" placeholder="https://..."></div>
+  </div>
+
+  <div class="card">
+    <div class="consent-section">
+      <div class="field" style="margin:0">
+        <label id="l_consent">Autorisez-vous le RSN à créer un profil de membre public ?</label>
+        <select id="f_consent" style="margin-top:.5rem">
+          <option value="Oui" id="opt_yes">Oui, afficher mon profil publiquement</option>
+          <option value="Non" id="opt_no">Non, ne pas afficher mon profil</option>
+          <option value="" id="opt_pending">Je déciderai plus tard</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a href="/" class="btn btn-secondary" style="text-decoration:none" id="cancelBtn">Annuler</a>
+    <button class="btn btn-primary" onclick="save()" id="saveBtn">Enregistrer</button>
+  </div>
+</div>
+
+<script>
+const OPTIONS = {
+  axes: [
+    'Axe 1 - Plateformes numériques et gouvernance informationnelle',
+    'Axe 2 - Modélisation et méthodes numériques',
+    'Axe 3 - Intervention numérique',
+    'Axe 4 - Transformation numérique',
+  ],
+  principes: ['Science ouverte','Numérique de confiance','Santé durable','Engagement citoyen','Équité diversité inclusion et accessibilité'],
+  champs: ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'],
+};
+
+let lang = 'fr', token = '', profile = {};
+
+function t(key) {
+  const map = {
+    fr: { title:'Modifier mon profil', subtitle:'Modifiez uniquement les champs que vous souhaitez mettre à jour.',
+      s_identity:'Identité', s_research:'Recherche & expertise', s_axes:"Axes, principes & champs d'action", s_links:'Liens',
+      l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel principal', l_email2:'Courriel secondaire',
+      l_institution:'Institution / Organisation', l_statut:'Statut actuel', l_expertise:'Expertise',
+      l_themes:"Thèmes d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Étudiants',
+      l_axes:"Axes d'intérêt", l_principes:'Principes fondateurs', l_champs:"Champs d'action",
+      l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
+      opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
+      saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', lang:'EN',
+      msg_success:'Profil mis à jour ! Vos modifications seront visibles après approbation.',
+      msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
+      expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien' },
+    en: { title:'Update my profile', subtitle:'Only modify the fields you want to update.',
+      s_identity:'Identity', s_research:'Research & expertise', s_axes:'Axes, principles & action fields', s_links:'Links',
+      l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
+      l_institution:'Institution / Organization', l_statut:'Current status', l_expertise:'Expertise',
+      l_themes:'Research themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'Students',
+      l_axes:'Research axes', l_principes:'Founding principles', l_champs:'Action fields',
+      l_consent:'Do you authorize RSN to create a public member profile?',
+      opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
+      saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', lang:'FR',
+      msg_success:'Profile updated! Changes will be visible after approval.',
+      msg_error:'Error saving profile.', expired_title:'Link expired',
+      expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link' }
+  };
+  return (map[lang] || map.fr)[key] || key;
+}
+
+function applyI18n() {
+  ['title','subtitle','langBtn','expiredTitle','expiredMsg','expiredBtn',
+   's_identity','s_research','s_axes','s_links',
+   'l_prenom','l_nom','l_email','l_email2','l_institution','l_statut',
+   'l_expertise','l_themes','l_reseau','l_projet','l_etudiants',
+   'l_axes','l_principes','l_champs','l_consent',
+   'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+}
+
+function toggleLang() { lang = lang === 'fr' ? 'en' : 'fr'; applyI18n(); }
+
+function buildChips(groupId, options, selected) {
+  const el = document.getElementById(groupId);
+  el.textContent = '';
+  for (const opt of options) {
+    const chip = document.createElement('label');
+    chip.className = 'chip' + (selected.includes(opt) ? ' checked' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = opt;
+    cb.checked = selected.includes(opt);
+    cb.addEventListener('change', () => chip.classList.toggle('checked', cb.checked));
+    chip.appendChild(cb);
+    chip.appendChild(document.createTextNode(opt.replace(/^Axe \d+ - /, '')));
+    el.appendChild(chip);
+  }
+}
+
+function getChips(groupId) {
+  return [...document.querySelectorAll('#' + groupId + ' input:checked')].map(cb => cb.value);
+}
+
+async function init() {
+  token = new URLSearchParams(location.search).get('token');
+  if (!token) { showExpired(); return; }
+  document.getElementById('loading').style.display = 'block';
+  try {
+    const resp = await fetch('/api/profile?token=' + token);
+    if (resp.status === 401) { showExpired(); return; }
+    if (!resp.ok) throw new Error('API error');
+    profile = await resp.json();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('form').style.display = 'block';
+    document.getElementById('f_prenom').value = profile.prenom || '';
+    document.getElementById('f_nom').value = profile.nom || '';
+    document.getElementById('f_email').value = profile.email || '';
+    document.getElementById('f_email2').value = profile.email2 || '';
+    document.getElementById('f_institution').value = profile.institution || '';
+    document.getElementById('f_statut').value = profile.statut || '';
+    document.getElementById('f_expertise').value = profile.expertise || '';
+    document.getElementById('f_themes').value = profile.themes || '';
+    document.getElementById('f_reseau').value = profile.reseau || '';
+    document.getElementById('f_projet').value = profile.projet || '';
+    document.getElementById('f_etudiants').value = profile.etudiants || '';
+    document.getElementById('f_orcid').value = profile.orcid || '';
+    document.getElementById('f_cv').value = profile.cv || '';
+    document.getElementById('f_consent').value = profile.consent || '';
+    buildChips('axes_group', OPTIONS.axes, profile.axes || []);
+    buildChips('principes_group', OPTIONS.principes, profile.principes || []);
+    buildChips('champs_group', OPTIONS.champs, profile.champs || []);
+  } catch (e) { showExpired(); }
+}
+
+function showExpired() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('expired').style.display = 'block';
+}
+
+async function save() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = t('saving');
+  const data = {
+    prenom: document.getElementById('f_prenom').value.trim(),
+    nom: document.getElementById('f_nom').value.trim(),
+    email: document.getElementById('f_email').value.trim() || null,
+    email2: document.getElementById('f_email2').value.trim() || null,
+    institution: document.getElementById('f_institution').value.trim(),
+    statut: document.getElementById('f_statut').value.trim(),
+    expertise: document.getElementById('f_expertise').value.trim(),
+    themes: document.getElementById('f_themes').value.trim(),
+    reseau: document.getElementById('f_reseau').value.trim(),
+    projet: document.getElementById('f_projet').value.trim(),
+    etudiants: document.getElementById('f_etudiants').value.trim(),
+    orcid: document.getElementById('f_orcid').value.trim() || null,
+    cv: document.getElementById('f_cv').value.trim() || null,
+    consent: document.getElementById('f_consent').value,
+    axes: getChips('axes_group'),
+    principes: getChips('principes_group'),
+    champs: getChips('champs_group'),
+  };
+  try {
+    const resp = await fetch('/api/profile?token=' + token, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+    });
+    if (resp.ok) { showMsg(t('msg_success'), 'success'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else showMsg(t('msg_error'), 'error');
+  } catch (e) { showMsg(t('msg_error'), 'error'); }
+  btn.disabled = false; btn.textContent = t('saveBtn');
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msgBox');
+  el.textContent = text; el.className = 'msg ' + type;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -11,5 +11,12 @@ Formulaire*.csv
 __pycache__/
 *.pyc
 
+# Node
+node_modules/
+.env
+
+# Vercel
+.vercel/
+
 # macOS
 .DS_Store

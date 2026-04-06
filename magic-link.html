@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSN — Modifier mon profil</title>
+<style>
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; } }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .card { background:var(--card); border-radius:1rem; padding:2.5rem; max-width:420px; width:100%; box-shadow:0 4px 24px rgba(0,0,0,.1); text-align:center; }
+  h1 { font-size:1.3rem; margin-bottom:.5rem; color:var(--primary); }
+  p { font-size:.9rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.5; }
+  .input-group { display:flex; gap:.5rem; margin-bottom:1rem; }
+  input[type="email"] { flex:1; padding:.65rem 1rem; border:1.5px solid var(--border); border-radius:.5rem; font-size:.95rem; background:var(--card); color:var(--text); outline:none; }
+  input:focus { border-color:var(--primary); }
+  button { padding:.65rem 1.5rem; border:none; border-radius:.5rem; background:var(--primary); color:#fff; font-size:.95rem; font-weight:600; cursor:pointer; transition:opacity .2s; }
+  button:hover { opacity:.85; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .msg { margin-top:1rem; padding:.75rem; border-radius:.5rem; font-size:.85rem; line-height:1.4; }
+  .msg.success { background:#c6f6d5; color:#22543d; }
+  .msg.error { background:#fed7d7; color:#9b2c2c; }
+  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } }
+  .lang-toggle { position:absolute; top:1rem; right:1rem; background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  .back { display:inline-block; margin-top:1rem; font-size:.8rem; color:var(--muted); text-decoration:none; }
+  .back:hover { color:var(--primary); }
+</style>
+</head>
+<body>
+<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+<div class="card">
+  <h1 id="title">Modifier mon profil</h1>
+  <p id="desc">Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.</p>
+
+  <div class="input-group">
+    <input type="email" id="email" placeholder="votre.email@institution.ca" autocomplete="email">
+    <button id="submit" onclick="send()">
+      <span id="btnText">Envoyer</span>
+    </button>
+  </div>
+
+  <div id="msg" class="msg" style="display:none"></div>
+
+  <a class="back" href="/" id="backLink">← Retour au bottin</a>
+</div>
+
+<script>
+const i18n = {
+  fr: {
+    title: 'Modifier mon profil',
+    desc: 'Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.',
+    btn: 'Envoyer',
+    sending: 'Envoi...',
+    success: 'Si votre courriel est dans notre base, vous recevrez un lien de modification dans les prochaines minutes. Vérifiez vos courriels indésirables.',
+    error: 'Une erreur est survenue. Veuillez réessayer.',
+    invalid: 'Veuillez entrer un courriel valide.',
+    back: '← Retour au bottin',
+    lang: 'EN',
+  },
+  en: {
+    title: 'Update my profile',
+    desc: 'Enter your institutional email to receive a secure edit link.',
+    btn: 'Send',
+    sending: 'Sending...',
+    success: 'If your email is in our database, you will receive an edit link shortly. Check your spam folder.',
+    error: 'An error occurred. Please try again.',
+    invalid: 'Please enter a valid email.',
+    back: '← Back to directory',
+    lang: 'FR',
+  }
+};
+let lang = 'fr';
+
+function t(key) { return i18n[lang][key] || key; }
+
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  document.getElementById('title').textContent = t('title');
+  document.getElementById('desc').textContent = t('desc');
+  document.getElementById('btnText').textContent = t('btn');
+  document.getElementById('backLink').textContent = t('back');
+  document.getElementById('langBtn').textContent = t('lang');
+  document.getElementById('msg').style.display = 'none';
+}
+
+async function send() {
+  const email = document.getElementById('email').value.trim();
+  if (!email || !email.includes('@')) {
+    showMsg(t('invalid'), 'error');
+    return;
+  }
+
+  const btn = document.getElementById('submit');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true;
+  btnText.textContent = t('sending');
+
+  try {
+    const resp = await fetch('/api/magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, lang }),
+    });
+
+    if (resp.ok) {
+      showMsg(t('success'), 'success');
+    } else {
+      showMsg(t('error'), 'error');
+    }
+  } catch (e) {
+    showMsg(t('error'), 'error');
+  }
+
+  btn.disabled = false;
+  btnText.textContent = t('btn');
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
+}
+
+// Submit on Enter
+document.getElementById('email').addEventListener('keypress', e => {
+  if (e.key === 'Enter') send();
+});
+</script>
+</body>
+</html>
