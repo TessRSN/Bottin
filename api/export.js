@@ -7,6 +7,9 @@
  */
 const { getAllMembers, CSV_COL } = require('../lib/notion');
 
+// Vercel serverless config
+module.exports.config = { maxDuration: 60 };
+
 // CSV headers in exact order expected by index.html
 const HEADERS = [
   CSV_COL.prenom, CSV_COL.nom, CSV_COL.email, CSV_COL.email2,
@@ -144,7 +147,7 @@ module.exports = async function handler(req, res) {
     res.setHeader('Content-Disposition', 'inline; filename="public_members.csv"');
     return res.status(200).send(csv);
   } catch (err) {
-    console.error('Export error:', err);
-    return res.status(500).json({ error: 'Export failed' });
+    console.error('Export error:', err.message, err.stack);
+    return res.status(500).json({ error: 'Export failed', detail: err.message });
   }
 };
