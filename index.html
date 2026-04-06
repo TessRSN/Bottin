@@ -359,6 +359,7 @@
         [data-theme="dark"] .member-modal { background:#1e293b;color:#e2e8f0 }
         .map-member-link { cursor:pointer;transition:color .15s }
         .map-member-link:hover { color:var(--rsn-primary);text-decoration:underline }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
@@ -432,6 +433,11 @@
 </div>
 
 <div class="content">
+    <div id="loadingState" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
+        <div style="font-size:2rem;margin-bottom:1rem;animation:pulse 1.5s ease-in-out infinite">⏳</div>
+        <p style="font-size:1rem;font-weight:600" data-i18n="loading_title">Chargement des membres...</p>
+        <p style="font-size:0.85rem;margin-top:0.5rem" data-i18n="loading_subtitle">Connexion à la base de données</p>
+    </div>
     <div id="cardsView" class="cards-grid"></div>
     <div id="tableView" class="table-wrapper hidden"></div>
     <div id="mapContainer" class="hidden">
@@ -533,6 +539,7 @@ const I18N = {
         map_student_s: 'étudiant', map_students_s: 'étudiants',
         map_partner_s: 'partenaire', map_partners_s: 'partenaires',
         map_loading: 'Chargement de la carte... (nécessite une connexion internet)',
+        loading_title: 'Chargement des membres...', loading_subtitle: 'Connexion à la base de données',
         badge_pending_consent: 'En attente de consentement',
         badge_incomplete_form: 'Nouveau formulaire non complété',
         prev: '← Préc.', next: 'Suiv. →',
@@ -577,6 +584,7 @@ const I18N = {
         map_student_s: 'student', map_students_s: 'students',
         map_partner_s: 'partner', map_partners_s: 'partners',
         map_loading: 'Loading map... (requires internet connection)',
+        loading_title: 'Loading members...', loading_subtitle: 'Connecting to the database',
         badge_pending_consent: 'Pending consent',
         badge_incomplete_form: 'New form not completed',
         prev: '← Prev', next: 'Next →',
@@ -814,6 +822,7 @@ function loadMembers(data) {
     });
     // Tri alphabétique par nom de famille par défaut
     allMembers.sort((a,b) => { const an=a.nom||a.prenom||''; const bn=b.nom||b.prenom||''; const c=an.localeCompare(bn,'fr'); return c!==0?c:(a.prenom||'').localeCompare(b.prenom||'','fr'); });
+    const ls = document.getElementById('loadingState'); if (ls) ls.style.display = 'none';
     updateStats(); populateFilters(); applyFilters(); restoreHash();
 }
 
@@ -1410,7 +1419,7 @@ function restoreHash() {
         if(!processCSV(txt)) throw new Error('empty');
     }).catch(()=>{
         ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
-        ua.querySelector('p').textContent=currentLang==='fr'?'Erreur de chargement — veuillez rafraîchir la page':'Loading error — please refresh the page';
+        const ls=document.getElementById('loadingState'); if(ls) ls.innerHTML='<div style="font-size:2rem;margin-bottom:1rem">⚠️</div><p style="font-size:1rem;font-weight:600">'+(currentLang==='fr'?'Erreur de chargement':'Loading error')+'</p><p style="font-size:0.85rem;margin-top:0.5rem">'+(currentLang==='fr'?'Veuillez rafraîchir la page':'Please refresh the page')+'</p>';
     });
 })();
 </script>
