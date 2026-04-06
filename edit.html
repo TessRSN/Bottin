@@ -40,6 +40,7 @@
   .expired { text-align:center; padding:4rem; }
   .expired h2 { color:#e53e3e; margin-bottom:1rem; }
   .required-mark { color:#e53e3e; margin-left:2px; }
+  .field-error { border-color:#e53e3e !important; outline:2px solid #e53e3e; outline-offset:2px; border-radius:4px; }
   .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; z-index:10; }
 </style>
 </head>
@@ -238,37 +239,38 @@ function validate() {
     { id: 'f_statut', label: t('l_statut') },
   ];
   let ok = true;
-  // Reset borders
-  required.forEach(f => document.getElementById(f.id).style.borderColor = '');
-  document.getElementById('axes_group').style.outline = '';
-  document.getElementById('f_consent').style.borderColor = '';
+  let firstErrEl = null;
+  // Reset
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
 
-  // Check text fields
   const missing = [];
   for (const f of required) {
     const el = document.getElementById(f.id);
-    if (!el.value.trim()) { el.style.borderColor = '#e53e3e'; ok = false; missing.push(f.label); }
+    if (!el.value.trim()) {
+      el.classList.add('field-error');
+      ok = false; missing.push(f.label);
+      if (!firstErrEl) firstErrEl = el;
+    }
   }
   // Check at least 1 axe
   if (getChips('axes_group').length === 0) {
-    document.getElementById('axes_group').style.outline = '2px solid #e53e3e';
-    document.getElementById('axes_group').style.outlineOffset = '4px';
-    document.getElementById('axes_group').style.borderRadius = '4px';
+    document.getElementById('axes_group').classList.add('field-error');
     ok = false; missing.push(t('l_axes'));
+    if (!firstErrEl) firstErrEl = document.getElementById('axes_group');
   }
-  // Check consent is not empty
-  if (!document.getElementById('f_consent').value) {
-    document.getElementById('f_consent').style.borderColor = '#e53e3e';
+  // Check consent
+  const consentEl = document.getElementById('f_consent');
+  if (!consentEl.value) {
+    consentEl.classList.add('field-error');
     ok = false; missing.push(t('l_consent'));
+    if (!firstErrEl) firstErrEl = consentEl;
   }
   if (!ok) {
     const msg = lang === 'fr'
       ? 'Veuillez remplir les champs obligatoires : ' + missing.join(', ')
       : 'Please fill in the required fields: ' + missing.join(', ');
     showMsg(msg, 'error');
-    // Scroll to first error
-    const firstErr = document.querySelector('[style*="e53e3e"]');
-    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   return ok;
 }
