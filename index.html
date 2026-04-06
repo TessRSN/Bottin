@@ -349,6 +349,16 @@
         .qr-option a.qr-btn:hover { background:#2b6cb0 }
         [data-theme="dark"] .qr-modal { background:#1e293b;color:#e2e8f0 }
         [data-theme="dark"] .qr-option-icon { color:#e2e8f0 }
+        /* Member profile modal */
+        .member-overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10001;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s }
+        .member-overlay.active { opacity:1;pointer-events:auto }
+        .member-modal { background:var(--rsn-card-bg,#fff);border-radius:1rem;padding:1.5rem;max-width:480px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.3);position:relative;transform:scale(.92);transition:transform .25s;max-height:85vh;overflow-y:auto;color:var(--rsn-text) }
+        .member-overlay.active .member-modal { transform:scale(1) }
+        .member-modal-close { position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--rsn-muted);line-height:1 }
+        .member-modal-close:hover { color:var(--rsn-text) }
+        [data-theme="dark"] .member-modal { background:#1e293b;color:#e2e8f0 }
+        .map-member-link { cursor:pointer;transition:color .15s }
+        .map-member-link:hover { color:var(--rsn-primary);text-decoration:underline }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
@@ -471,6 +481,12 @@
     </div>
 </div>
 
+<div class="member-overlay" id="memberOverlay" onclick="if(event.target===this)closeMemberPopup()">
+    <div class="member-modal" id="memberModalContent">
+        <button class="member-modal-close" onclick="closeMemberPopup()">&times;</button>
+    </div>
+</div>
+
 <script>
 const UPDATE_FORM_URL = 'https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsmgcNltxdiFKtCT8xm4nBrpUMEoxRDlSMVpCRUUzTDU4VFpTMFM3OVMwSC4u&route=shorturl';
 const JOIN_FORM_URL = 'https://forms.office.com/pages/responsepage.aspx?id=nacZrqHWaUedEUnXJsvjsh7KLUHRaDdEtHOhp39lSJxURU80STZXM1VXVlNYMEg0RE9NVldBUkhDSi4u&origin=lprLink&route=shorturl';
@@ -490,7 +506,7 @@ const I18N = {
         filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
-        view_cards: 'Cartes', view_table: 'Tableau', view_map: 'Carte',
+        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte',
         no_results: 'Aucun membre trouvé',
         no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
         upload_title: 'Mettre à jour les données :',
@@ -537,7 +553,7 @@ const I18N = {
         filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
-        view_cards: 'Cards', view_table: 'Table', view_map: 'Map',
+        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map',
         no_results: 'No members found',
         no_results_hint: 'Try adjusting your search criteria or filters.',
         upload_title: 'Update data:',
@@ -1040,6 +1056,52 @@ function readF(file){
     r.readAsText(file,'UTF-8');
 }
 
+// ─── MEMBER POPUP (from map) ───
+function showMemberPopup(name) {
+    const m = allMembers.find(x => x.name === name);
+    if (!m) return;
+    const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
+    const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /, '') : '';
+    const pf1 = m.principes[0] || '';
+    const ca1 = m.champsAction[0] || '';
+    const expertiseText = m.themes || m.expertise || '';
+    let links = [];
+    if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
+    if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+    const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
+    let chips = [];
+    if (ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
+    if (pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
+    if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
+    const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+    let details = [];
+    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
+    if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${t('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
+    if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${t('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
+    if (m.projet) details.push(`<div class="card-detail"><span class="dl">${t('lbl_project')}</span><span>${esc(trunc(m.projet, 250))}</span></div>`);
+    if (m.etudiants) details.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
+    const modal = document.getElementById('memberModalContent');
+    // Build content safely — all user data goes through esc()
+    modal.textContent = '';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'member-modal-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.onclick = closeMemberPopup;
+    modal.appendChild(closeBtn);
+    const content = document.createElement('div');
+    content.innerHTML = [
+        `<div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type || 'N/A')}</span></div>`,
+        `<div class="card-institution" style="margin:.5rem 0">${esc(m.institution || t('lbl_no_institution'))}</div>`,
+        m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
+        `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
+        chipsHtml, lnkH
+    ].join('');
+    modal.appendChild(content);
+    document.getElementById('memberOverlay').classList.add('active');
+}
+function closeMemberPopup() { document.getElementById('memberOverlay').classList.remove('active'); }
+document.addEventListener('click', e => { const el = e.target.closest('.map-member-link'); if (el && el.dataset.member) showMemberPopup(el.dataset.member); });
+
 // ─── MAP ───
 let map = null, clusterGroup = null;
 const GEOCODE = {
@@ -1265,7 +1327,7 @@ function renderMap() {
             weight: 1.5, opacity: 0.9, fillOpacity: 0.6
         });
         // Build member names list for popup
-        const namesList = data.members.slice(0, 15).map(m => `<div style="font-size:0.78rem;padding:1px 0;">${esc(m.name)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
+        const namesList = data.members.slice(0, 15).map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${esc(m.name)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
         const moreNames = n > 15 ? `<div style="font-size:0.72rem;color:var(--rsn-muted);margin-top:2px;">+ ${n-15} ${t('map_members')}…</div>` : '';
         marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:180px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}${moreNames}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
