@@ -194,19 +194,25 @@ function getChips(groupId) {
   return [...document.querySelectorAll('#' + groupId + ' input:checked')].map(cb => cb.value);
 }
 
-async function fetchWithRetry(url, retries = 2) {
-  for (let i = 0; i <= retries; i++) {
+async function fetchProfile(token) {
+  // Retry up to 3 times with increasing delays to handle Vercel cold starts
+  const delays = [0, 3000, 5000];
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await new Promise(r => setTimeout(r, delays[i]));
     try {
-      const resp = await fetch(url);
-      if (resp.status === 401) return resp;
-      if (resp.ok) return resp;
-      if (i < retries) await new Promise(r => setTimeout(r, 2000));
+      // Add cache-busting to avoid browser caching a failed response
+      const resp = await fetch('/api/profile?token=' + token + '&t=' + Date.now());
+      if (resp.status === 401) return { expired: true };
+      if (resp.ok) {
+        const data = await resp.json();
+        return { ok: true, data };
+      }
+      // Non-401 error: retry
     } catch (e) {
-      if (i >= retries) throw e;
-      await new Promise(r => setTimeout(r, 2000));
+      // Network error: retry
     }
   }
-  throw new Error('Failed after retries');
+  return { error: true };
 }
 
 async function init() {
@@ -214,9 +220,10 @@ async function init() {
   if (!token) { showExpired(); return; }
   document.getElementById('loading').style.display = 'block';
   try {
-    const resp = await fetchWithRetry('/api/profile?token=' + token);
-    if (resp.status === 401) { showExpired(); return; }
-    if (!resp.ok) throw new Error('API error');
+    const result = await fetchProfile(token);
+    if (result.expired) { showExpired(); return; }
+    if (result.error || !result.ok) throw new Error('API error');
+    profile = result.data;
     profile = await resp.json();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('form').style.display = 'block';
