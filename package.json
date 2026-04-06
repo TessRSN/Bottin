@@ -14,7 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@notionhq/client": "^5.16.0",
+    "@notionhq/client": "^2.2.15",
     "csv-parse": "^6.2.1",
     "jsonwebtoken": "^9.0.3",
     "resend": "^6.10.0"
