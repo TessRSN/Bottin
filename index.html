@@ -1392,29 +1392,35 @@ function restoreHash() {
 
 // ─── AUTO-LOAD ───
 (function(){
-    const names = ['public_members.csv', 'all_members.csv', 'RSN_BD_AllMembers(ALL (new))2.csv', 'membres.csv'];
-    function processCSV(txt, fname) {
+    function processCSV(txt) {
         const d=csvToObjects(txt);
-        if(d.length>0){loadMembers(d);ua.querySelector('p').innerHTML=`<strong>✓ ${currentLang==='fr'?'Données chargées automatiquement':'Data loaded automatically'}</strong> — ${d.length} membres`;return true;}
+        if(d.length>0){loadMembers(d);ua.querySelector('p').textContent=(currentLang==='fr'?'Données chargées':'Data loaded')+' — '+d.length+' membres';return true;}
         return false;
     }
-    function tryNext(i) {
-        if (i >= names.length) {
+    function decodeBuf(buf) {
+        let txt = new TextDecoder('utf-8').decode(buf);
+        const firstLine = txt.split('\n')[0];
+        if(txt.includes('\ufffd') || (!/Prénom/.test(firstLine) && /Pr/.test(firstLine))) {
+            txt = new TextDecoder('iso-8859-1').decode(buf);
+        }
+        return txt;
+    }
+    // Try API first (Notion live data), then static CSV fallback
+    const apiUrl = '/api/export';
+    const fallbacks = ['public_members.csv', 'all_members.csv'];
+    fetch(apiUrl).then(r=>{if(!r.ok)throw 0;return r.text();}).then(txt=>{
+        if(processCSV(txt)) return;
+        tryFallback(0);
+    }).catch(()=>tryFallback(0));
+    function tryFallback(i) {
+        if (i >= fallbacks.length) {
             ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
             return;
         }
-        fetch(names[i]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(buf=>{
-            // Try UTF-8 first
-            let txt = new TextDecoder('utf-8').decode(buf);
-            const firstLine = txt.split('\n')[0];
-            // If accented chars are broken, try Latin-1
-            if(txt.includes('\ufffd') || (!/Prénom/.test(firstLine) && /Pr/.test(firstLine))) {
-                txt = new TextDecoder('iso-8859-1').decode(buf);
-            }
-            if(!processCSV(txt, names[i])) tryNext(i+1);
-        }).catch(()=>tryNext(i+1));
+        fetch(fallbacks[i]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(buf=>{
+            if(!processCSV(decodeBuf(buf))) tryFallback(i+1);
+        }).catch(()=>tryFallback(i+1));
     }
-    tryNext(0);
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
