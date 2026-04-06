@@ -194,12 +194,27 @@ function getChips(groupId) {
   return [...document.querySelectorAll('#' + groupId + ' input:checked')].map(cb => cb.value);
 }
 
+async function fetchWithRetry(url, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url);
+      if (resp.status === 401) return resp;
+      if (resp.ok) return resp;
+      if (i < retries) await new Promise(r => setTimeout(r, 2000));
+    } catch (e) {
+      if (i >= retries) throw e;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+  throw new Error('Failed after retries');
+}
+
 async function init() {
   token = new URLSearchParams(location.search).get('token');
   if (!token) { showExpired(); return; }
   document.getElementById('loading').style.display = 'block';
   try {
-    const resp = await fetch('/api/profile?token=' + token);
+    const resp = await fetchWithRetry('/api/profile?token=' + token);
     if (resp.status === 401) { showExpired(); return; }
     if (!resp.ok) throw new Error('API error');
     profile = await resp.json();

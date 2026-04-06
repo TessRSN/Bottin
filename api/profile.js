@@ -5,6 +5,8 @@
 const { getProfile, updateProfile } = require('../lib/notion');
 const { verifyToken } = require('../lib/token');
 
+module.exports.config = { maxDuration: 30 };
+
 // Fields that members can edit themselves
 const EDITABLE_FIELDS = [
   'prenom', 'nom', 'email', 'email2', 'institution', 'statut',
