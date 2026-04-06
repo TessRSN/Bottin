@@ -1405,22 +1405,13 @@ function restoreHash() {
         }
         return txt;
     }
-    // Try API first (Notion live data), then static CSV fallback
-    const apiUrl = '/api/export';
-    const fallbacks = ['public_members.csv', 'all_members.csv'];
-    fetch(apiUrl).then(r=>{if(!r.ok)throw 0;return r.text();}).then(txt=>{
-        if(processCSV(txt)) return;
-        tryFallback(0);
-    }).catch(()=>tryFallback(0));
-    function tryFallback(i) {
-        if (i >= fallbacks.length) {
-            ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
-            return;
-        }
-        fetch(fallbacks[i]).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();}).then(buf=>{
-            if(!processCSV(decodeBuf(buf))) tryFallback(i+1);
-        }).catch(()=>tryFallback(i+1));
-    }
+    // Load from Notion API
+    fetch('/api/export').then(r=>{if(!r.ok)throw new Error(r.status);return r.text();}).then(txt=>{
+        if(!processCSV(txt)) throw new Error('empty');
+    }).catch(()=>{
+        ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
+        ua.querySelector('p').textContent=currentLang==='fr'?'Erreur de chargement — veuillez rafraîchir la page':'Loading error — please refresh the page';
+    });
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
