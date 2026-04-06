@@ -133,6 +133,14 @@ module.exports = async function handler(req, res) {
     statsRow[CSV_COL.email] = `${excludedStats.total},${excludedStats.regulier},${excludedStats.etudiant},${excludedStats.partenaire}`;
     statsRow[CSV_COL.consent] = 'stats';
 
+    // Sort by last name then first name
+    const sortByName = (a, b) => {
+      const cmp = (a[CSV_COL.nom] || '').localeCompare(b[CSV_COL.nom] || '', 'fr');
+      return cmp !== 0 ? cmp : (a[CSV_COL.prenom] || '').localeCompare(b[CSV_COL.prenom] || '', 'fr');
+    };
+    publicRows.sort(sortByName);
+    pendingRows.sort(sortByName);
+
     // Build CSV
     const allRows = [...publicRows, ...pendingRows, statsRow];
     const lines = [HEADERS.map(escapeCSV).join(',')];
