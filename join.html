@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSN — Devenir membre</title>
+<style>
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --accent:#4299e1; --success:#48bb78; --radius:.5rem; --error:#e53e3e; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#63b3ed; } }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); padding:1rem; }
+  .container { max-width:680px; margin:2rem auto; }
+  .header { text-align:center; margin-bottom:2rem; }
+  .header img { height:60px; margin-bottom:1rem; }
+  h1 { font-size:1.4rem; color:var(--primary); margin-bottom:.25rem; }
+  .subtitle { color:var(--muted); font-size:.85rem; margin-bottom:.5rem; }
+  .intro { color:var(--text); font-size:.85rem; line-height:1.6; margin-bottom:1.5rem; background:var(--card); border-radius:var(--radius); padding:1rem 1.25rem; border-left:3px solid var(--primary); }
+  .card { background:var(--card); border-radius:1rem; padding:1.5rem 2rem; box-shadow:0 2px 12px rgba(0,0,0,.08); margin-bottom:1.5rem; }
+  .section-title { font-size:.95rem; font-weight:700; color:var(--primary); margin-bottom:1rem; padding-bottom:.5rem; border-bottom:2px solid var(--border); }
+  .field { margin-bottom:1.1rem; }
+  label.field-label { display:block; font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.03em; }
+  .field-hint { font-size:.75rem; color:var(--muted); margin-bottom:.4rem; font-style:italic; }
+  input, textarea, select { width:100%; padding:.55rem .75rem; border:1.5px solid var(--border); border-radius:var(--radius); font-size:.9rem; background:var(--card); color:var(--text); outline:none; transition:border .2s; }
+  input:focus, textarea:focus, select:focus { border-color:var(--accent); }
+  textarea { resize:vertical; min-height:80px; }
+  .radio-group { display:flex; flex-direction:column; gap:.45rem; margin-top:.3rem; }
+  .radio-option { display:flex; align-items:flex-start; gap:.5rem; padding:.45rem .65rem; border-radius:var(--radius); border:1.5px solid var(--border); cursor:pointer; transition:all .15s; font-size:.85rem; line-height:1.4; }
+  .radio-option:hover { border-color:var(--accent); background:rgba(66,153,225,.04); }
+  .radio-option.selected { border-color:var(--primary); background:rgba(66,153,225,.08); }
+  .radio-option input[type="radio"] { width:auto; margin-top:2px; flex-shrink:0; cursor:pointer; }
+  .radio-option span { cursor:pointer; }
+  .checkbox-group { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .chip { display:inline-flex; align-items:center; gap:.3rem; padding:.35rem .75rem; border-radius:2rem; font-size:.8rem; border:1.5px solid var(--border); cursor:pointer; transition:all .15s; user-select:none; }
+  .chip input { display:none; }
+  .chip.checked { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
+  @media (prefers-color-scheme:dark) { .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); } }
+  .consent-section label.field-label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
+  .actions { display:flex; gap:1rem; justify-content:center; margin-top:1.5rem; }
+  .btn { padding:.7rem 2rem; border:none; border-radius:var(--radius); font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { opacity:.85; }
+  .btn-secondary { background:var(--border); color:var(--text); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; }
+  .msg.success { display:block; background:#c6f6d5; color:#22543d; }
+  .msg.error { display:block; background:#fed7d7; color:#9b2c2c; }
+  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } }
+  .required-mark { color:var(--error); margin-left:2px; }
+  .field-error { border-color:var(--error) !important; outline:2px solid var(--error); outline-offset:2px; border-radius:4px; }
+  .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; z-index:10; }
+  .success-screen { text-align:center; padding:3rem 1rem; }
+  .success-screen .icon { font-size:3rem; margin-bottom:1rem; }
+  .success-screen h2 { color:var(--success); margin-bottom:.75rem; font-size:1.3rem; }
+  .success-screen p { color:var(--muted); font-size:.9rem; line-height:1.6; max-width:420px; margin:0 auto; }
+  .step-indicator { display:flex; justify-content:center; gap:.5rem; margin-bottom:1.5rem; }
+  .step-dot { width:10px; height:10px; border-radius:50%; background:var(--border); transition:all .2s; }
+  .step-dot.active { background:var(--primary); transform:scale(1.2); }
+  .step-dot.done { background:var(--success); }
+  @media (max-width:480px) { .card { padding:1rem 1.25rem; } }
+</style>
+</head>
+<body>
+<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+
+<div class="container" id="formContainer">
+  <div class="header">
+    <img src="/L_RSN_FR_RGB.png" alt="RSN" onerror="this.style.display='none'">
+    <h1 id="title">Devenir membre du RSN</h1>
+    <p class="subtitle" id="subtitle">Formulaire d'inscription au Réseau de santé numérique</p>
+  </div>
+
+  <div class="intro" id="intro">
+    Le Réseau de santé numérique est financé par le Fonds de recherche du Québec (secteur Santé). Notre mission est de développer et de bâtir les fondations de la science de la santé numérique au Québec. Nous accueillons chaleureusement les nouveaux membres réguliers, les personnes aux études et les partenaires qui souhaitent contribuer à l'avancement de la santé numérique au Québec.
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  <div id="msgBox" class="msg"></div>
+
+  <!-- PAGE 1 : Identité -->
+  <div id="page1">
+    <div class="card">
+      <div class="section-title" id="s_identity">Identité</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="field"><label class="field-label" id="l_prenom">Prénom<span class="required-mark">*</span></label><input id="f_prenom" required></div>
+        <div class="field"><label class="field-label" id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
+      </div>
+      <div class="field"><label class="field-label" id="l_email">Courriel<span class="required-mark">*</span></label><input id="f_email" type="email" required></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" id="s_status">Statut actuel<span class="required-mark">*</span></div>
+      <div class="field-hint" id="h_status"></div>
+      <div class="radio-group" id="status_group"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" id="s_institution">Institution principale d'affiliation<span class="required-mark">*</span></div>
+      <div class="field"><input id="f_institution" required></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" id="s_membership">Type d'adhésion souhaité<span class="required-mark">*</span></div>
+      <div class="radio-group" id="membership_group"></div>
+    </div>
+
+    <div class="actions">
+      <a href="/" class="btn btn-secondary" style="text-decoration:none" id="cancelBtn">Annuler</a>
+      <button class="btn btn-primary" onclick="goPage(2)" id="nextBtn1">Suivant</button>
+    </div>
+  </div>
+
+  <!-- PAGE 2 : Recherche -->
+  <div id="page2" style="display:none">
+    <div class="card">
+      <div class="section-title" id="s_research">Recherche et expertise</div>
+      <div class="field">
+        <label class="field-label" id="l_themes">Principaux thèmes de recherche ou d'intérêt<span class="required-mark">*</span></label>
+        <div class="field-hint" id="h_themes">Maximum trois, séparés par une virgule</div>
+        <textarea id="f_themes" rows="2"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_cv">Lien vers votre CV en ligne</label>
+        <div class="field-hint" id="h_cv">ORCID, Google Scholar, site personnel, LinkedIn...</div>
+        <input id="f_cv" type="url" placeholder="https://...">
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_orcid">Identifiant ORCID</label>
+        <div class="field-hint" id="h_orcid">Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)</div>
+        <input id="f_orcid" placeholder="0000-0000-0000-0000">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title" id="s_referral">Informations complémentaires</div>
+      <div class="field">
+        <label class="field-label" id="l_refere">Référence par un membre actuel du RSN</label>
+        <div class="field-hint" id="h_refere">Nom, institution et courriel de la personne qui vous réfère</div>
+        <textarea id="f_refere" rows="2"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_reseau">Autres réseaux de recherche financés par les FRQ</label>
+        <div class="field-hint" id="h_reseau">Excluant le RSN</div>
+        <input id="f_reseau">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="goPage(1)" id="backBtn1">Retour</button>
+      <button class="btn btn-primary" onclick="goPage(3)" id="nextBtn2">Suivant</button>
+    </div>
+  </div>
+
+  <!-- PAGE 3 : Axes & consentement -->
+  <div id="page3" style="display:none">
+    <div class="card">
+      <div class="section-title" id="s_axes">Axes, principes et champs d'action</div>
+      <div class="field">
+        <label class="field-label" id="l_axes">Axes d'intérêt<span class="required-mark">*</span></label>
+        <div class="checkbox-group" id="axes_group"></div>
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_principes">Principes fondateurs</label>
+        <div class="checkbox-group" id="principes_group"></div>
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_champs">Champs d'action</label>
+        <div class="checkbox-group" id="champs_group"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="consent-section">
+        <div class="field" style="margin:0">
+          <label class="field-label" id="l_consent">Autorisez-vous le RSN à créer un profil de membre public ?<span class="required-mark">*</span></label>
+          <select id="f_consent" style="margin-top:.5rem">
+            <option value="" id="opt_choose">-- Choisir --</option>
+            <option value="Oui" id="opt_yes">Oui, afficher mon profil publiquement</option>
+            <option value="Non" id="opt_no">Non, ne pas afficher mon profil</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="goPage(2)" id="backBtn2">Retour</button>
+      <button class="btn btn-primary" onclick="submit()" id="submitBtn">Soumettre ma candidature</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success screen -->
+<div class="container" id="successScreen" style="display:none">
+  <div class="card">
+    <div class="success-screen">
+      <div class="icon">&#10003;</div>
+      <h2 id="success_title">Candidature envoyée !</h2>
+      <p id="success_msg">Merci pour votre intérêt envers le RSN. Votre candidature sera examinée par notre équipe. Vous recevrez une confirmation par courriel une fois votre profil approuvé.</p>
+      <a href="/" class="btn btn-primary" style="display:inline-block;margin-top:1.5rem;text-decoration:none" id="success_btn">Retour au bottin</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── OPTIONS ───
+var STATUS_OPTIONS = [
+  { fr: 'Chercheur universitaire', en: 'University Researcher' },
+  { fr: 'Chercheur clinicien universitaire', en: 'Clinical University Researcher' },
+  { fr: 'Chercheur de collège', en: 'College Researcher' },
+  { fr: 'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)', en: 'Other Research Statuses (government institution, private sector, practitioner, artist, individual contributor)' },
+  { fr: 'Professionnel de recherche', en: 'Research Professional' },
+  { fr: 'Personne aux études au 1er cycle', en: 'Undergraduate Student' },
+  { fr: 'Personne aux études à la maîtrise', en: "Master's Student" },
+  { fr: 'Personne aux études au doctorat', en: 'PhD Student' },
+  { fr: 'Stagiaire postdoctoral', en: 'Postdoctoral Fellow' },
+  { fr: 'Direction ou gestion', en: 'Director or Manager' },
+  { fr: "Membre de l'industrie", en: 'Industry Member' },
+  { fr: 'Professionnel de la santé', en: 'Health Professional' },
+  { fr: 'Autre', en: 'Other' },
+];
+
+var MEMBERSHIP_OPTIONS = [
+  { fr: 'Membre régulier (requiert le statut de chercheur FRQ)', en: 'Regular member (requires FRQ researcher status)', value: 'Régulier' },
+  { fr: 'Membre partenaire (personne en santé numérique, non chercheur au FRQ)', en: 'Partner member (working in digital health, not a researcher at the FRQ)', value: 'Partenaire' },
+  { fr: "Membre étudiant (inscrit dans un établissement d'enseignement)", en: 'Student member (enrolled in an educational institution)', value: 'Étudiant' },
+];
+
+var AXES_OPTIONS = [
+  'Axe 1 - Plateformes numériques et gouvernance informationnelle',
+  'Axe 2 - Modélisation et méthodes numériques',
+  'Axe 3 - Intervention numérique',
+  'Axe 4 - Transformation numérique',
+];
+var PRINCIPES_OPTIONS = ['Science ouverte','Numérique de confiance','Santé durable','Engagement citoyen','Équité diversité inclusion et accessibilité'];
+var CHAMPS_OPTIONS = ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'];
+
+// ─── I18N ───
+var lang = 'fr';
+
+var I18N = {
+  fr: {
+    title: 'Devenir membre du RSN',
+    subtitle: "Formulaire d'inscription au Réseau de santé numérique",
+    intro: "Le Réseau de santé numérique est financé par le Fonds de recherche du Québec (secteur Santé). Notre mission est de développer et de bâtir les fondations de la science de la santé numérique au Québec. Nous accueillons chaleureusement les nouveaux membres réguliers, les personnes aux études et les partenaires qui souhaitent contribuer à l'avancement de la santé numérique au Québec.",
+    s_identity: 'Identité',
+    l_prenom: 'Prénom', l_nom: 'Nom', l_email: 'Courriel',
+    s_status: 'Statut actuel',
+    h_status_text: 'Voir les définitions du FRQ',
+    h_status_link: 'PDF',
+    s_institution: "Institution principale d'affiliation",
+    s_membership: "Type d'adhésion souhaité",
+    s_research: 'Recherche et expertise',
+    l_themes: "Principaux thèmes de recherche ou d'intérêt",
+    h_themes: 'Maximum trois, séparés par une virgule',
+    l_cv: 'Lien vers votre CV en ligne',
+    h_cv: 'ORCID, Google Scholar, site personnel, LinkedIn...',
+    l_orcid: 'Identifiant ORCID',
+    h_orcid: 'Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)',
+    s_referral: 'Informations complémentaires',
+    l_refere: 'Référence par un membre actuel du RSN',
+    h_refere: 'Nom, institution et courriel de la personne qui vous réfère',
+    l_reseau: 'Autres réseaux de recherche financés par les FRQ',
+    h_reseau: 'Excluant le RSN',
+    s_axes: "Axes, principes et champs d'action",
+    l_axes: "Axes d'intérêt", l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
+    l_consent: 'Autorisez-vous le RSN à créer un profil de membre public ?',
+    opt_choose: '-- Choisir --',
+    opt_yes: 'Oui, afficher mon profil publiquement',
+    opt_no: 'Non, ne pas afficher mon profil',
+    cancelBtn: 'Annuler', nextBtn: 'Suivant', backBtn: 'Retour',
+    submitBtn: 'Soumettre ma candidature', submitting: 'Envoi en cours...',
+    langBtn: 'EN',
+    success_title: 'Candidature envoyée !',
+    success_msg: 'Merci pour votre intérêt envers le RSN. Votre candidature sera examinée par notre équipe. Vous recevrez une confirmation par courriel une fois votre profil approuvé.',
+    success_btn: 'Retour au bottin',
+    err_required: 'Veuillez remplir les champs obligatoires : ',
+    err_email: "L'adresse courriel semble invalide.",
+    err_submit: "Erreur lors de l'envoi. Veuillez réessayer.",
+    err_duplicate: 'Un compte avec ce courriel existe déjà. Utilisez plutôt la page de mise à jour de profil.',
+  },
+  en: {
+    title: 'Join the RSN',
+    subtitle: 'Digital Health Network Registration Form',
+    intro: "The Digital Health Network is funded by the Fonds de recherche du Québec (Health sector). Our mission is to develop and build the foundations of digital health science in Quebec. We warmly welcome new regular members, students and partners who wish to contribute to the advancement of digital health in Quebec.",
+    s_identity: 'Identity',
+    l_prenom: 'First name', l_nom: 'Last name', l_email: 'Email',
+    s_status: 'Present Status',
+    h_status_text: 'Refer to the FRQ definitions',
+    h_status_link: 'PDF',
+    s_institution: 'Main institution of affiliation',
+    s_membership: 'Desired RSN Membership',
+    s_research: 'Research and expertise',
+    l_themes: 'Main research or interest topics',
+    h_themes: 'Maximum three, separated by a comma',
+    l_cv: 'Link to your online resume',
+    h_cv: 'ORCID, Google Scholar, personal website, LinkedIn...',
+    l_orcid: 'ORCID Identifier',
+    h_orcid: 'Format: XXXX-XXXX-XXXX-XXXX (last 16 digits)',
+    s_referral: 'Additional information',
+    l_refere: 'Referral by a current RSN member',
+    h_refere: 'Name, institution and email of the person referring you',
+    l_reseau: 'Other FRQ-funded research networks',
+    h_reseau: 'Excluding the RSN',
+    s_axes: 'Axes, principles and action fields',
+    l_axes: 'Research axes', l_principes: 'Founding principles', l_champs: 'Action fields',
+    l_consent: 'Do you authorize RSN to create a public member profile?',
+    opt_choose: '-- Choose --',
+    opt_yes: 'Yes, display my profile publicly',
+    opt_no: 'No, do not display my profile',
+    cancelBtn: 'Cancel', nextBtn: 'Next', backBtn: 'Back',
+    submitBtn: 'Submit my application', submitting: 'Submitting...',
+    langBtn: 'FR',
+    success_title: 'Application submitted!',
+    success_msg: 'Thank you for your interest in the RSN. Your application will be reviewed by our team. You will receive an email confirmation once your profile is approved.',
+    success_btn: 'Back to the directory',
+    err_required: 'Please fill in the required fields: ',
+    err_email: 'The email address seems invalid.',
+    err_submit: 'Error submitting. Please try again.',
+    err_duplicate: 'An account with this email already exists. Please use the profile update page instead.',
+  }
+};
+
+function t(key) { return (I18N[lang] || I18N.fr)[key] || key; }
+
+function setWithRequired(id, text, required) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  while (el.firstChild) el.removeChild(el.firstChild);
+  el.appendChild(document.createTextNode(text));
+  if (required) {
+    var mark = document.createElement('span');
+    mark.className = 'required-mark';
+    mark.textContent = '*';
+    el.appendChild(mark);
+  }
+}
+
+function applyI18n() {
+  // Simple text elements
+  var textKeys = ['title','subtitle','langBtn','success_title','success_msg','success_btn'];
+  textKeys.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = t(id); });
+
+  // Intro
+  document.getElementById('intro').textContent = t('intro');
+
+  // Section titles (with required marks)
+  setWithRequired('s_identity', t('s_identity'), false);
+  setWithRequired('s_status', t('s_status'), true);
+  setWithRequired('s_institution', t('s_institution'), true);
+  setWithRequired('s_membership', t('s_membership'), true);
+  setWithRequired('s_research', t('s_research'), false);
+  setWithRequired('s_referral', t('s_referral'), false);
+  setWithRequired('s_axes', t('s_axes'), false);
+
+  // Labels with required marks
+  setWithRequired('l_prenom', t('l_prenom'), true);
+  setWithRequired('l_nom', t('l_nom'), true);
+  setWithRequired('l_email', t('l_email'), true);
+  setWithRequired('l_themes', t('l_themes'), true);
+  setWithRequired('l_cv', t('l_cv'), false);
+  setWithRequired('l_orcid', t('l_orcid'), false);
+  setWithRequired('l_refere', t('l_refere'), false);
+  setWithRequired('l_reseau', t('l_reseau'), false);
+  setWithRequired('l_axes', t('l_axes'), true);
+  setWithRequired('l_principes', t('l_principes'), false);
+  setWithRequired('l_champs', t('l_champs'), false);
+  setWithRequired('l_consent', t('l_consent'), true);
+
+  // Hints — build h_status with safe DOM methods
+  var hStatus = document.getElementById('h_status');
+  if (hStatus) {
+    while (hStatus.firstChild) hStatus.removeChild(hStatus.firstChild);
+    hStatus.appendChild(document.createTextNode(t('h_status_text') + ' ('));
+    var link = document.createElement('a');
+    link.href = 'https://frqnet.frq.gouv.qc.ca/Documents/RGC_FRQ_EN.pdf';
+    link.target = '_blank';
+    link.textContent = t('h_status_link');
+    hStatus.appendChild(link);
+    hStatus.appendChild(document.createTextNode(')'));
+  }
+  var hintKeys = ['h_themes','h_cv','h_orcid','h_refere','h_reseau'];
+  hintKeys.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = t(id);
+  });
+
+  // Select options
+  document.getElementById('opt_choose').textContent = t('opt_choose');
+  document.getElementById('opt_yes').textContent = t('opt_yes');
+  document.getElementById('opt_no').textContent = t('opt_no');
+
+  // Buttons
+  document.getElementById('cancelBtn').textContent = t('cancelBtn');
+  document.getElementById('nextBtn1').textContent = t('nextBtn');
+  document.getElementById('nextBtn2').textContent = t('nextBtn');
+  document.getElementById('backBtn1').textContent = t('backBtn');
+  document.getElementById('backBtn2').textContent = t('backBtn');
+  document.getElementById('submitBtn').textContent = t('submitBtn');
+
+  // Rebuild radio groups with current language
+  buildRadios('status_group', STATUS_OPTIONS, 'status');
+  buildRadios('membership_group', MEMBERSHIP_OPTIONS, 'membership');
+}
+
+function toggleLang() { lang = lang === 'fr' ? 'en' : 'fr'; applyI18n(); }
+
+// ─── RADIO GROUPS ───
+var radioState = { status: '', membership: '' };
+
+function buildRadios(groupId, options, stateKey) {
+  var el = document.getElementById(groupId);
+  var prev = radioState[stateKey];
+  while (el.firstChild) el.removeChild(el.firstChild);
+
+  options.forEach(function(opt) {
+    var val = opt.value || opt.fr;
+    var labelText = opt[lang] || opt.fr;
+    var wrapper = document.createElement('label');
+    wrapper.className = 'radio-option' + (prev === val ? ' selected' : '');
+    var radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = stateKey;
+    radio.value = val;
+    radio.checked = (prev === val);
+    radio.addEventListener('change', function() {
+      radioState[stateKey] = val;
+      var allOptions = el.querySelectorAll('.radio-option');
+      for (var i = 0; i < allOptions.length; i++) allOptions[i].classList.remove('selected');
+      wrapper.classList.add('selected');
+    });
+    var span = document.createElement('span');
+    span.textContent = labelText;
+    wrapper.appendChild(radio);
+    wrapper.appendChild(span);
+    el.appendChild(wrapper);
+  });
+}
+
+// ─── CHIPS ───
+function buildChips(groupId, options) {
+  var el = document.getElementById(groupId);
+  while (el.firstChild) el.removeChild(el.firstChild);
+  for (var i = 0; i < options.length; i++) {
+    var opt = options[i];
+    var chip = document.createElement('label');
+    chip.className = 'chip';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt;
+    (function(chipRef, cbRef) {
+      cbRef.addEventListener('change', function() { chipRef.classList.toggle('checked', cbRef.checked); });
+    })(chip, cb);
+    chip.appendChild(cb);
+    chip.appendChild(document.createTextNode(opt.replace(/^Axe \d+ - /, '')));
+    el.appendChild(chip);
+  }
+}
+
+function getChips(groupId) {
+  var checked = document.querySelectorAll('#' + groupId + ' input:checked');
+  var values = [];
+  for (var i = 0; i < checked.length; i++) values.push(checked[i].value);
+  return values;
+}
+
+// ─── PAGINATION ───
+var currentPage = 1;
+
+function goPage(page) {
+  if (page > currentPage && !validatePage(currentPage)) return;
+
+  document.getElementById('page1').style.display = page === 1 ? 'block' : 'none';
+  document.getElementById('page2').style.display = page === 2 ? 'block' : 'none';
+  document.getElementById('page3').style.display = page === 3 ? 'block' : 'none';
+
+  for (var i = 1; i <= 3; i++) {
+    var dot = document.getElementById('dot' + i);
+    dot.className = 'step-dot';
+    if (i < page) dot.classList.add('done');
+    if (i === page) dot.classList.add('active');
+  }
+
+  currentPage = page;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── VALIDATION ───
+function validatePage(page) {
+  var allErrors = document.querySelectorAll('.field-error');
+  for (var e = 0; e < allErrors.length; e++) allErrors[e].classList.remove('field-error');
+  var missing = [];
+  var firstErrEl = null;
+
+  function checkInput(id, label) {
+    var el = document.getElementById(id);
+    if (!el.value.trim()) {
+      el.classList.add('field-error');
+      missing.push(label);
+      if (!firstErrEl) firstErrEl = el;
+    }
+  }
+  function checkRadio(stateKey, groupId, label) {
+    if (!radioState[stateKey]) {
+      document.getElementById(groupId).classList.add('field-error');
+      missing.push(label);
+      if (!firstErrEl) firstErrEl = document.getElementById(groupId);
+    }
+  }
+
+  if (page === 1) {
+    checkInput('f_prenom', t('l_prenom'));
+    checkInput('f_nom', t('l_nom'));
+    checkInput('f_email', t('l_email'));
+    var emailVal = document.getElementById('f_email').value.trim();
+    if (emailVal && !emailVal.includes('@')) {
+      document.getElementById('f_email').classList.add('field-error');
+      if (missing.indexOf(t('l_email')) === -1) missing.push(t('l_email'));
+      if (!firstErrEl) firstErrEl = document.getElementById('f_email');
+    }
+    checkRadio('status', 'status_group', t('s_status'));
+    checkInput('f_institution', t('s_institution'));
+    checkRadio('membership', 'membership_group', t('s_membership'));
+  }
+
+  if (page === 2) {
+    checkInput('f_themes', t('l_themes'));
+  }
+
+  if (page === 3) {
+    if (getChips('axes_group').length === 0) {
+      document.getElementById('axes_group').classList.add('field-error');
+      missing.push(t('l_axes'));
+      if (!firstErrEl) firstErrEl = document.getElementById('axes_group');
+    }
+    var consentEl = document.getElementById('f_consent');
+    if (!consentEl.value) {
+      consentEl.classList.add('field-error');
+      missing.push(t('l_consent'));
+      if (!firstErrEl) firstErrEl = consentEl;
+    }
+  }
+
+  if (missing.length) {
+    showMsg(t('err_required') + missing.join(', '), 'error');
+    if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+  hideMsg();
+  return true;
+}
+
+// ─── SUBMIT ───
+function submit() {
+  if (!validatePage(3)) return;
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = t('submitting');
+
+  var data = {
+    prenom: document.getElementById('f_prenom').value.trim(),
+    nom: document.getElementById('f_nom').value.trim(),
+    email: document.getElementById('f_email').value.trim(),
+    statut: radioState.status,
+    institution: document.getElementById('f_institution').value.trim(),
+    type: radioState.membership,
+    themes: document.getElementById('f_themes').value.trim(),
+    cv: document.getElementById('f_cv').value.trim() || null,
+    orcid: document.getElementById('f_orcid').value.trim() || null,
+    refere: document.getElementById('f_refere').value.trim(),
+    reseau: document.getElementById('f_reseau').value.trim(),
+    axes: getChips('axes_group'),
+    principes: getChips('principes_group'),
+    champs: getChips('champs_group'),
+    consent: document.getElementById('f_consent').value,
+  };
+
+  fetch('/api/join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  .then(function(resp) {
+    return resp.json().then(function(result) {
+      if (resp.ok && result.ok) {
+        document.getElementById('formContainer').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (result.code === 'DUPLICATE') {
+        showMsg(t('err_duplicate'), 'error');
+      } else {
+        showMsg(t('err_submit'), 'error');
+      }
+    });
+  })
+  .catch(function() {
+    showMsg(t('err_submit'), 'error');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = t('submitBtn');
+  });
+}
+
+// ─── MESSAGES ───
+function showMsg(text, type) {
+  var el = document.getElementById('msgBox');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+function hideMsg() {
+  document.getElementById('msgBox').className = 'msg';
+}
+
+// ─── INIT ───
+function init() {
+  buildChips('axes_group', AXES_OPTIONS);
+  buildChips('principes_group', PRINCIPES_OPTIONS);
+  buildChips('champs_group', CHAMPS_OPTIONS);
+  applyI18n();
+}
+
+init();
+</script>
+</body>
+</html>
