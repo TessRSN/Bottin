@@ -596,7 +596,7 @@ const I18N = {
     }
 };
 
-let currentLang = 'fr';
+let currentLang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
 function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fr[key]) || key; }
 
 // ─── QR Modal ───
@@ -654,6 +654,7 @@ function applyI18n() {
 
 function toggleLang() {
     currentLang = currentLang === 'fr' ? 'en' : 'fr';
+    try { localStorage.setItem('rsn-lang', currentLang); } catch(e) {}
     applyI18n();
     if (allMembers.length) render();
     saveHash();

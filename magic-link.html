@@ -4,9 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSN — Modifier mon profil</title>
+<script>
+  // Apply theme ASAP to avoid flash
+  (function(){
+    try {
+      var t = localStorage.getItem('rsn-theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
 <style>
   :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; }
-  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; } }
+  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; }
   * { box-sizing:border-box; margin:0; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
   .card { background:var(--card); border-radius:1rem; padding:2.5rem; max-width:420px; width:100%; box-shadow:0 4px 24px rgba(0,0,0,.1); text-align:center; }
@@ -21,14 +31,20 @@
   .msg { margin-top:1rem; padding:.75rem; border-radius:.5rem; font-size:.85rem; line-height:1.4; }
   .msg.success { background:#c6f6d5; color:#22543d; }
   .msg.error { background:#fed7d7; color:#9b2c2c; }
-  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } }
-  .lang-toggle { position:absolute; top:1rem; right:1rem; background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
+  [data-theme="dark"] .msg.error { background:#9b2c2c; color:#fed7d7; }
+  .top-controls { position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; }
+  .top-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  .top-btn:hover { color:var(--text); border-color:var(--primary); }
   .back { display:inline-block; margin-top:1rem; font-size:.8rem; color:var(--muted); text-decoration:none; }
   .back:hover { color:var(--primary); }
 </style>
 </head>
 <body>
-<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+<div class="top-controls">
+  <button class="top-btn" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
+  <button class="top-btn" onclick="toggleLang()" id="langBtn">EN</button>
+</div>
 <div class="card">
   <h1 id="title">Modifier mon profil</h1>
   <p id="desc">Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.</p>
@@ -70,19 +86,41 @@ const i18n = {
     lang: 'FR',
   }
 };
-let lang = 'fr';
+let lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
 
 function t(key) { return i18n[lang][key] || key; }
 
-function toggleLang() {
-  lang = lang === 'fr' ? 'en' : 'fr';
+function applyLang() {
+  document.documentElement.lang = lang;
   document.getElementById('title').textContent = t('title');
   document.getElementById('desc').textContent = t('desc');
   document.getElementById('btnText').textContent = t('btn');
   document.getElementById('backLink').textContent = t('back');
   document.getElementById('langBtn').textContent = t('lang');
+}
+
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  try { localStorage.setItem('rsn-lang', lang); } catch(e) {}
+  applyLang();
   document.getElementById('msg').style.display = 'none';
 }
+
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('rsn-theme', next); } catch(e) {}
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+// Init on load
+(function(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  document.getElementById('themeBtn').textContent = cur === 'dark' ? '☀️' : '🌙';
+  applyLang();
+  document.getElementById('email').placeholder = lang === 'fr' ? 'votre.email@institution.ca' : 'your.email@institution.ca';
+})();
 
 async function send() {
   const email = document.getElementById('email').value.trim();

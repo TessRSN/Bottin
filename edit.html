@@ -4,9 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSN — Modifier mon profil</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('rsn-theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
 <style>
   :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --accent:#4299e1; --success:#48bb78; --radius:.5rem; }
-  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#63b3ed; } }
+  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#63b3ed; }
   * { box-sizing:border-box; margin:0; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); padding:1rem; }
   .container { max-width:640px; margin:2rem auto; }
@@ -30,21 +39,24 @@
   .btn-secondary { background:var(--border); color:var(--text); }
   .btn:disabled { opacity:.5; cursor:not-allowed; }
   .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
-  @media (prefers-color-scheme:dark) { .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); } }
+  [data-theme="dark"] .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); }
   .consent-section label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
   .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; }
   .msg.success { display:block; background:#c6f6d5; color:#22543d; }
   .msg.error { display:block; background:#fed7d7; color:#9b2c2c; }
-  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } }
+  [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
+  [data-theme="dark"] .msg.error { background:#9b2c2c; color:#fed7d7; }
   .loading { text-align:center; padding:4rem; color:var(--muted); }
   .expired { text-align:center; padding:4rem; }
   .expired h2 { color:#e53e3e; margin-bottom:1rem; }
   .required-mark { color:#e53e3e; margin-left:2px; }
   .field-error { border-color:#e53e3e !important; outline:2px solid #e53e3e; outline-offset:2px; border-radius:4px; }
   .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; z-index:10; }
+  .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; z-index:10; }
 </style>
 </head>
 <body>
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
 <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
 
 <div class="container" id="loading" style="display:none">
@@ -130,7 +142,7 @@ const OPTIONS = {
   champs: ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'],
 };
 
-let lang = 'fr', token = '', profile = {};
+let lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })(), token = '', profile = {};
 
 function t(key) {
   const map = {
@@ -172,7 +184,25 @@ function applyI18n() {
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
 }
 
-function toggleLang() { lang = lang === 'fr' ? 'en' : 'fr'; applyI18n(); }
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  try { localStorage.setItem('rsn-lang', lang); } catch(e) {}
+  applyI18n();
+}
+
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('rsn-theme', next); } catch(e) {}
+  var b = document.getElementById('themeBtn'); if (b) b.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+// Init theme icon
+(function(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var b = document.getElementById('themeBtn'); if (b) b.textContent = cur === 'dark' ? '☀️' : '🌙';
+})();
 
 function buildChips(groupId, options, selected) {
   const el = document.getElementById(groupId);

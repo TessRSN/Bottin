@@ -5,9 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>RSN — Sauvegardes</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('rsn-theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+</script>
 <style>
   :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --accent:#38a169; --danger:#c53030; }
-  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#68d391; --danger:#fc8181; } }
+  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#68d391; --danger:#fc8181; }
   * { box-sizing:border-box; margin:0; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem; }
   .container { max-width:720px; margin:0 auto; }
@@ -28,7 +37,9 @@
   .msg.success { background:#c6f6d5; color:#22543d; }
   .msg.error { background:#fed7d7; color:#9b2c2c; }
   .msg.info { background:#bee3f8; color:#2c5282; }
-  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } .msg.info { background:#2c5282; color:#bee3f8; } }
+  [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
+  [data-theme="dark"] .msg.error { background:#9b2c2c; color:#fed7d7; }
+  [data-theme="dark"] .msg.info { background:#2c5282; color:#bee3f8; }
   .backup-list { list-style:none; margin-top:1rem; }
   .backup-list li { display:flex; justify-content:space-between; align-items:center; padding:.75rem; border:1px solid var(--border); border-radius:.5rem; margin-bottom:.5rem; gap:.75rem; flex-wrap:wrap; }
   .backup-list .info { flex:1; min-width:0; }
@@ -51,7 +62,10 @@
 <div class="container">
   <div class="header">
     <a class="back" href="/" id="backLink">← Retour au bottin</a>
-    <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+    <div style="display:flex;gap:.4rem">
+      <button class="lang-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
+      <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+    </div>
   </div>
 
   <div class="card" id="authCard">
@@ -174,7 +188,7 @@ const i18n = {
   }
 };
 
-let lang = 'fr';
+let lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
 let secret = '';
 
 function t(key, vars) {
@@ -185,17 +199,30 @@ function t(key, vars) {
 
 function setText(id, key) { document.getElementById(id).textContent = t(key); }
 
-function toggleLang() {
-  lang = lang === 'fr' ? 'en' : 'fr';
+function applyLang() {
   document.documentElement.lang = lang;
   document.getElementById('langBtn').textContent = t('lang');
   ['backLink','authTitle','authDesc','keyLabel','nowTitle','nowDesc','nowBtn',
    'storedTitle','storedDesc','listBtn','triggerBtn','linksTitle','linksDesc',
    'linkSite','linkVercel','linkGithub'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.textContent = t(id === 'backLink' ? 'backLink' : id);
+    if (el) el.textContent = t(id);
   });
   document.getElementById('unlockBtn').textContent = t('unlock');
+}
+
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  try { localStorage.setItem('rsn-lang', lang); } catch(e) {}
+  applyLang();
+}
+
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('rsn-theme', next); } catch(e) {}
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
 function showMsg(id, type, text) {
@@ -345,6 +372,13 @@ async function triggerAutoBackup() {
 document.getElementById('key').addEventListener('keydown', e => {
   if (e.key === 'Enter') unlock();
 });
+
+// Init lang + theme icon on page load
+(function(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  document.getElementById('themeBtn').textContent = cur === 'dark' ? '☀️' : '🌙';
+  applyLang();
+})();
 </script>
 </body>
 </html>
