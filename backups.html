@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>RSN — Sauvegardes</title>
+<style>
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --accent:#38a169; --danger:#c53030; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --accent:#68d391; --danger:#fc8181; } }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem; }
+  .container { max-width:720px; margin:0 auto; }
+  .card { background:var(--card); border-radius:1rem; padding:2rem; box-shadow:0 4px 24px rgba(0,0,0,.08); margin-bottom:1.25rem; }
+  h1 { font-size:1.5rem; margin-bottom:.35rem; color:var(--primary); }
+  h2 { font-size:1.05rem; margin-bottom:.75rem; color:var(--text); }
+  p.desc { font-size:.9rem; color:var(--muted); margin-bottom:1.25rem; line-height:1.5; }
+  label { display:block; font-size:.85rem; color:var(--muted); margin-bottom:.3rem; }
+  input[type="password"], input[type="text"] { width:100%; padding:.6rem .9rem; border:1.5px solid var(--border); border-radius:.5rem; font-size:.9rem; background:var(--card); color:var(--text); outline:none; font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+  input:focus { border-color:var(--primary); }
+  .actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.5rem; }
+  button { padding:.6rem 1.1rem; border:none; border-radius:.5rem; background:var(--primary); color:#fff; font-size:.9rem; font-weight:600; cursor:pointer; transition:opacity .2s; }
+  button:hover { opacity:.85; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.secondary { background:transparent; color:var(--primary); border:1.5px solid var(--primary); }
+  button.small { padding:.35rem .75rem; font-size:.8rem; }
+  .msg { margin-top:1rem; padding:.75rem; border-radius:.5rem; font-size:.85rem; line-height:1.4; }
+  .msg.success { background:#c6f6d5; color:#22543d; }
+  .msg.error { background:#fed7d7; color:#9b2c2c; }
+  .msg.info { background:#bee3f8; color:#2c5282; }
+  @media (prefers-color-scheme:dark) { .msg.success { background:#22543d; color:#c6f6d5; } .msg.error { background:#9b2c2c; color:#fed7d7; } .msg.info { background:#2c5282; color:#bee3f8; } }
+  .backup-list { list-style:none; margin-top:1rem; }
+  .backup-list li { display:flex; justify-content:space-between; align-items:center; padding:.75rem; border:1px solid var(--border); border-radius:.5rem; margin-bottom:.5rem; gap:.75rem; flex-wrap:wrap; }
+  .backup-list .info { flex:1; min-width:0; }
+  .backup-list .date { font-weight:600; font-size:.9rem; }
+  .backup-list .meta { font-size:.78rem; color:var(--muted); margin-top:.15rem; word-break:break-all; }
+  .lang-toggle { background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+  .back { font-size:.82rem; color:var(--muted); text-decoration:none; }
+  .back:hover { color:var(--primary); }
+  .hidden { display:none !important; }
+  code { font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:.8rem; background:var(--bg); padding:.1rem .3rem; border-radius:.2rem; }
+  .links-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:.75rem; margin-top:.5rem; }
+  .link-item { display:flex; flex-direction:column; padding:.75rem 1rem; border:1px solid var(--border); border-radius:.5rem; text-decoration:none; color:var(--text); transition:border-color .2s; }
+  .link-item:hover { border-color:var(--primary); }
+  .link-item .link-label { font-weight:600; font-size:.85rem; color:var(--primary); }
+  .link-item .link-url { font-size:.75rem; color:var(--muted); margin-top:.2rem; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <a class="back" href="/" id="backLink">← Retour au bottin</a>
+    <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+  </div>
+
+  <div class="card" id="authCard">
+    <h1 id="authTitle">Sauvegardes du bottin</h1>
+    <p class="desc" id="authDesc">Entrez la clé d'accès pour gérer les sauvegardes de la base de données des membres.</p>
+    <label for="key" id="keyLabel">Clé d'accès (BACKUP_SECRET)</label>
+    <input type="password" id="key" placeholder="••••••••••••••••" autocomplete="off">
+    <div class="actions">
+      <button onclick="unlock()" id="unlockBtn">Déverrouiller</button>
+    </div>
+    <div id="authMsg" class="msg hidden"></div>
+  </div>
+
+  <div id="toolsArea" class="hidden">
+
+    <div class="card">
+      <h2 id="nowTitle">Sauvegarde instantanée</h2>
+      <p class="desc" id="nowDesc">Télécharge immédiatement un fichier JSON avec tous les membres (rien n'est stocké sur Vercel).</p>
+      <div class="actions">
+        <button onclick="manualDownload()" id="nowBtn">Télécharger maintenant</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 id="storedTitle">Sauvegardes stockées (Vercel Blob)</h2>
+      <p class="desc" id="storedDesc">Sauvegardes automatiques hebdomadaires (dimanche 3h UTC) + sauvegardes manuelles déclenchées via le bouton ci-dessous.</p>
+      <div class="actions">
+        <button onclick="listBackups()" id="listBtn">Voir la liste</button>
+        <button class="secondary" onclick="triggerAutoBackup()" id="triggerBtn">Déclencher une sauvegarde stockée</button>
+      </div>
+      <div id="listMsg" class="msg hidden"></div>
+      <ul class="backup-list hidden" id="backupList"></ul>
+    </div>
+
+    <div class="card">
+      <h2 id="linksTitle">Liens du projet</h2>
+      <p class="desc" id="linksDesc">Accès rapide aux outils d'administration et au code source.</p>
+      <div class="links-grid">
+        <a class="link-item" href="https://bottin-gamma.vercel.app/" target="_blank" rel="noopener">
+          <span class="link-label" id="linkSite">Bottin public</span>
+          <span class="link-url">bottin-gamma.vercel.app</span>
+        </a>
+        <a class="link-item" href="https://vercel.com/tessrsns-projects/bottin" target="_blank" rel="noopener">
+          <span class="link-label" id="linkVercel">Dashboard Vercel</span>
+          <span class="link-url">vercel.com/tessrsns-projects/bottin</span>
+        </a>
+        <a class="link-item" href="https://github.com/TessRSN/Bottin" target="_blank" rel="noopener">
+          <span class="link-label" id="linkGithub">Code source (GitHub)</span>
+          <span class="link-url">github.com/TessRSN/Bottin</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const i18n = {
+  fr: {
+    backLink: '← Retour au bottin',
+    authTitle: 'Sauvegardes du bottin',
+    authDesc: "Entrez la clé d'accès pour gérer les sauvegardes de la base de données des membres.",
+    keyLabel: "Clé d'accès (BACKUP_SECRET)",
+    unlock: 'Déverrouiller',
+    unlocking: 'Vérification…',
+    wrongKey: 'Clé invalide.',
+    networkErr: 'Erreur réseau. Réessayez.',
+    nowTitle: 'Sauvegarde instantanée',
+    nowDesc: "Télécharge immédiatement un fichier JSON avec tous les membres (rien n'est stocké sur Vercel).",
+    nowBtn: 'Télécharger maintenant',
+    downloading: 'Téléchargement…',
+    storedTitle: 'Sauvegardes stockées (Vercel Blob)',
+    storedDesc: 'Sauvegardes automatiques hebdomadaires (dimanche 3h UTC) + sauvegardes manuelles déclenchées via le bouton ci-dessous.',
+    listBtn: 'Voir la liste',
+    listing: 'Chargement…',
+    triggerBtn: 'Déclencher une sauvegarde stockée',
+    triggering: 'Sauvegarde en cours…',
+    triggerOk: 'Sauvegarde créée avec succès ({count} membres, {size}).',
+    triggerErr: 'Échec de la sauvegarde.',
+    emptyList: 'Aucune sauvegarde stockée pour le moment.',
+    download: 'Télécharger',
+    count: '{n} sauvegarde(s) disponible(s).',
+    linksTitle: 'Liens du projet',
+    linksDesc: "Accès rapide aux outils d'administration et au code source.",
+    linkSite: 'Bottin public',
+    linkVercel: 'Dashboard Vercel',
+    linkGithub: 'Code source (GitHub)',
+    lang: 'EN',
+  },
+  en: {
+    backLink: '← Back to directory',
+    authTitle: 'Directory backups',
+    authDesc: 'Enter the access key to manage backups of the member database.',
+    keyLabel: 'Access key (BACKUP_SECRET)',
+    unlock: 'Unlock',
+    unlocking: 'Verifying…',
+    wrongKey: 'Invalid key.',
+    networkErr: 'Network error. Try again.',
+    nowTitle: 'Instant backup',
+    nowDesc: 'Downloads a JSON file with all members right now (nothing stored on Vercel).',
+    nowBtn: 'Download now',
+    downloading: 'Downloading…',
+    storedTitle: 'Stored backups (Vercel Blob)',
+    storedDesc: 'Automatic weekly backups (Sunday 3am UTC) + manual backups triggered via the button below.',
+    listBtn: 'View list',
+    listing: 'Loading…',
+    triggerBtn: 'Trigger a stored backup',
+    triggering: 'Backing up…',
+    triggerOk: 'Backup created successfully ({count} members, {size}).',
+    triggerErr: 'Backup failed.',
+    emptyList: 'No stored backups yet.',
+    download: 'Download',
+    count: '{n} backup(s) available.',
+    linksTitle: 'Project links',
+    linksDesc: 'Quick access to admin tools and source code.',
+    linkSite: 'Public directory',
+    linkVercel: 'Vercel dashboard',
+    linkGithub: 'Source code (GitHub)',
+    lang: 'FR',
+  }
+};
+
+let lang = 'fr';
+let secret = '';
+
+function t(key, vars) {
+  let s = i18n[lang][key] || key;
+  if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+  return s;
+}
+
+function setText(id, key) { document.getElementById(id).textContent = t(key); }
+
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  document.documentElement.lang = lang;
+  document.getElementById('langBtn').textContent = t('lang');
+  ['backLink','authTitle','authDesc','keyLabel','nowTitle','nowDesc','nowBtn',
+   'storedTitle','storedDesc','listBtn','triggerBtn','linksTitle','linksDesc',
+   'linkSite','linkVercel','linkGithub'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(id === 'backLink' ? 'backLink' : id);
+  });
+  document.getElementById('unlockBtn').textContent = t('unlock');
+}
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + type;
+  el.textContent = text;
+  el.classList.remove('hidden');
+}
+function hideMsg(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+function clearChildren(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function fmtDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch { return iso; }
+}
+
+async function unlock() {
+  const k = document.getElementById('key').value.trim();
+  if (!k) return;
+  const btn = document.getElementById('unlockBtn');
+  btn.disabled = true;
+  btn.textContent = t('unlocking');
+  hideMsg('authMsg');
+  try {
+    const r = await fetch('/api/list-backups?key=' + encodeURIComponent(k));
+    if (r.status === 401) {
+      showMsg('authMsg', 'error', t('wrongKey'));
+      btn.disabled = false;
+      btn.textContent = t('unlock');
+      return;
+    }
+    if (!r.ok) {
+      showMsg('authMsg', 'error', t('networkErr'));
+      btn.disabled = false;
+      btn.textContent = t('unlock');
+      return;
+    }
+    secret = k;
+    document.getElementById('authCard').classList.add('hidden');
+    document.getElementById('toolsArea').classList.remove('hidden');
+    const data = await r.json();
+    renderList(data);
+  } catch (err) {
+    showMsg('authMsg', 'error', t('networkErr'));
+    btn.disabled = false;
+    btn.textContent = t('unlock');
+  }
+}
+
+function manualDownload() {
+  const btn = document.getElementById('nowBtn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('downloading');
+  window.location.href = '/api/backup-manual?key=' + encodeURIComponent(secret);
+  setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 3000);
+}
+
+async function listBackups() {
+  const btn = document.getElementById('listBtn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('listing');
+  hideMsg('listMsg');
+  try {
+    const r = await fetch('/api/list-backups?key=' + encodeURIComponent(secret));
+    const data = await r.json();
+    if (!r.ok) throw new Error('fail');
+    renderList(data);
+  } catch (err) {
+    showMsg('listMsg', 'error', t('networkErr'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+function renderList(data) {
+  const ul = document.getElementById('backupList');
+  clearChildren(ul);
+  if (!data || !data.backups || data.backups.length === 0) {
+    showMsg('listMsg', 'info', t('emptyList'));
+    ul.classList.add('hidden');
+    return;
+  }
+  showMsg('listMsg', 'info', t('count', { n: data.count }));
+  ul.classList.remove('hidden');
+  data.backups.forEach(b => {
+    const li = document.createElement('li');
+    const info = document.createElement('div');
+    info.className = 'info';
+    const date = document.createElement('div');
+    date.className = 'date';
+    date.textContent = fmtDate(b.uploadedAt);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = fmtSize(b.size) + ' · ' + b.filename;
+    info.appendChild(date);
+    info.appendChild(meta);
+    const dl = document.createElement('button');
+    dl.className = 'small';
+    dl.textContent = t('download');
+    dl.onclick = () => {
+      const url = '/api/download-backup?key=' + encodeURIComponent(secret) + '&filename=' + encodeURIComponent(b.filename);
+      window.location.href = url;
+    };
+    li.appendChild(info);
+    li.appendChild(dl);
+    ul.appendChild(li);
+  });
+}
+
+async function triggerAutoBackup() {
+  const btn = document.getElementById('triggerBtn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('triggering');
+  hideMsg('listMsg');
+  try {
+    const r = await fetch('/api/backup-auto?key=' + encodeURIComponent(secret));
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error('fail');
+    showMsg('listMsg', 'success', t('triggerOk', { count: data.memberCount, size: fmtSize(data.size) }));
+    const r2 = await fetch('/api/list-backups?key=' + encodeURIComponent(secret));
+    if (r2.ok) renderList(await r2.json());
+  } catch (err) {
+    showMsg('listMsg', 'error', t('triggerErr'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+document.getElementById('key').addEventListener('keydown', e => {
+  if (e.key === 'Enter') unlock();
+});
+</script>
+</body>
+</html>
