@@ -16,3 +16,6 @@ node_modules/
 .DS_Store
 *.pdf
 generate_qr_flyers.py
+
+# Local tooling
+.claude/
