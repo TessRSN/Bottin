@@ -43,9 +43,9 @@ module.exports = async function handler(req, res) {
     const filename = `backup-${timestamp}.json`;
 
     const blob = await put(filename, json, {
-      access: 'public', // "public" in Vercel Blob just means URL is unguessable; not listed anywhere
+      access: 'private', // private store — content only accessible with the BLOB_READ_WRITE_TOKEN
       contentType: 'application/json',
-      addRandomSuffix: true, // unguessable URL
+      addRandomSuffix: true,
     });
 
     return res.status(200).json({
