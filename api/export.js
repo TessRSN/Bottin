@@ -5,6 +5,7 @@
  *
  * Called by Vercel cron daily or on-demand
  */
+const crypto = require('crypto');
 const { getAllMembers, CSV_COL } = require('../lib/notion');
 
 // Vercel serverless config
@@ -151,9 +152,20 @@ module.exports = async function handler(req, res) {
     }
     const csv = lines.join('\n');
 
-    // Return CSV with caching
+    // Generate ETag from content so clients can skip re-download when nothing changed
+    const etag = '"' + crypto.createHash('md5').update(csv).digest('hex') + '"';
+
+    // If the client's cached version matches the current content, return 304 (no body)
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      return res.status(304).end();
+    }
+
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     res.setHeader('Content-Disposition', 'inline; filename="public_members.csv"');
     return res.status(200).send(csv);
   } catch (err) {

@@ -52,11 +52,16 @@
   .required-mark { color:#e53e3e; margin-left:2px; }
   .field-error { border-color:#e53e3e !important; outline:2px solid #e53e3e; outline-offset:2px; border-radius:4px; }
   .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; z-index:10; }
-  .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; z-index:10; }
+  .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; z-index:10; display:inline-flex; align-items:center; }
+  .theme-toggle svg { width:14px; height:14px; }
+  .hidden { display:none !important; }
 </style>
 </head>
 <body>
-<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
+  <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
 <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
 
 <div class="container" id="loading" style="display:none">
@@ -190,19 +195,22 @@ function toggleLang() {
   applyI18n();
 }
 
+function updateThemeIcons() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var sun = document.getElementById('iconSun'), moon = document.getElementById('iconMoon');
+  if (sun) sun.classList.toggle('hidden', isDark);
+  if (moon) moon.classList.toggle('hidden', !isDark);
+}
+
 function toggleTheme() {
   var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   var next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem('rsn-theme', next); } catch(e) {}
-  var b = document.getElementById('themeBtn'); if (b) b.textContent = next === 'dark' ? '☀️' : '🌙';
+  updateThemeIcons();
 }
 
-// Init theme icon
-(function(){
-  var cur = document.documentElement.getAttribute('data-theme');
-  var b = document.getElementById('themeBtn'); if (b) b.textContent = cur === 'dark' ? '☀️' : '🌙';
-})();
+updateThemeIcons();
 
 function buildChips(groupId, options, selected) {
   const el = document.getElementById(groupId);

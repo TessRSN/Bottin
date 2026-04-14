@@ -34,15 +34,20 @@
   [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
   [data-theme="dark"] .msg.error { background:#9b2c2c; color:#fed7d7; }
   .top-controls { position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; }
-  .top-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  .top-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; display:inline-flex; align-items:center; gap:.3rem; }
   .top-btn:hover { color:var(--text); border-color:var(--primary); }
+  .top-btn svg { width:14px; height:14px; }
+  .hidden { display:none !important; }
   .back { display:inline-block; margin-top:1rem; font-size:.8rem; color:var(--muted); text-decoration:none; }
   .back:hover { color:var(--primary); }
 </style>
 </head>
 <body>
 <div class="top-controls">
-  <button class="top-btn" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</button>
+  <button class="top-btn" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
+    <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
   <button class="top-btn" onclick="toggleLang()" id="langBtn">EN</button>
 </div>
 <div class="card">
@@ -106,18 +111,23 @@ function toggleLang() {
   document.getElementById('msg').style.display = 'none';
 }
 
+function updateThemeIcons() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.getElementById('iconSun').classList.toggle('hidden', isDark);
+  document.getElementById('iconMoon').classList.toggle('hidden', !isDark);
+}
+
 function toggleTheme() {
   var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   var next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   try { localStorage.setItem('rsn-theme', next); } catch(e) {}
-  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+  updateThemeIcons();
 }
 
 // Init on load
 (function(){
-  var cur = document.documentElement.getAttribute('data-theme');
-  document.getElementById('themeBtn').textContent = cur === 'dark' ? '☀️' : '🌙';
+  updateThemeIcons();
   applyLang();
   document.getElementById('email').placeholder = lang === 'fr' ? 'votre.email@institution.ca' : 'your.email@institution.ca';
 })();

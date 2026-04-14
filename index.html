@@ -1400,28 +1400,69 @@ function restoreHash() {
     else render();
 }
 
-// ─── AUTO-LOAD ───
+// ─── AUTO-LOAD (with client-side cache) ───
+// Strategy: display cached CSV immediately (instant, no spinner),
+// then revalidate in background with ETag. Only re-render if the data changed.
 (function(){
-    function processCSV(txt) {
+    const CACHE_KEY = 'rsn-members-cache-v1';
+
+    function processCSV(txt, fromCache) {
         const d=csvToObjects(txt);
-        if(d.length>0){loadMembers(d);ua.querySelector('p').textContent=(currentLang==='fr'?'Données chargées':'Data loaded')+' — '+d.length+' membres';return true;}
+        if(d.length>0){
+            loadMembers(d);
+            const label = fromCache ? (currentLang==='fr'?'Données (cache)':'Data (cached)') : (currentLang==='fr'?'Données chargées':'Data loaded');
+            ua.querySelector('p').textContent = label + ' — ' + d.length + ' membres';
+            return true;
+        }
         return false;
     }
-    function decodeBuf(buf) {
-        let txt = new TextDecoder('utf-8').decode(buf);
-        const firstLine = txt.split('\n')[0];
-        if(txt.includes('\ufffd') || (!/Prénom/.test(firstLine) && /Pr/.test(firstLine))) {
-            txt = new TextDecoder('iso-8859-1').decode(buf);
-        }
-        return txt;
+
+    function loadCache() {
+        try {
+            const raw = localStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw); // { csv, etag }
+        } catch(e) { return null; }
     }
-    // Load from Notion API
-    fetch('/api/export').then(r=>{if(!r.ok)throw new Error(r.status);return r.text();}).then(txt=>{
-        if(!processCSV(txt)) throw new Error('empty');
-    }).catch(()=>{
+    function saveCache(csv, etag) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ csv: csv, etag: etag })); } catch(e) {}
+    }
+
+    const cached = loadCache();
+    let renderedFromCache = false;
+
+    if (cached && cached.csv) {
+        try {
+            renderedFromCache = processCSV(cached.csv, true);
+        } catch(e) { renderedFromCache = false; }
+    }
+
+    // Conditional fetch with ETag
+    const headers = {};
+    if (cached && cached.etag) headers['If-None-Match'] = cached.etag;
+
+    fetch('/api/export', { headers: headers, cache: 'no-cache' }).then(r => {
+        if (r.status === 304) return null; // unchanged — keep cached render
+        if (!r.ok) throw new Error(r.status);
+        const newEtag = r.headers.get('ETag');
+        return r.text().then(txt => ({ txt: txt, etag: newEtag }));
+    }).then(result => {
+        if (!result) return; // 304 path — nothing to do
+        if (!processCSV(result.txt, false)) throw new Error('empty');
+        saveCache(result.txt, result.etag);
+    }).catch(err => {
+        if (renderedFromCache) return; // already showing cached data — silently fail background refresh
         ['totalMembers','totalInstitutions','totalRegulier','totalEtudiant','totalPartenaire'].forEach(id=>{document.getElementById(id).textContent='0';});
-        const ls=document.getElementById('loadingState'); if(ls) ls.innerHTML='<div style="font-size:2rem;margin-bottom:1rem">⚠️</div><p style="font-size:1rem;font-weight:600">'+(currentLang==='fr'?'Erreur de chargement':'Loading error')+'</p><p style="font-size:0.85rem;margin-top:0.5rem">'+(currentLang==='fr'?'Veuillez rafraîchir la page':'Please refresh the page')+'</p>';
+        const ls=document.getElementById('loadingState');
+        if (ls) {
+            clearChildren(ls);
+            const icon = document.createElement('div'); icon.style.cssText='font-size:2rem;margin-bottom:1rem'; icon.textContent='⚠️'; ls.appendChild(icon);
+            const p1 = document.createElement('p'); p1.style.cssText='font-size:1rem;font-weight:600'; p1.textContent = (currentLang==='fr'?'Erreur de chargement':'Loading error'); ls.appendChild(p1);
+            const p2 = document.createElement('p'); p2.style.cssText='font-size:0.85rem;margin-top:0.5rem'; p2.textContent = (currentLang==='fr'?'Veuillez rafraîchir la page':'Please refresh the page'); ls.appendChild(p2);
+        }
     });
+
+    function clearChildren(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
