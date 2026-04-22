@@ -228,6 +228,12 @@
         .card-expand-btn:hover { text-decoration: underline; }
         .card-extra { display: none; }
         .card-extra.visible { display: block; margin-top: 0.5rem; }
+        .modal-projet-text { white-space: pre-line; }
+        .modal-projet-text.collapsed { max-height: 4.5em; overflow: hidden; position: relative; }
+        .modal-projet-text.collapsed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.5em; background: linear-gradient(transparent, var(--rsn-card-bg, #fff)); pointer-events: none; }
+        [data-theme="dark"] .modal-projet-text.collapsed::after { background: linear-gradient(transparent, #1e293b); }
+        .modal-projet-toggle { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.8rem; padding: 0.15rem 0; margin-top: 0.1rem; }
+        .modal-projet-toggle:hover { text-decoration: underline; }
 
         /* ─── TABLE ─── */
         .table-wrapper { overflow-x: auto; background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); transition: background 0.3s; }
@@ -1088,7 +1094,12 @@ function showMemberPopup(name) {
     if (m.statut) details.push(`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
     if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${t('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
     if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${t('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
-    if (m.projet) details.push(`<div class="card-detail"><span class="dl">${t('lbl_project')}</span><span>${esc(trunc(m.projet, 250))}</span></div>`);
+    if (m.projet) {
+        const projetLong = m.projet.length > 300;
+        const colClass = projetLong ? ' collapsed' : '';
+        const toggleBtn = projetLong ? `<button class="modal-projet-toggle" onclick="this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
+        details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${colClass}">${esc(m.projet)}</div>${toggleBtn}</div>`);
+    }
     if (m.etudiants) details.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
     const modal = document.getElementById('memberModalContent');
     // Build content safely — all user data goes through esc()
