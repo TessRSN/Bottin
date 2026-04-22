@@ -964,7 +964,12 @@ function renderCards() {
         if(ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
         const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
         let exParts=[];
-        if(m.projet) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_project')}</span><span>${esc(trunc(m.projet,250))}</span></div>`);
+        if(m.projet) {
+            const pLong = m.projet.length > 300;
+            const pCol = pLong ? ' collapsed' : '';
+            const pBtn = pLong ? `<button class="modal-projet-toggle" onclick="event.stopPropagation();this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
+            exParts.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${pCol}">${esc(m.projet)}</div>${pBtn}</div>`);
+        }
         if(m.etudiants) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
         const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${t('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
         // Consent & form badges
