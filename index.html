@@ -1130,7 +1130,12 @@ document.addEventListener('click', e => { const el = e.target.closest('.map-memb
 
 // ─── MAP ───
 let map = null, clusterGroup = null;
-const GEOCODE = {
+// GEOCODE is now loaded dynamically from /api/institutions (which reads
+// the "Validée" entries from the Notion Institutions database).
+// The hardcoded fallback below is kept ONLY to avoid breaking the map if
+// the API call fails (e.g. Notion is down) — it is overwritten as soon
+// as the fetch completes. Keep this in sync with data/initial-institutions.js.
+let GEOCODE = {
     'McGill University': [45.5048, -73.5772],
     'Université Laval': [46.7808, -71.2758],
     'Université de Montréal': [45.5017, -73.6162],
@@ -1479,6 +1484,50 @@ function restoreHash() {
     });
 
     function clearChildren(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+})();
+
+// ─── INSTITUTIONS CATALOG (with client-side cache) ───
+// Load the validated institutions from Notion via /api/institutions and
+// expose them as GEOCODE. Same caching strategy as the members CSV:
+// localStorage holds the last response + its ETag, so we render
+// immediately from cache and revalidate in background.
+(function(){
+    const INST_CACHE_KEY = 'rsn-institutions-cache-v1';
+
+    function loadInstCache() {
+        try {
+            const raw = localStorage.getItem(INST_CACHE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw); // { data, etag }
+        } catch(e) { return null; }
+    }
+    function saveInstCache(data, etag) {
+        try { localStorage.setItem(INST_CACHE_KEY, JSON.stringify({ data: data, etag: etag })); } catch(e) {}
+    }
+
+    const cached = loadInstCache();
+    if (cached && cached.data && typeof cached.data === 'object') {
+        GEOCODE = cached.data;
+    }
+
+    const headers = {};
+    if (cached && cached.etag) headers['If-None-Match'] = cached.etag;
+
+    fetch('/api/institutions', { headers: headers, cache: 'no-cache' }).then(r => {
+        if (r.status === 304) return null;
+        if (!r.ok) throw new Error(r.status);
+        const newEtag = r.headers.get('ETag');
+        return r.json().then(data => ({ data: data, etag: newEtag }));
+    }).then(result => {
+        if (!result) return;
+        GEOCODE = result.data;
+        saveInstCache(result.data, result.etag);
+        // If the map is currently visible, re-render to apply any new institutions
+        if (currentView === 'map' && typeof renderMap === 'function') renderMap();
+    }).catch(err => {
+        // On error, keep the hardcoded fallback already loaded
+        console.warn('Failed to load institutions catalog:', err && err.message);
+    });
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
