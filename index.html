@@ -801,6 +801,13 @@ function loadMembers(data) {
         else if(/partenaire/i.test(typeRaw)) typeNorm='partenaire';
         const email = (m[C.email]||'').trim();
         const institution = (m[C.institution]||'').trim();
+        // A member can be affiliated to multiple institutions, stored
+        // semicolon-separated in a single field. Split into a real array
+        // so the UI (cards / modal / table) and the map can treat each
+        // affiliation independently. Empty fragments are dropped.
+        const institutions = institution
+            ? institution.split(';').map(s => s.trim()).filter(Boolean)
+            : [];
         const statut = (m[C.statut]||'').trim();
         // Consent: 'oui' = public, 'non' = hidden (already filtered by script), '' = pending
         const consentRaw = (m[C.profilPublic]||'').trim().toLowerCase();
@@ -808,7 +815,7 @@ function loadMembers(data) {
         // New form filled = has at least one axe d'intérêt
         const formComplete = axes.length > 0;
         allMembers.push({
-            name, prenom, nom, email, institution, statut,
+            name, prenom, nom, email, institution, institutions, statut,
             statutGroup: groupStatut(statut),
             region: getRegion(institution),
             type: typeRaw, typeNorm,
@@ -837,7 +844,10 @@ function updateStats() {
     const $ = id => document.getElementById(id);
     // Include excluded members in aggregated stats
     $('totalMembers').textContent = allMembers.length + excludedStats.total;
-    $('totalInstitutions').textContent = new Set(allMembers.map(m=>m.institution).filter(Boolean)).size;
+    // Count unique atomic institutions (after splitting on ';'), not the raw composite strings
+    const uniqueInsts = new Set();
+    allMembers.forEach(m => (m.institutions || []).forEach(i => uniqueInsts.add(i)));
+    $('totalInstitutions').textContent = uniqueInsts.size;
     $('totalRegulier').textContent = allMembers.filter(m=>m.typeNorm==='regulier').length + excludedStats.regulier;
     $('totalEtudiant').textContent = allMembers.filter(m=>m.typeNorm==='etudiant').length + excludedStats.etudiant;
     $('totalPartenaire').textContent = allMembers.filter(m=>m.typeNorm==='partenaire').length + excludedStats.partenaire;
@@ -982,7 +992,7 @@ function renderCards() {
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
             ${badgesHtml}
-            <div class="card-institution">${esc(m.institution||t('lbl_no_institution'))}</div>
+            <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||t('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
             <div class="card-details">
                 ${m.statut?`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
@@ -1013,7 +1023,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td><strong>${esc(m.name)}</strong>${badges?' <br>'+badges:''}</td><td>${esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td><strong>${esc(m.name)}</strong>${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -1117,7 +1127,7 @@ function showMemberPopup(name) {
     const content = document.createElement('div');
     content.innerHTML = [
         `<div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type || 'N/A')}</span></div>`,
-        `<div class="card-institution" style="margin:.5rem 0">${esc(m.institution || t('lbl_no_institution'))}</div>`,
+        `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || t('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
         chipsHtml, lnkH
@@ -1318,10 +1328,15 @@ function renderMap() {
     let mapped = 0;
     // Only show consented members on the map (consent === 'oui')
     const mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+    // Each member can be affiliated to multiple institutions (split on ';' upstream).
+    // Add the member to every institution so they appear at every relevant location.
     mapMembers.forEach(m => {
-        if (!m.institution) return;
-        if (!byInst[m.institution]) byInst[m.institution] = { members: [], coords: null };
-        byInst[m.institution].members.push(m);
+        const list = (m.institutions && m.institutions.length) ? m.institutions : (m.institution ? [m.institution] : []);
+        list.forEach(inst => {
+            if (!inst) return;
+            if (!byInst[inst]) byInst[inst] = { members: [], coords: null };
+            byInst[inst].members.push(m);
+        });
     });
     const norm = s => s.replace(/[\u2018\u2019\u2032]/g, "'").replace(/[\u201C\u201D]/g, '"');
     Object.keys(byInst).forEach(inst => {
@@ -1338,10 +1353,14 @@ function renderMap() {
     });
     // Deterministic hash for stable jitter
     function hashStr(s) { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }
+    // Track unique members across all geolocated institutions, since a member
+    // with multiple institutions appears at each location but should be counted
+    // only once in the "X membres géolocalisés" stat.
+    const uniqueMappedMembers = new Set();
     Object.entries(byInst).forEach(([inst, data]) => {
         if (!data.coords) return;
         const n = data.members.length;
-        mapped += n;
+        data.members.forEach(m => uniqueMappedMembers.add(m.email || m.name));
         const types = { regulier: 0, etudiant: 0, partenaire: 0 };
         data.members.forEach(m => { if (types[m.typeNorm] !== undefined) types[m.typeNorm]++; });
         let typeParts = [];
@@ -1364,6 +1383,7 @@ function renderMap() {
         clusterGroup.addLayer(marker);
     });
     map.addLayer(clusterGroup);
+    mapped = uniqueMappedMembers.size;
     document.getElementById('mapStats').textContent = `${mapped} ${t('map_geolocated')}`;
     const pct = filteredMembers.length > 0 ? Math.round(mapped / filteredMembers.length * 100) : 0;
     const instMapped = Object.keys(byInst).filter(k=>byInst[k].coords).length;
