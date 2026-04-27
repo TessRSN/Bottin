@@ -84,6 +84,8 @@
   .inst-row.show-address .inst-address-field { display:block; }
   .btn-add-inst { background:none; border:1px dashed var(--border); color:var(--primary); cursor:pointer; padding:.5rem 1rem; border-radius:.4rem; font-size:.85rem; width:100%; margin-top:.3rem; }
   .btn-add-inst:hover { background:rgba(43,108,176,.05); border-color:var(--primary); }
+  /* Sub-group labels for the merged "thématiques" question */
+  .subgroup-label { font-size:.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.4rem; padding-bottom:.2rem; border-bottom:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -193,17 +195,18 @@
   <!-- PAGE 3 : Axes & consentement -->
   <div id="page3" style="display:none">
     <div class="card">
-      <div class="section-title" id="s_axes">Axes, principes et champs d'action</div>
+      <div class="section-title" id="s_axes">Vos thématiques d'intérêt<span class="required-mark">*</span></div>
+      <div class="field-hint" id="h_themes_pick">Choisissez au moins une option parmi les trois familles ci-dessous.</div>
       <div class="field">
-        <label class="field-label" id="l_axes">Axes d'intérêt<span class="required-mark">*</span></label>
+        <div class="subgroup-label" id="l_axes">Axes</div>
         <div class="checkbox-group" id="axes_group"></div>
       </div>
       <div class="field">
-        <label class="field-label" id="l_principes">Principes fondateurs</label>
+        <div class="subgroup-label" id="l_principes">Principes fondateurs</div>
         <div class="checkbox-group" id="principes_group"></div>
       </div>
       <div class="field">
-        <label class="field-label" id="l_champs">Champs d'action</label>
+        <div class="subgroup-label" id="l_champs">Champs d'action</div>
         <div class="checkbox-group" id="champs_group"></div>
       </div>
     </div>
@@ -309,8 +312,9 @@ var I18N = {
     h_refere: 'Nom, institution et courriel de la personne qui vous réfère',
     l_reseau: 'Autres réseaux de recherche financés par les FRQ',
     h_reseau: 'Excluant le RSN',
-    s_axes: "Axes, principes et champs d'action",
-    l_axes: "Axes d'intérêt", l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
+    s_axes: "Vos thématiques d'intérêt",
+    h_themes_pick: 'Choisissez au moins une option parmi les trois familles ci-dessous.',
+    l_axes: 'Axes', l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
     l_consent: 'Autorisez-vous le RSN à créer un profil de membre public ?',
     opt_choose: '-- Choisir --',
     opt_yes: 'Oui, afficher mon profil publiquement',
@@ -359,8 +363,9 @@ var I18N = {
     h_refere: 'Name, institution and email of the person referring you',
     l_reseau: 'Other FRQ-funded research networks',
     h_reseau: 'Excluding the RSN',
-    s_axes: 'Axes, principles and action fields',
-    l_axes: 'Research axes', l_principes: 'Founding principles', l_champs: 'Action fields',
+    s_axes: 'Your topics of interest',
+    h_themes_pick: 'Choose at least one option from any of the three families below.',
+    l_axes: 'Axes', l_principes: 'Founding principles', l_champs: 'Action fields',
     l_consent: 'Do you authorize RSN to create a public member profile?',
     opt_choose: '-- Choose --',
     opt_yes: 'Yes, display my profile publicly',
@@ -409,7 +414,7 @@ function applyI18n() {
   setWithRequired('s_membership', t('s_membership'), true);
   setWithRequired('s_research', t('s_research'), false);
   setWithRequired('s_referral', t('s_referral'), false);
-  setWithRequired('s_axes', t('s_axes'), false);
+  setWithRequired('s_axes', t('s_axes'), true);
 
   // Labels with required marks
   setWithRequired('l_prenom', t('l_prenom'), true);
@@ -421,7 +426,8 @@ function applyI18n() {
   setWithRequired('l_orcid', t('l_orcid'), false);
   setWithRequired('l_refere', t('l_refere'), false);
   setWithRequired('l_reseau', t('l_reseau'), false);
-  setWithRequired('l_axes', t('l_axes'), true);
+  // Sub-group labels (no asterisks — the parent section header carries the required mark)
+  setWithRequired('l_axes', t('l_axes'), false);
   setWithRequired('l_principes', t('l_principes'), false);
   setWithRequired('l_champs', t('l_champs'), false);
   setWithRequired('l_consent', t('l_consent'), true);
@@ -438,7 +444,7 @@ function applyI18n() {
     hStatus.appendChild(link);
     hStatus.appendChild(document.createTextNode(')'));
   }
-  var hintKeys = ['h_email2','h_institution','h_themes','h_cv','h_orcid','h_refere','h_reseau'];
+  var hintKeys = ['h_email2','h_institution','h_themes_pick','h_themes','h_cv','h_orcid','h_refere','h_reseau'];
   hintKeys.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = t(id);
@@ -640,9 +646,13 @@ function validatePage(page) {
   }
 
   if (page === 3) {
-    if (getChips('axes_group').length === 0) {
+    // Merged "thématiques" question: at least one chip across axes/principes/champs
+    var totalThemes = getChips('axes_group').length + getChips('principes_group').length + getChips('champs_group').length;
+    if (totalThemes === 0) {
       document.getElementById('axes_group').classList.add('field-error');
-      missing.push(t('l_axes'));
+      document.getElementById('principes_group').classList.add('field-error');
+      document.getElementById('champs_group').classList.add('field-error');
+      missing.push(t('s_axes'));
       if (!firstErrEl) firstErrEl = document.getElementById('axes_group');
     }
     var consentEl = document.getElementById('f_consent');
