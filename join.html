@@ -299,6 +299,7 @@ var I18N = {
     err_email: "L'adresse courriel semble invalide.",
     err_submit: "Erreur lors de l'envoi. Veuillez réessayer.",
     err_duplicate: 'Un compte avec ce courriel existe déjà. Utilisez plutôt la page de mise à jour de profil.',
+    err_ratelimit: 'Trop de tentatives. Veuillez réessayer dans une heure.',
   },
   en: {
     title: 'Join the RSN',
@@ -339,6 +340,7 @@ var I18N = {
     err_email: 'The email address seems invalid.',
     err_submit: 'Error submitting. Please try again.',
     err_duplicate: 'An account with this email already exists. Please use the profile update page instead.',
+    err_ratelimit: 'Too many attempts. Please try again in an hour.',
   }
 };
 
@@ -629,6 +631,8 @@ function submit() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (result.code === 'DUPLICATE') {
         showMsg(t('err_duplicate'), 'error');
+      } else if (resp.status === 429) {
+        showMsg(t('err_ratelimit'), 'error');
       } else {
         showMsg(t('err_submit'), 'error');
       }
