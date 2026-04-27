@@ -4,6 +4,9 @@ all_members.csv
 new_all_members.csv
 RSN_BD_AllMembers*.csv
 Formulaire*.csv
+data/membership-dates.js
+data/*.csv
+data/*-private.*
 
 # Node
 node_modules/
