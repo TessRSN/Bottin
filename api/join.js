@@ -5,8 +5,9 @@
  * Creates a new member in Notion with workflow status "Nouveau".
  * Checks for duplicate email before creating.
  */
-const { findByEmail, createMember } = require('../lib/notion');
+const { findByEmail, createMember, findInstitutionByName, createInstitution } = require('../lib/notion');
 const { sendJoinConfirmation } = require('../lib/email');
+const { geocodeAddress } = require('../lib/geocode');
 
 // Simple in-memory rate limiter
 const attempts = new Map();
@@ -52,6 +53,7 @@ module.exports = async function handler(req, res) {
       prenom: prenom.trim(),
       nom: nom.trim(),
       email: normalized,
+      email2: (body.email2 || '').toLowerCase().trim() || null,
       statut: statut.trim(),
       institution: institution.trim(),
       type: type.trim(),
@@ -71,6 +73,44 @@ module.exports = async function handler(req, res) {
       await sendJoinConfirmation(normalized, prenom.trim());
     } catch (mailErr) {
       console.error('Join confirmation email failed:', mailErr.message);
+    }
+
+    // Process new institutions submitted by the member.
+    // Each one is geocoded via Nominatim and added to the Notion "Institutions"
+    // database with status "En attente" so the admin can review/correct.
+    // Failures here don't break the join flow — the member is already created.
+    const newInstitutions = Array.isArray(body.newInstitutions) ? body.newInstitutions : [];
+    for (const inst of newInstitutions) {
+      const name = (inst && inst.name || '').trim();
+      const address = (inst && inst.address || '').trim();
+      if (!name || !address) continue;
+
+      try {
+        // Skip if an institution with the same name already exists (any status)
+        const existing = await findInstitutionByName(name);
+        if (existing) {
+          console.log(`[join] Institution "${name}" already exists in Notion, skipping`);
+          continue;
+        }
+
+        let coords = null;
+        try {
+          coords = await geocodeAddress(address);
+        } catch (geoErr) {
+          console.error(`[join] Geocoding failed for "${name}":`, geoErr.message);
+        }
+
+        await createInstitution({
+          name,
+          address,
+          latitude: coords ? coords.lat : null,
+          longitude: coords ? coords.lng : null,
+          statut: 'En attente',
+        });
+        console.log(`[join] New institution "${name}" added to Notion (En attente)`);
+      } catch (instErr) {
+        console.error(`[join] Failed to add institution "${name}":`, instErr.message);
+      }
     }
 
     return res.status(200).json({ ok: true });
