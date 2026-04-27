@@ -17,11 +17,23 @@
  * actuelle reçoivent un 304 Not Modified sans body.
  */
 const crypto = require('crypto');
-const { getValidatedInstitutions } = require('../lib/notion');
+const { getValidatedInstitutions, getAllInstitutions } = require('../lib/notion');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Admin mode: ?all=true&key=SECRET returns the FULL list (incl. En attente / Refusée)
+  // for inspection purposes (looking for duplicates etc.)
+  if (req.query && req.query.all === 'true') {
+    if (!req.query.key || req.query.key !== process.env.BACKUP_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized for admin mode' });
+    }
+    const all = await getAllInstitutions();
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(JSON.stringify(all, null, 2));
   }
 
   try {
