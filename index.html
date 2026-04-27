@@ -1328,29 +1328,37 @@ function renderMap() {
     let mapped = 0;
     // Only show consented members on the map (consent === 'oui')
     const mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+    const norm = s => s.replace(/[‘’′]/g, "'").replace(/[“”]/g, '"');
+    // Resolve a member-typed institution string to the canonical name from
+    // the catalog (GEOCODE). Collapses orthographic variations onto a single
+    // pin: e.g. "Centre de Recherche du CHUM" (R majuscule) and "Centre de
+    // recherche du CHUM" (r minuscule) both resolve to the same canonical
+    // key, so all their members land on the same pin with the same jitter.
+    function resolveCanonical(inst) {
+        if (!inst) return null;
+        if (GEOCODE[inst]) return inst;
+        const ni = norm(inst);
+        if (GEOCODE[ni]) return ni;
+        const lower = ni.toLowerCase();
+        for (const key of Object.keys(GEOCODE)) {
+            const nk = norm(key).toLowerCase();
+            if (lower.includes(nk) || nk.includes(lower)) return key;
+        }
+        return inst; // fallback: raw name (no coords, won't appear on the map)
+    }
     // Each member can be affiliated to multiple institutions (split on ';' upstream).
     // Add the member to every institution so they appear at every relevant location.
     mapMembers.forEach(m => {
         const list = (m.institutions && m.institutions.length) ? m.institutions : (m.institution ? [m.institution] : []);
         list.forEach(inst => {
-            if (!inst) return;
-            if (!byInst[inst]) byInst[inst] = { members: [], coords: null };
-            byInst[inst].members.push(m);
+            const canonical = resolveCanonical(inst);
+            if (!canonical) return;
+            if (!byInst[canonical]) byInst[canonical] = { members: [], coords: GEOCODE[canonical] || null };
+            // Avoid double-counting if a member's two institutions both resolve to the same canonical name
+            if (!byInst[canonical].members.includes(m)) byInst[canonical].members.push(m);
         });
     });
-    const norm = s => s.replace(/[\u2018\u2019\u2032]/g, "'").replace(/[\u201C\u201D]/g, '"');
-    Object.keys(byInst).forEach(inst => {
-        if (GEOCODE[inst]) { byInst[inst].coords = GEOCODE[inst]; return; }
-        const ni = norm(inst);
-        if (GEOCODE[ni]) { byInst[inst].coords = GEOCODE[ni]; return; }
-        const lower = ni.toLowerCase();
-        for (const [key, coords] of Object.entries(GEOCODE)) {
-            const nk = norm(key).toLowerCase();
-            if (lower.includes(nk) || nk.includes(lower)) {
-                byInst[inst].coords = coords; return;
-            }
-        }
-    });
+    // (Coords resolution is now done inline by resolveCanonical above.)
     // Deterministic hash for stable jitter
     function hashStr(s) { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }
     // Track unique members across all geolocated institutions, since a member
