@@ -752,8 +752,17 @@ function loadInstitutionsCatalog() {
 }
 
 function populateCatalog(names) {
-  INSTITUTIONS_NAMES = names.slice().sort(function(a, b) { return a.localeCompare(b, 'fr'); });
-  INSTITUTIONS_CATALOG = INSTITUTIONS_NAMES.map(function(n) { return n.toLowerCase().trim(); });
+  // Filter out "composite" entries that combine multiple institutions
+  // with a semicolon (e.g. "McGill University; MILA - ..."). These exist
+  // for legacy reasons in the catalog (to map historical CSV strings)
+  // but should not be proposed in the dropdown — members are expected to
+  // select each institution separately via the "+ Ajouter une autre" button.
+  var atomic = names.filter(function(n) { return n.indexOf(';') === -1; });
+  INSTITUTIONS_NAMES = atomic.slice().sort(function(a, b) { return a.localeCompare(b, 'fr'); });
+  // The catalog used for "is this in our list?" check still uses ALL names
+  // (including composites) so that someone who pastes "McGill; MILA" still
+  // matches without prompting for an address.
+  INSTITUTIONS_CATALOG = names.map(function(n) { return n.toLowerCase().trim(); });
   var dl = document.getElementById('institutions_list');
   if (!dl) return;
   while (dl.firstChild) dl.removeChild(dl.firstChild);
