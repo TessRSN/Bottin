@@ -6,7 +6,8 @@
  * Called by Vercel cron daily or on-demand
  */
 const crypto = require('crypto');
-const { getAllMembers, CSV_COL } = require('../lib/notion');
+const { getAllMembers, markAcceptanceEmailSent, CSV_COL } = require('../lib/notion');
+const { sendAcceptanceEmail } = require('../lib/email');
 
 // Vercel serverless config
 module.exports.config = { maxDuration: 60 };
@@ -161,6 +162,29 @@ module.exports = async function handler(req, res) {
       res.setHeader('ETag', etag);
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(304).end();
+    }
+
+    // Send acceptance emails to newly-approved members (idempotent via checkbox)
+    // Triggered when admin moves a card to "Approuvé" in the Notion Kanban.
+    // Failures don't block the CSV response — they'll be retried tomorrow.
+    let emailsSent = 0;
+    let emailsFailed = 0;
+    for (const m of members) {
+      if (m.workflow !== 'Approuvé') continue;
+      if (m.emailAccepteEnvoye) continue;
+      if (!m.email || !m.prenom) continue;
+      try {
+        await sendAcceptanceEmail(m.email, m.prenom);
+        await markAcceptanceEmailSent(m.id);
+        emailsSent++;
+        console.log(`[export] Acceptance email sent to ${m.email}`);
+      } catch (err) {
+        emailsFailed++;
+        console.error(`[export] Failed to send acceptance email to ${m.email}:`, err.message);
+      }
+    }
+    if (emailsSent > 0 || emailsFailed > 0) {
+      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed`);
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
