@@ -71,6 +71,19 @@
   .step-dot.active { background:var(--primary); transform:scale(1.2); }
   .step-dot.done { background:var(--success); }
   @media (max-width:480px) { .card { padding:1rem 1.25rem; } }
+  /* Multi-institution rows */
+  .inst-row { border:1px solid var(--border); border-radius:.5rem; padding:.75rem; margin-bottom:.6rem; background:var(--bg-soft, transparent); position:relative; }
+  .inst-row .inst-input-wrap { display:flex; gap:.5rem; align-items:flex-start; }
+  .inst-row .inst-input-wrap input { flex:1; }
+  .inst-row .inst-remove-btn { background:none; border:1px solid var(--border); color:var(--muted); cursor:pointer; padding:.4rem .6rem; border-radius:.3rem; font-size:.8rem; flex-shrink:0; }
+  .inst-row .inst-remove-btn:hover { color:var(--error); border-color:var(--error); }
+  .inst-row .inst-not-found { display:none; margin-top:.6rem; padding:.5rem .6rem; background:#fef3c7; border-left:3px solid #d97706; color:#78350f; font-size:.78rem; border-radius:.25rem; }
+  [data-theme="dark"] .inst-row .inst-not-found { background:#451a03; color:#fef3c7; border-left-color:#d97706; }
+  .inst-row.show-address .inst-not-found { display:block; }
+  .inst-row .inst-address-field { display:none; margin-top:.5rem; }
+  .inst-row.show-address .inst-address-field { display:block; }
+  .btn-add-inst { background:none; border:1px dashed var(--border); color:var(--primary); cursor:pointer; padding:.5rem 1rem; border-radius:.4rem; font-size:.85rem; width:100%; margin-top:.3rem; }
+  .btn-add-inst:hover { background:rgba(43,108,176,.05); border-color:var(--primary); }
 </style>
 </head>
 <body>
@@ -108,6 +121,7 @@
         <div class="field"><label class="field-label" id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
       </div>
       <div class="field"><label class="field-label" id="l_email">Courriel<span class="required-mark">*</span></label><input id="f_email" type="email" required></div>
+      <div class="field"><label class="field-label" id="l_email2">Courriel secondaire</label><div class="field-hint" id="h_email2">Optionnel. Ex. courriel personnel ou d'une autre institution.</div><input id="f_email2" type="email"></div>
     </div>
 
     <div class="card">
@@ -117,8 +131,11 @@
     </div>
 
     <div class="card">
-      <div class="section-title" id="s_institution">Institution principale d'affiliation<span class="required-mark">*</span></div>
-      <div class="field"><input id="f_institution" required></div>
+      <div class="section-title" id="s_institution">Institution(s) d'affiliation<span class="required-mark">*</span></div>
+      <div class="field-hint" id="h_institution">Tapez pour rechercher dans notre catalogue. Si votre institution n'apparaît pas, écrivez son nom complet et fournissez son adresse pour qu'on l'ajoute à la carte.</div>
+      <datalist id="institutions_list"></datalist>
+      <div id="institutions_container"></div>
+      <button type="button" class="btn-add-inst" id="addInstBtn" onclick="addInstitutionRow()">+ Ajouter une autre institution</button>
     </div>
 
     <div class="card">
@@ -266,10 +283,19 @@ var I18N = {
     intro: "Le Réseau de santé numérique est financé par le Fonds de recherche du Québec (secteur Santé). Notre mission est de développer et de bâtir les fondations de la science de la santé numérique au Québec. Nous accueillons chaleureusement les nouveaux membres réguliers, les personnes aux études et les partenaires qui souhaitent contribuer à l'avancement de la santé numérique au Québec.",
     s_identity: 'Identité',
     l_prenom: 'Prénom', l_nom: 'Nom', l_email: 'Courriel',
+    l_email2: 'Courriel secondaire',
+    h_email2: "Optionnel. Ex. courriel personnel ou d'une autre institution.",
     s_status: 'Statut actuel',
     h_status_text: 'Voir les définitions du FRQ',
     h_status_link: 'PDF',
-    s_institution: "Institution principale d'affiliation",
+    s_institution: "Institution(s) d'affiliation",
+    h_institution: "Tapez pour rechercher dans notre catalogue. Si votre institution n'apparaît pas, écrivez son nom complet et fournissez son adresse pour qu'on l'ajoute à la carte.",
+    inst_placeholder: 'Commencez à taper le nom de votre institution',
+    inst_remove: 'Retirer',
+    inst_add: '+ Ajouter une autre institution',
+    inst_not_found: "Cette institution n'est pas dans notre catalogue. Veuillez fournir son adresse pour qu'on l'ajoute à la carte.",
+    l_inst_address: "Adresse complète de l'institution",
+    h_inst_address: 'Ex. 845 rue Sherbrooke O., Montréal, QC, Canada',
     s_membership: "Type d'adhésion souhaité",
     s_research: 'Recherche et expertise',
     l_themes: "Principaux thèmes de recherche ou d'intérêt",
@@ -307,10 +333,19 @@ var I18N = {
     intro: "The Digital Health Network is funded by the Fonds de recherche du Québec (Health sector). Our mission is to develop and build the foundations of digital health science in Quebec. We warmly welcome new regular members, students and partners who wish to contribute to the advancement of digital health in Quebec.",
     s_identity: 'Identity',
     l_prenom: 'First name', l_nom: 'Last name', l_email: 'Email',
+    l_email2: 'Secondary email',
+    h_email2: 'Optional. E.g. personal email or another institution.',
     s_status: 'Present Status',
     h_status_text: 'Refer to the FRQ definitions',
     h_status_link: 'PDF',
-    s_institution: 'Main institution of affiliation',
+    s_institution: 'Institution(s) of affiliation',
+    h_institution: "Start typing to search our catalog. If your institution doesn't appear, write its full name and provide its address so we can add it to the map.",
+    inst_placeholder: 'Start typing your institution name',
+    inst_remove: 'Remove',
+    inst_add: '+ Add another institution',
+    inst_not_found: 'This institution is not in our catalog. Please provide its address so we can add it to the map.',
+    l_inst_address: 'Full institution address',
+    h_inst_address: 'E.g. 845 Sherbrooke St. W., Montreal, QC, Canada',
     s_membership: 'Desired RSN Membership',
     s_research: 'Research and expertise',
     l_themes: 'Main research or interest topics',
@@ -380,6 +415,7 @@ function applyI18n() {
   setWithRequired('l_prenom', t('l_prenom'), true);
   setWithRequired('l_nom', t('l_nom'), true);
   setWithRequired('l_email', t('l_email'), true);
+  setWithRequired('l_email2', t('l_email2'), false);
   setWithRequired('l_themes', t('l_themes'), true);
   setWithRequired('l_cv', t('l_cv'), false);
   setWithRequired('l_orcid', t('l_orcid'), false);
@@ -402,10 +438,28 @@ function applyI18n() {
     hStatus.appendChild(link);
     hStatus.appendChild(document.createTextNode(')'));
   }
-  var hintKeys = ['h_themes','h_cv','h_orcid','h_refere','h_reseau'];
+  var hintKeys = ['h_email2','h_institution','h_themes','h_cv','h_orcid','h_refere','h_reseau'];
   hintKeys.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = t(id);
+  });
+
+  // Add-institution button label
+  var addInstBtn = document.getElementById('addInstBtn');
+  if (addInstBtn) addInstBtn.textContent = t('inst_add');
+
+  // Update existing institution rows (placeholders, hints, remove labels) when language changes
+  document.querySelectorAll('.inst-row').forEach(function(row) {
+    var input = row.querySelector('.inst-input');
+    if (input) input.placeholder = t('inst_placeholder');
+    var notFound = row.querySelector('.inst-not-found');
+    if (notFound) notFound.textContent = t('inst_not_found');
+    var addrLabel = row.querySelector('.inst-address-label');
+    if (addrLabel) addrLabel.textContent = t('l_inst_address');
+    var addrHint = row.querySelector('.inst-address-hint');
+    if (addrHint) addrHint.textContent = t('h_inst_address');
+    var removeBtn = row.querySelector('.inst-remove-btn');
+    if (removeBtn) removeBtn.textContent = t('inst_remove');
   });
 
   // Select options
@@ -561,7 +615,23 @@ function validatePage(page) {
       if (!firstErrEl) firstErrEl = document.getElementById('f_email');
     }
     checkRadio('status', 'status_group', t('s_status'));
-    checkInput('f_institution', t('s_institution'));
+    // Validate at least one institution is filled, and any "not in catalog" institution has an address
+    var instData = collectInstitutions();
+    if (instData.length === 0) {
+      missing.push(t('s_institution'));
+      var firstInst = document.querySelector('.inst-row .inst-input');
+      if (firstInst) { firstInst.classList.add('field-error'); if (!firstErrEl) firstErrEl = firstInst; }
+    } else {
+      // Each unknown institution must have an address
+      for (var idx = 0; idx < instData.length; idx++) {
+        if (instData[idx].needsAddress && !instData[idx].address) {
+          var addrInput = document.querySelectorAll('.inst-address-input')[idx];
+          if (addrInput) { addrInput.classList.add('field-error'); if (!firstErrEl) firstErrEl = addrInput; }
+          missing.push(t('l_inst_address'));
+          break;
+        }
+      }
+    }
     checkRadio('membership', 'membership_group', t('s_membership'));
   }
 
@@ -600,12 +670,15 @@ function submit() {
   btn.disabled = true;
   btn.textContent = t('submitting');
 
+  var instData = collectInstitutions();
   var data = {
     prenom: document.getElementById('f_prenom').value.trim(),
     nom: document.getElementById('f_nom').value.trim(),
     email: document.getElementById('f_email').value.trim(),
+    email2: document.getElementById('f_email2').value.trim() || null,
     statut: radioState.status,
-    institution: document.getElementById('f_institution').value.trim(),
+    institution: instData.map(function(i){ return i.name; }).join('; '),
+    newInstitutions: instData.filter(function(i){ return i.needsAddress && i.address; }).map(function(i){ return { name: i.name, address: i.address }; }),
     type: radioState.membership,
     themes: document.getElementById('f_themes').value.trim(),
     cv: document.getElementById('f_cv').value.trim() || null,
@@ -657,11 +730,153 @@ function hideMsg() {
   document.getElementById('msgBox').className = 'msg';
 }
 
+// ─── INSTITUTIONS CATALOG (autocomplete) ───
+// Loaded once at startup from /api/institutions. Used to:
+//  - Populate the <datalist> for native autocomplete
+//  - Detect when a user enters an unknown institution → show address field
+var INSTITUTIONS_CATALOG = []; // array of names, lowercased for case-insensitive match
+var INSTITUTIONS_NAMES = [];   // canonical names with original casing (for the datalist)
+
+function loadInstitutionsCatalog() {
+  // Try cache first (same key as index.html so the data is shared between pages)
+  try {
+    var cached = JSON.parse(localStorage.getItem('rsn-institutions-cache-v1') || 'null');
+    if (cached && cached.data) populateCatalog(Object.keys(cached.data));
+  } catch(e) {}
+
+  // Fetch fresh in background
+  fetch('/api/institutions', { cache: 'no-cache' })
+    .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(data) { populateCatalog(Object.keys(data)); })
+    .catch(function(err) { console.warn('Could not load institutions catalog:', err && err.message); });
+}
+
+function populateCatalog(names) {
+  INSTITUTIONS_NAMES = names.slice().sort(function(a, b) { return a.localeCompare(b, 'fr'); });
+  INSTITUTIONS_CATALOG = INSTITUTIONS_NAMES.map(function(n) { return n.toLowerCase().trim(); });
+  var dl = document.getElementById('institutions_list');
+  if (!dl) return;
+  while (dl.firstChild) dl.removeChild(dl.firstChild);
+  for (var i = 0; i < INSTITUTIONS_NAMES.length; i++) {
+    var opt = document.createElement('option');
+    opt.value = INSTITUTIONS_NAMES[i];
+    dl.appendChild(opt);
+  }
+  // Re-check existing rows (the user may have typed before catalog loaded)
+  document.querySelectorAll('.inst-row').forEach(function(row) {
+    var input = row.querySelector('.inst-input');
+    if (input) checkInstitutionAgainstCatalog(row, input.value);
+  });
+}
+
+function isInCatalog(name) {
+  return INSTITUTIONS_CATALOG.indexOf((name || '').toLowerCase().trim()) !== -1;
+}
+
+function checkInstitutionAgainstCatalog(row, value) {
+  if (!value || !value.trim()) {
+    row.classList.remove('show-address');
+    return;
+  }
+  if (isInCatalog(value)) {
+    row.classList.remove('show-address');
+  } else if (INSTITUTIONS_CATALOG.length > 0) {
+    // Only flag as unknown after the catalog has loaded
+    row.classList.add('show-address');
+  }
+}
+
+function addInstitutionRow() {
+  var container = document.getElementById('institutions_container');
+  var row = document.createElement('div');
+  row.className = 'inst-row';
+
+  var inputWrap = document.createElement('div');
+  inputWrap.className = 'inst-input-wrap';
+
+  var input = document.createElement('input');
+  input.className = 'inst-input';
+  input.type = 'text';
+  input.setAttribute('list', 'institutions_list');
+  input.placeholder = t('inst_placeholder');
+  input.autocomplete = 'off';
+  input.addEventListener('input', function() { checkInstitutionAgainstCatalog(row, input.value); });
+  input.addEventListener('blur',  function() { checkInstitutionAgainstCatalog(row, input.value); });
+  inputWrap.appendChild(input);
+
+  // Remove button (only visible if more than one row)
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'inst-remove-btn';
+  removeBtn.textContent = t('inst_remove');
+  removeBtn.onclick = function() {
+    container.removeChild(row);
+    updateRemoveButtonsVisibility();
+  };
+  inputWrap.appendChild(removeBtn);
+
+  row.appendChild(inputWrap);
+
+  // "Not in catalog" warning
+  var notFound = document.createElement('div');
+  notFound.className = 'inst-not-found';
+  notFound.textContent = t('inst_not_found');
+  row.appendChild(notFound);
+
+  // Address field (hidden until institution is unknown)
+  var addrField = document.createElement('div');
+  addrField.className = 'inst-address-field field';
+  var addrLabel = document.createElement('label');
+  addrLabel.className = 'field-label inst-address-label';
+  addrLabel.textContent = t('l_inst_address');
+  var addrHint = document.createElement('div');
+  addrHint.className = 'field-hint inst-address-hint';
+  addrHint.textContent = t('h_inst_address');
+  var addrInput = document.createElement('input');
+  addrInput.className = 'inst-address-input';
+  addrInput.type = 'text';
+  addrInput.placeholder = t('h_inst_address');
+  addrField.appendChild(addrLabel);
+  addrField.appendChild(addrHint);
+  addrField.appendChild(addrInput);
+  row.appendChild(addrField);
+
+  container.appendChild(row);
+  updateRemoveButtonsVisibility();
+}
+
+function updateRemoveButtonsVisibility() {
+  var rows = document.querySelectorAll('.inst-row');
+  rows.forEach(function(row) {
+    var btn = row.querySelector('.inst-remove-btn');
+    if (btn) btn.style.display = rows.length > 1 ? '' : 'none';
+  });
+}
+
+function collectInstitutions() {
+  var result = [];
+  document.querySelectorAll('.inst-row').forEach(function(row) {
+    var input = row.querySelector('.inst-input');
+    var name = input ? input.value.trim() : '';
+    if (!name) return;
+    var addrInput = row.querySelector('.inst-address-input');
+    var address = addrInput ? addrInput.value.trim() : '';
+    result.push({
+      name: name,
+      address: address,
+      needsAddress: !isInCatalog(name),
+    });
+  });
+  return result;
+}
+
 // ─── INIT ───
 function init() {
   buildChips('axes_group', AXES_OPTIONS);
   buildChips('principes_group', PRINCIPES_OPTIONS);
   buildChips('champs_group', CHAMPS_OPTIONS);
+  loadInstitutionsCatalog();
+  addInstitutionRow(); // Start with one institution row
   applyI18n();
   updateThemeIcons();
 }
