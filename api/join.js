@@ -6,6 +6,7 @@
  * Checks for duplicate email before creating.
  */
 const { findByEmail, createMember } = require('../lib/notion');
+const { sendJoinConfirmation } = require('../lib/email');
 
 // Simple in-memory rate limiter
 const attempts = new Map();
@@ -64,6 +65,13 @@ module.exports = async function handler(req, res) {
       champs: body.champs || [],
       consent: consent,
     });
+
+    // Send confirmation email (non-blocking — failure shouldn't break the submission)
+    try {
+      await sendJoinConfirmation(normalized, prenom.trim());
+    } catch (mailErr) {
+      console.error('Join confirmation email failed:', mailErr.message);
+    }
 
     return res.status(200).json({ ok: true });
   } catch (err) {
