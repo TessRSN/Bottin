@@ -657,6 +657,24 @@ function applyI18n() {
     document.getElementById('langLabel').textContent = currentLang === 'fr' ? 'EN' : 'FR';
     document.documentElement.lang = currentLang;
 }
+// Apply i18n at page load so the static HTML reflects the language
+// stored in localStorage (or the default 'fr'). Without this, the
+// titles/labels would stay in French even when currentLang === 'en',
+// because applyI18n was only called on toggle.
+applyI18n();
+// Also re-apply on bfcache restore (back/forward navigation) — the
+// member may have changed lang on edit.html or magic-link.html and
+// we want index.html to pick up the new value when they come back.
+window.addEventListener('pageshow', function(e) {
+    try {
+        var stored = localStorage.getItem('rsn-lang') || 'fr';
+        if (stored !== currentLang) {
+            currentLang = stored;
+            applyI18n();
+            if (typeof allMembers !== 'undefined' && allMembers.length) render();
+        }
+    } catch(err) {}
+});
 
 function toggleLang() {
     currentLang = currentLang === 'fr' ? 'en' : 'fr';
@@ -667,21 +685,27 @@ function toggleLang() {
 }
 
 // ─── THEME ───
+// UX convention (aligned with the language button):
+// the icon shown is the TARGET action, not the current state.
+//   - In dark mode  → show ☀️ (click to switch to light)
+//   - In light mode → show 🌙 (click to switch to dark)
+function updateThemeIcons() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.getElementById('iconSun').classList.toggle('hidden', !isDark);
+    document.getElementById('iconMoon').classList.toggle('hidden', isDark);
+}
 function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    document.getElementById('iconSun').classList.toggle('hidden', !isDark);
-    document.getElementById('iconMoon').classList.toggle('hidden', isDark);
     localStorage.setItem('rsn-theme', isDark ? 'light' : 'dark');
+    updateThemeIcons();
 }
-// Init theme
+// Init theme — always apply target-icon logic (covers both light & dark)
 (function(){
     const saved = localStorage.getItem('rsn-theme');
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        document.getElementById('iconSun').classList.add('hidden');
-        document.getElementById('iconMoon').classList.remove('hidden');
-    }
+    const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+    updateThemeIcons();
 })();
 
 const CONFIG = {
