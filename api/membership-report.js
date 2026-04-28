@@ -137,6 +137,31 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, ...report });
     }
 
+    if (mode === 'full-data') {
+      // Returns essential fields for cross-checking with the CSV.
+      // Used by scripts/compare-csv-notion.js (local).
+      const all = await getAllMembers();
+      const slim = all.map(m => ({
+        id: m.id,
+        prenom: m.prenom,
+        nom: m.nom,
+        email: (m.email || '').toLowerCase().trim(),
+        email2: (m.email2 || '').toLowerCase().trim() || null,
+        institution: m.institution,
+        statut: m.statut,
+        type: m.type,
+        reseau: m.reseau,
+        themes: m.themes,
+        consent: m.consent,
+        workflow: m.workflow,
+        dateDebut: m.dateDebut,
+        dateRenouvellement: m.dateRenouvellement,
+        orcid: m.orcid,
+        cv: m.cv,
+      }));
+      return res.status(200).json({ ok: true, count: slim.length, members: slim });
+    }
+
     // Default: quality report
     const all = await getAllMembers();
 
