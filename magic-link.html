@@ -40,6 +40,9 @@
   .hidden { display:none !important; }
   .back { display:inline-block; margin-top:1rem; font-size:.8rem; color:var(--muted); text-decoration:none; }
   .back:hover { color:var(--primary); }
+  .help-box { margin-top:1.25rem; padding:.75rem 1rem; background:var(--bg); border-left:3px solid var(--primary); border-radius:.3rem; font-size:.8rem; color:var(--muted); line-height:1.5; text-align:left; }
+  .help-box a { color:var(--primary); text-decoration:none; }
+  .help-box a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -63,6 +66,8 @@
 
   <div id="msg" class="msg" style="display:none"></div>
 
+  <div class="help-box" id="helpBox"></div>
+
   <a class="back" href="/" id="backLink">← Retour au bottin</a>
 </div>
 
@@ -78,6 +83,8 @@ const i18n = {
     invalid: 'Veuillez entrer un courriel valide.',
     back: '← Retour au bottin',
     lang: 'EN',
+    help_before: 'Vous avez changé d’adresse courriel récemment et n’avez plus accès à l’ancienne ? Contactez-nous à ',
+    help_after: ' pour que nous mettions à jour votre courriel principal.',
   },
   en: {
     title: 'Update my profile',
@@ -89,6 +96,8 @@ const i18n = {
     invalid: 'Please enter a valid email.',
     back: '← Back to directory',
     lang: 'FR',
+    help_before: 'Have you recently changed your email and no longer have access to the old one? Contact us at ',
+    help_after: ' so we can update your primary email.',
   }
 };
 let lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
@@ -102,6 +111,18 @@ function applyLang() {
   document.getElementById('btnText').textContent = t('btn');
   document.getElementById('backLink').textContent = t('back');
   document.getElementById('langBtn').textContent = t('lang');
+
+  // Build the help-box with mailto link
+  var help = document.getElementById('helpBox');
+  if (help) {
+    while (help.firstChild) help.removeChild(help.firstChild);
+    help.appendChild(document.createTextNode(t('help_before')));
+    var a = document.createElement('a');
+    a.href = 'mailto:rsn.gestion@rimuhc.ca';
+    a.textContent = 'rsn.gestion@rimuhc.ca';
+    help.appendChild(a);
+    help.appendChild(document.createTextNode(t('help_after')));
+  }
 }
 
 function toggleLang() {
