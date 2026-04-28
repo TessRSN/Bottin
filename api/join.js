@@ -22,8 +22,12 @@ module.exports = async function handler(req, res) {
   const body = req.body || {};
 
   // Basic validation
-  const { prenom, nom, email, statut, institution, type, themes, axes, consent } = body;
-  if (!prenom || !nom || !email || !statut || !institution || !type || !themes || !axes || !axes.length || !consent) {
+  const { prenom, nom, email, statut, institution, type, themes, axes, principes, champs, consent } = body;
+  // Thematics: at least 1 selection across axes/principes/champs (merged question)
+  const totalThemes = (Array.isArray(axes) ? axes.length : 0)
+                    + (Array.isArray(principes) ? principes.length : 0)
+                    + (Array.isArray(champs) ? champs.length : 0);
+  if (!prenom || !nom || !email || !statut || !institution || !type || !themes || totalThemes === 0 || !consent) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
   if (!email.includes('@')) {
