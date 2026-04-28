@@ -5,7 +5,7 @@
  * Creates a new member in Notion with workflow status "Nouveau".
  * Checks for duplicate email before creating.
  */
-const { findByEmail, createMember, findInstitutionByName, createInstitution } = require('../lib/notion');
+const { findByEmail, createMember, findInstitutionByName, createInstitution, setMemberInstitutionRelation } = require('../lib/notion');
 const { sendJoinConfirmation } = require('../lib/email');
 const { geocodeAddress } = require('../lib/geocode');
 
@@ -48,8 +48,9 @@ module.exports = async function handler(req, res) {
       return res.status(409).json({ ok: false, code: 'DUPLICATE' });
     }
 
-    // Create the member
-    await createMember({
+    // Create the member (returns the created Notion page so we can link
+    // the institution Relation afterwards)
+    const newMemberPage = await createMember({
       prenom: prenom.trim(),
       nom: nom.trim(),
       email: normalized,
@@ -67,6 +68,7 @@ module.exports = async function handler(req, res) {
       champs: body.champs || [],
       consent: consent,
     });
+    const newMemberId = newMemberPage && newMemberPage.id;
 
     // Send confirmation email (non-blocking — failure shouldn't break the submission)
     try {
@@ -110,6 +112,31 @@ module.exports = async function handler(req, res) {
         console.log(`[join] New institution "${name}" added to Notion (En attente)`);
       } catch (instErr) {
         console.error(`[join] Failed to add institution "${name}":`, instErr.message);
+      }
+    }
+
+    // Phase 2: also fill the new "Institution liée" Relation on the member.
+    // We resolve each institution name (split on ';') to its Notion page ID.
+    // This runs after the new institutions creation so freshly-added entries
+    // are also picked up. Failures here don't break the join flow.
+    if (newMemberId) {
+      try {
+        const memberInstitutionNames = institution.split(';').map(s => s.trim()).filter(Boolean);
+        const linkedIds = [];
+        for (const name of memberInstitutionNames) {
+          try {
+            const page = await findInstitutionByName(name);
+            if (page && !linkedIds.includes(page.id)) linkedIds.push(page.id);
+          } catch (err) {
+            console.error(`[join] findInstitutionByName failed for "${name}":`, err.message);
+          }
+        }
+        if (linkedIds.length > 0) {
+          await setMemberInstitutionRelation(newMemberId, linkedIds);
+          console.log(`[join] Linked ${linkedIds.length} institutions for ${normalized}`);
+        }
+      } catch (linkErr) {
+        console.error('[join] Setting institution relation failed:', linkErr.message);
       }
     }
 
