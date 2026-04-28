@@ -152,7 +152,18 @@ const OPTIONS = {
   champs: ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'],
 };
 
-let lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })(), token = '', profile = {};
+// Priorité: ?lang= dans l'URL (vient du lien email) > localStorage > défaut 'fr'
+let lang = (function(){
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var urlLang = p.get('lang');
+    if (urlLang === 'fr' || urlLang === 'en') {
+      try { localStorage.setItem('rsn-lang', urlLang); } catch(e) {}
+      return urlLang;
+    }
+    return localStorage.getItem('rsn-lang') || 'fr';
+  } catch(e) { return 'fr'; }
+})(), token = '', profile = {};
 
 function t(key) {
   const map = {
