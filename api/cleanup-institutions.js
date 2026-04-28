@@ -1,19 +1,20 @@
 /**
  * GET /api/cleanup-institutions?key=YOUR_BACKUP_SECRET&action=...
  *
- * Endpoint admin one-shot pour le nettoyage final des institutions:
- *   action=rename            : applique 30 renommages dans les fiches
- *                              membres (find/replace, multi-institutions
- *                              preservees grace au split sur ';')
- *   action=archive-unused    : archive 5 fiches catalogue inutilisees
- *   action=add-no-institution: cree la fiche "Pas d'institution
- *                              (travailleur autonome)" sans coords
- *   action=preview           : liste ce qui serait modifie sans rien faire
+ * Endpoint admin one-shot pour le nettoyage final des institutions.
  *
- * Une fois execute, ce fichier peut etre supprime.
+ * Actions:
+ *   preview          : liste les renommages sans rien modifier
+ *   rename           : applique tous les renommages dans les fiches membres
+ *   archive-unused   : archive les fiches catalogue inutilisees
+ *   add-no-institution : cree "Pas d'institution (travailleur autonome)"
+ *   restore-archived : restaure 3 fiches archivees par erreur
+ *   create-new       : cree les ~10 nouvelles fiches du catalogue (Cat. B)
+ *   final-pass       : extension de rename pour les cas rates au 1er pass
+ *                      (typo Sherbrooke + travailleurs autonomes + Mathieu/Danina)
  */
 const { Client } = require('@notionhq/client');
-const { getAllMembers, getAllInstitutions, createInstitution, INST_PROP } = require('../lib/notion');
+const { getAllMembers, getAllInstitutions, createInstitution, PROP, INST_PROP } = require('../lib/notion');
 
 let _notion;
 function notion() {
@@ -21,8 +22,7 @@ function notion() {
   return _notion;
 }
 
-// 30 renames a appliquer dans les fiches membres
-const RENAMES = [
+const RENAMES_PASS1 = [
   ['CRCHUM - Centre de recherche du CHUM', 'CRCHUM - Centre de Recherche du CHUM'],
   ['RI-MUHC', 'RI-MUHC - Research Institute of McGill University Health Centre'],
   ['CHU de Québec-Université Laval - Centre hospitalier universitaire de Québec-Université Laval', 'CHU de Québec - Université Laval'],
@@ -54,7 +54,14 @@ const RENAMES = [
   ["CIUSSS de l'Estrie - CHU de Sherbrooke", "CIUSSS de l'Estrie-CHUS"],
 ];
 
-// 5 fiches catalogue inutilisees a archiver
+const RENAMES_PASS2 = [
+  ['univerrsité de Sherbrooke', 'Université de Sherbrooke'],
+  ['Travailleur autonome', "Pas d'institution (travailleur autonome)"],
+  ['Travailleur Autonome', "Pas d'institution (travailleur autonome)"],
+  ['Impulsions', 'COGEP inc'],
+  ['OROT', 'Waterloo Regional Health Network'],
+];
+
 const UNUSED_TO_ARCHIVE = [
   'CHUS - Centre hospitalier universitaire de sherbrooke',
   'Collège des médecins du Québec',
@@ -63,23 +70,46 @@ const UNUSED_TO_ARCHIVE = [
   'Health Technology Assessment Unit of the MUHC - McGill University Health Center',
 ];
 
-// Replace one occurrence (or multiple) of an institution name within a
-// member's institution string, preserving the rest (other institutions
-// separated by ';'). Case-sensitive exact match for safety.
+const TO_RESTORE = [
+  'CRCHU de Québec - Université Laval',
+  "École d'optométrie Université de Montréal",
+  'Health Technology Assessment Unit of the MUHC - McGill University Health Center',
+];
+
+const NEW_INSTITUTIONS = [
+  { name: 'Careteam Technologies', latitude: 49.2878, longitude: -123.1183 },
+  { name: "CIUSSS de l'Estrie-CHUS", latitude: 45.4014, longitude: -71.8836 },
+  { name: 'COGEP inc', latitude: null, longitude: null },
+  { name: 'Lady Davis Institute', latitude: 45.4928, longitude: -73.6308 },
+  { name: 'MaSantéPhysique.ai', latitude: 45.4972, longitude: -73.5634 },
+  { name: 'Numana Tech', latitude: 45.5025, longitude: -73.5585 },
+  { name: 'Waterloo Regional Health Network', latitude: 43.4563, longitude: -80.5120 },
+  { name: 'Solution Moveck inc.', latitude: null, longitude: null },
+  { name: 'StatSciences Inc.', latitude: null, longitude: null },
+  { name: 'Strataide', latitude: null, longitude: null },
+  { name: 'Universus Technologies', latitude: null, longitude: null },
+];
+
 function applyRename(currentValue, fromName, toName) {
   if (!currentValue) return currentValue;
   const parts = currentValue.split(';').map(s => s.trim());
   const newParts = parts.map(p => p === fromName ? toName : p);
-  // Avoid duplicates after rename (e.g. someone with both "ETS" and
-  // "ETS - École de technologie supérieure" would otherwise have it twice)
   const seen = new Set();
-  const dedup = newParts.filter(p => {
+  return newParts.filter(p => {
     if (!p) return false;
     if (seen.has(p)) return false;
     seen.add(p);
     return true;
+  }).join('; ');
+}
+
+async function findArchivedByName(dbId, name) {
+  const resp = await notion().databases.query({
+    database_id: dbId,
+    filter: { property: INST_PROP.nom, title: { equals: name } },
+    page_size: 5,
   });
-  return dedup.join('; ');
+  return resp.results.find(p => p.archived) || null;
 }
 
 module.exports = async function handler(req, res) {
@@ -90,13 +120,14 @@ module.exports = async function handler(req, res) {
   const action = (req.query && req.query.action) || 'preview';
 
   try {
-    if (action === 'rename' || action === 'preview') {
+    if (action === 'rename' || action === 'preview' || action === 'final-pass') {
+      const renamesToApply = action === 'final-pass' ? RENAMES_PASS2 : RENAMES_PASS1;
       const members = await getAllMembers();
       const updates = [];
       for (const m of members) {
         if (!m.institution) continue;
         let newValue = m.institution;
-        for (const [from, to] of RENAMES) {
+        for (const [from, to] of renamesToApply) {
           newValue = applyRename(newValue, from, to);
         }
         if (newValue !== m.institution) {
@@ -108,14 +139,13 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ ok: true, action: 'preview', count: updates.length, updates });
       }
 
-      // Apply for real
       const results = { updated: 0, failed: 0, errors: [] };
       for (const u of updates) {
         try {
           await notion().pages.update({
             page_id: u.id,
             properties: {
-              [require('../lib/notion').PROP.institution]: { rich_text: [{ text: { content: u.after.slice(0, 2000) } }] },
+              [PROP.institution]: { rich_text: [{ text: { content: u.after.slice(0, 2000) } }] },
             },
           });
           results.updated++;
@@ -125,7 +155,7 @@ module.exports = async function handler(req, res) {
           if (results.errors.length >= 5) break;
         }
       }
-      return res.status(200).json({ ok: results.failed === 0, action: 'rename', count: updates.length, ...results });
+      return res.status(200).json({ ok: results.failed === 0, action, count: updates.length, ...results });
     }
 
     if (action === 'archive-unused') {
@@ -145,22 +175,53 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: results.failed === 0, action: 'archive-unused', ...results });
     }
 
+    if (action === 'restore-archived') {
+      const dbId = process.env.NOTION_INSTITUTIONS_DB_ID;
+      const results = { restored: 0, notFound: [], failed: 0, errors: [] };
+      for (const name of TO_RESTORE) {
+        try {
+          const archivedPage = await findArchivedByName(dbId, name);
+          if (!archivedPage) { results.notFound.push(name); continue; }
+          await notion().pages.update({ page_id: archivedPage.id, archived: false });
+          results.restored++;
+        } catch (err) {
+          results.failed++;
+          results.errors.push({ name, error: err.message });
+        }
+      }
+      return res.status(200).json({ ok: results.failed === 0, action: 'restore-archived', ...results });
+    }
+
+    if (action === 'create-new') {
+      const all = await getAllInstitutions();
+      const existing = new Set(all.map(i => i.name));
+      const results = { created: 0, skipped: 0, failed: 0, errors: [] };
+      for (const inst of NEW_INSTITUTIONS) {
+        if (existing.has(inst.name)) { results.skipped++; continue; }
+        try {
+          await createInstitution({
+            name: inst.name,
+            address: '',
+            latitude: inst.latitude,
+            longitude: inst.longitude,
+            statut: 'Validée',
+          });
+          results.created++;
+        } catch (err) {
+          results.failed++;
+          results.errors.push({ name: inst.name, error: err.message });
+        }
+      }
+      return res.status(200).json({ ok: results.failed === 0, action: 'create-new', ...results });
+    }
+
     if (action === 'add-no-institution') {
       const name = "Pas d'institution (travailleur autonome)";
-      // Check if already exists
       const all = await getAllInstitutions();
       const existing = all.find(i => i.name === name);
       if (existing) {
-        return res.status(200).json({ ok: true, action: 'add-no-institution', skipped: true, message: 'Already exists' });
+        return res.status(200).json({ ok: true, action, skipped: true, message: 'Already exists' });
       }
-      // Create with status Validée and no coords (so it's offered in dropdown but not on the map)
-      // Note: getValidatedInstitutions filters out entries with null coords from the public list,
-      // so we use a sentinel of 0,0 which is not a real Quebec location and the map will skip it
-      // visually anyway. But for the autocomplete it'll still work.
-      // Actually: better to use null coords and accept that this entry won't appear in /api/institutions
-      // (since we filter null lat/lng there). The frontend join.html would not see it in autocomplete,
-      // but since members type "Travailleur autonome" freely it falls through to the "not in catalog"
-      // path which is fine.
       await createInstitution({
         name,
         address: '',
@@ -168,10 +229,10 @@ module.exports = async function handler(req, res) {
         longitude: null,
         statut: 'Validée',
       });
-      return res.status(200).json({ ok: true, action: 'add-no-institution', created: true });
+      return res.status(200).json({ ok: true, action, created: true });
     }
 
-    return res.status(400).json({ error: 'Unknown action. Use action=preview|rename|archive-unused|add-no-institution' });
+    return res.status(400).json({ error: 'Unknown action. Use: preview|rename|archive-unused|add-no-institution|restore-archived|create-new|final-pass' });
   } catch (err) {
     console.error('cleanup-institutions error:', err);
     return res.status(500).json({ error: 'Failed', message: err.message });
