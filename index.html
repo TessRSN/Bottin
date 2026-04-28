@@ -964,6 +964,18 @@ function displayName(m) {
     if (!n) return esc(p);
     return `${esc(p)} ${esc(n.toUpperCase())}`;
 }
+// Translate a member's "type" (stored in French in Notion: Régulier,
+// Étudiant, Partenaire) to the active language. Used on cards, table,
+// and map popup so the type label matches the current UI language.
+function translateType(type) {
+    if (!type) return '';
+    if (currentLang === 'fr') return type;
+    const t = type.toLowerCase();
+    if (t.includes('régulier') || t.includes('regulier')) return 'Regular';
+    if (t.includes('étudiant') || t.includes('etudiant')) return 'Student';
+    if (t.includes('partenaire')) return 'Partner';
+    return type;
+}
 
 function renderCards() {
     const el=document.getElementById('cardsView'), items=pgItems();
@@ -1001,7 +1013,7 @@ function renderCards() {
         if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${t('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
         return `<div class="member-card ${cc}${pendingClass}">
-            <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
+            <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
             ${badgesHtml}
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||t('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
@@ -1034,7 +1046,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -1137,7 +1149,7 @@ function showMemberPopup(name) {
     modal.appendChild(closeBtn);
     const content = document.createElement('div');
     content.innerHTML = [
-        `<div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(m.type || 'N/A')}</span></div>`,
+        `<div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span></div>`,
         `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || t('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
@@ -1397,7 +1409,7 @@ function renderMap() {
         });
         // Build member names list for popup
         // No artificial slice — show all members with scroll if needed
-        const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
+        const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span></div>`).join('');
         marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
     });
