@@ -27,6 +27,7 @@
   label { display:block; font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.03em; }
   input, textarea, select { width:100%; padding:.55rem .75rem; border:1.5px solid var(--border); border-radius:var(--radius); font-size:.9rem; background:var(--card); color:var(--text); outline:none; transition:border .2s; }
   input:focus, textarea:focus, select:focus { border-color:var(--accent); }
+  input[readonly] { background:var(--bg); color:var(--muted); cursor:not-allowed; }
   textarea { resize:vertical; min-height:80px; }
   .checkbox-group { display:flex; flex-wrap:wrap; gap:.5rem; }
   .chip { display:inline-flex; align-items:center; gap:.3rem; padding:.35rem .75rem; border-radius:2rem; font-size:.8rem; border:1.5px solid var(--border); cursor:pointer; transition:all .15s; user-select:none; }
@@ -88,7 +89,11 @@
       <div class="field"><label id="l_prenom">Prénom<span class="required-mark">*</span></label><input id="f_prenom" required></div>
       <div class="field"><label id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
     </div>
-    <div class="field"><label id="l_email">Courriel principal<span class="required-mark">*</span></label><input id="f_email" type="email" required></div>
+    <div class="field">
+      <label id="l_email">Courriel principal<span class="required-mark">*</span></label>
+      <input id="f_email" type="email" required readonly>
+      <div class="field-hint" id="h_email"></div>
+    </div>
     <div class="field"><label id="l_email2">Courriel secondaire</label><input id="f_email2" type="email"></div>
     <div class="field"><label id="l_institution">Institution / Organisation<span class="required-mark">*</span></label><input id="f_institution" required></div>
     <div class="field"><label id="l_statut">Statut actuel<span class="required-mark">*</span></label><input id="f_statut" required></div>
@@ -162,7 +167,8 @@ function t(key) {
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', lang:'EN',
       msg_success:'Profil mis à jour ! Vos modifications seront visibles après approbation.',
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
-      expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien' },
+      expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
+      h_email_before:'Pour modifier ce courriel, contactez-nous à ', h_email_after:'.' },
     en: { title:'Update my profile', subtitle:'Only modify the fields you want to update.',
       s_identity:'Identity', s_research:'Research & expertise', s_axes:'Axes, principles & action fields', s_links:'Links',
       l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
@@ -174,7 +180,8 @@ function t(key) {
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', lang:'FR',
       msg_success:'Profile updated! Changes will be visible after approval.',
       msg_error:'Error saving profile.', expired_title:'Link expired',
-      expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link' }
+      expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
+      h_email_before:'To change this email, please contact us at ', h_email_after:'.' }
   };
   return (map[lang] || map.fr)[key] || key;
 }
@@ -187,6 +194,18 @@ function applyI18n() {
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+
+  // Hint sous le champ email principal: "Pour modifier ce courriel, contactez-nous a [mailto]."
+  const hEmail = document.getElementById('h_email');
+  if (hEmail) {
+    while (hEmail.firstChild) hEmail.removeChild(hEmail.firstChild);
+    hEmail.appendChild(document.createTextNode(t('h_email_before')));
+    const a = document.createElement('a');
+    a.href = 'mailto:rsn.gestion@rimuhc.ca';
+    a.textContent = 'rsn.gestion@rimuhc.ca';
+    hEmail.appendChild(a);
+    hEmail.appendChild(document.createTextNode(t('h_email_after')));
+  }
 }
 
 function toggleLang() {
