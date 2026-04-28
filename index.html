@@ -1396,9 +1396,9 @@ function renderMap() {
             weight: 1.5, opacity: 0.9, fillOpacity: 0.6
         });
         // Build member names list for popup
-        const namesList = data.members.slice(0, 15).map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
-        const moreNames = n > 15 ? `<div style="font-size:0.72rem;color:var(--rsn-muted);margin-top:2px;">+ ${n-15} ${t('map_members')}…</div>` : '';
-        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:180px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}${moreNames}</div>`, { maxWidth: 300 });
+        // No artificial slice — show all members with scroll if needed
+        const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
+        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
     });
     map.addLayer(clusterGroup);
