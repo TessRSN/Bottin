@@ -215,6 +215,68 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: results.failed === 0, action: 'create-new', ...results });
     }
 
+    if (action === 'finalize-coords') {
+      // Update existing institutions with their newly-discovered coords,
+      // and recreate the 3 fiches catalogue archivees par erreur.
+      const all = await getAllInstitutions();
+      const byName = {};
+      for (const i of all) byName[i.name] = i;
+
+      const COORDS_UPDATES = [
+        { name: 'Solution Moveck inc.', lat: 46.8135, lng: -71.2263 },
+        { name: 'StatSciences Inc.', lat: 45.3517, lng: -73.9030 },
+        { name: 'Strataide', lat: 45.5052, lng: -73.5728 },
+        { name: 'Universus Technologies', lat: 45.4983, lng: -73.5588 },
+        { name: 'COGEP inc', lat: 46.8393, lng: -71.2826 },
+        { name: "Pas d'institution (travailleur autonome)", lat: 45.5017, lng: -73.5673 },
+      ];
+
+      const TO_RECREATE = [
+        { name: 'CRCHU de Québec - Université Laval', lat: 46.7660, lng: -71.2770 },
+        { name: "École d'optométrie Université de Montréal", lat: 45.5017, lng: -73.6162 },
+        { name: 'Health Technology Assessment Unit of the MUHC - McGill University Health Center', lat: 45.4728, lng: -73.6012 },
+      ];
+
+      const results = { updated: 0, created: 0, skipped: 0, failed: 0, errors: [] };
+
+      for (const u of COORDS_UPDATES) {
+        const inst = byName[u.name];
+        if (!inst) { results.skipped++; continue; }
+        try {
+          await notion().pages.update({
+            page_id: inst.id,
+            properties: {
+              [INST_PROP.latitude]: { number: u.lat },
+              [INST_PROP.longitude]: { number: u.lng },
+            },
+          });
+          results.updated++;
+        } catch (err) {
+          results.failed++;
+          results.errors.push({ name: u.name, error: err.message });
+        }
+      }
+
+      for (const c of TO_RECREATE) {
+        if (byName[c.name]) { results.skipped++; continue; }
+        try {
+          await createInstitution({
+            name: c.name,
+            address: '',
+            latitude: c.lat,
+            longitude: c.lng,
+            statut: 'Validée',
+          });
+          results.created++;
+        } catch (err) {
+          results.failed++;
+          results.errors.push({ name: c.name, error: err.message });
+        }
+      }
+
+      return res.status(200).json({ ok: results.failed === 0, action: 'finalize-coords', ...results });
+    }
+
     if (action === 'add-no-institution') {
       const name = "Pas d'institution (travailleur autonome)";
       const all = await getAllInstitutions();
