@@ -6,8 +6,206 @@
  * Called by Vercel cron daily or on-demand
  */
 const crypto = require('crypto');
-const { getAllMembers, markAcceptanceEmailSent, CSV_COL } = require('../lib/notion');
-const { sendAcceptanceEmail } = require('../lib/email');
+const {
+  getAllMembers, markAcceptanceEmailSent, setMemberCheckbox, archiveMemberPage,
+  CSV_COL,
+} = require('../lib/notion');
+const {
+  sendAcceptanceEmail,
+  sendRenewalReminder60j, sendRenewalReminder30j,
+  sendArchiveNotification, sendAdminRetentionRecap,
+} = require('../lib/email');
+const { signRenewalToken } = require('../lib/token');
+
+// ─── RETENTION CRON ────────────────────────────────────────────────
+// 60 days before renewal → email 1 + flag emailRenouv60jEnvoye
+// 30 days before renewal → email 2 + flag emailRenouv30jEnvoye
+// Day J (or after)        → archive page + email 4 + flag emailArchivageEnvoye
+// Daily admin recap        → list of fiches that will be archived within 7 days
+//
+// Three safety locks (env vars):
+//   RETENTION_EMAILS_ENABLED       must be "true" (default: dry-run, logs only)
+//   RETENTION_EMAILS_TEST_RECIPIENTS  if set, only these emails actually receive
+//   RETENTION_EMAILS_DAILY_LIMIT   max emails per cron run (default 30)
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysBetween(fromISO, toISO) {
+  const a = new Date(fromISO + 'T00:00:00Z');
+  const b = new Date(toISO + 'T00:00:00Z');
+  return Math.round((b - a) / 86400000);
+}
+function fullName(m) {
+  return `${(m.prenom || '').trim()} ${(m.nom || '').trim()}`.trim() || 'Membre';
+}
+
+async function runRetentionCron(allMembers) {
+  const enabled = process.env.RETENTION_EMAILS_ENABLED === 'true';
+  const dailyLimit = parseInt(process.env.RETENTION_EMAILS_DAILY_LIMIT || '30', 10);
+  const testRecipientsEnv = (process.env.RETENTION_EMAILS_TEST_RECIPIENTS || '').trim();
+  const testRecipients = testRecipientsEnv ? testRecipientsEnv.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
+  const adminRecipients = (process.env.ADMIN_NOTIFICATION_RECIPIENTS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const today = todayISO();
+  const baseUrl = process.env.BASE_URL || 'https://bottin-gamma.vercel.app';
+
+  const stats = {
+    enabled,
+    dailyLimit,
+    testRecipients: testRecipients || null,
+    today,
+    candidates60j: 0,
+    candidates30j: 0,
+    candidatesArchive: 0,
+    sent60j: 0,
+    sent30j: 0,
+    sentArchive: 0,
+    archivedPages: 0,
+    skippedTestList: 0,
+    upcoming7d: 0,
+    failed: 0,
+    errors: [],
+  };
+
+  // Only consider real members (with valid email + renewal date + not already archived).
+  const eligible = allMembers.filter(m =>
+    m.email && m.email.includes('@') &&
+    m.dateRenouvellement &&
+    m.workflow !== 'Refusé'
+  );
+
+  // Categorize each eligible member by what action is due TODAY.
+  const todoArchive = [];
+  const todo30j = [];
+  const todo60j = [];
+  const upcoming7d = [];
+
+  for (const m of eligible) {
+    const delta = daysBetween(today, m.dateRenouvellement);
+    if (delta <= 0 && !m.emailArchivageEnvoye) {
+      todoArchive.push(m);
+    } else if (delta > 0 && delta <= 30 && !m.emailRenouv30jEnvoye) {
+      todo30j.push(m);
+    } else if (delta > 30 && delta <= 60 && !m.emailRenouv60jEnvoye) {
+      todo60j.push(m);
+    }
+    if (delta > 0 && delta <= 7) upcoming7d.push(m);
+  }
+
+  stats.candidatesArchive = todoArchive.length;
+  stats.candidates30j = todo30j.length;
+  stats.candidates60j = todo60j.length;
+  stats.upcoming7d = upcoming7d.length;
+
+  // Dry-run: log only, don't send anything
+  if (!enabled) {
+    console.log('[retention] DISABLED (RETENTION_EMAILS_ENABLED ≠ "true")');
+    console.log(`[retention] Would have processed: archive=${todoArchive.length} 30j=${todo30j.length} 60j=${todo60j.length} upcoming7d=${upcoming7d.length}`);
+    return stats;
+  }
+
+  // Helper: should we actually send to this email?
+  function shouldSendTo(email) {
+    if (!testRecipients) return true; // no whitelist → send to everyone
+    return testRecipients.includes(email.toLowerCase().trim());
+  }
+
+  // Order matters: archive first (most urgent), then 30j, then 60j.
+  // Each respects the daily limit shared across all categories.
+  let budget = dailyLimit;
+
+  // Archive (oldest expirations first to be deterministic)
+  todoArchive.sort((a, b) => a.dateRenouvellement.localeCompare(b.dateRenouvellement));
+  for (const m of todoArchive) {
+    if (budget <= 0) break;
+    try {
+      if (shouldSendTo(m.email)) {
+        await sendArchiveNotification(m.email, m.prenom || fullName(m));
+        stats.sentArchive++;
+      } else {
+        stats.skippedTestList++;
+      }
+      // Even in test mode, we mark the checkbox AND archive the page.
+      // (The test mode only restricts who actually receives the email; the
+      //  retention logic itself runs through.)
+      await setMemberCheckbox(m.id, 'emailArchivageEnvoye', true);
+      await archiveMemberPage(m.id);
+      stats.archivedPages++;
+      budget--;
+      console.log(`[retention] Archived ${m.email} (renouv ${m.dateRenouvellement})`);
+    } catch (err) {
+      stats.failed++;
+      stats.errors.push({ stage: 'archive', email: m.email, error: err.message });
+    }
+  }
+
+  // 30-day reminders
+  todo30j.sort((a, b) => a.dateRenouvellement.localeCompare(b.dateRenouvellement));
+  for (const m of todo30j) {
+    if (budget <= 0) break;
+    try {
+      const token = signRenewalToken(m.id, m.email);
+      const url = `${baseUrl}/renew.html?token=${token}`;
+      if (shouldSendTo(m.email)) {
+        await sendRenewalReminder30j(m.email, m.prenom || fullName(m), m.dateRenouvellement, url);
+        stats.sent30j++;
+      } else {
+        stats.skippedTestList++;
+      }
+      await setMemberCheckbox(m.id, 'emailRenouv30jEnvoye', true);
+      budget--;
+      console.log(`[retention] 30j reminder to ${m.email}`);
+    } catch (err) {
+      stats.failed++;
+      stats.errors.push({ stage: '30j', email: m.email, error: err.message });
+    }
+  }
+
+  // 60-day reminders
+  todo60j.sort((a, b) => a.dateRenouvellement.localeCompare(b.dateRenouvellement));
+  for (const m of todo60j) {
+    if (budget <= 0) break;
+    try {
+      const token = signRenewalToken(m.id, m.email);
+      const url = `${baseUrl}/renew.html?token=${token}`;
+      if (shouldSendTo(m.email)) {
+        await sendRenewalReminder60j(m.email, m.prenom || fullName(m), m.dateRenouvellement, url);
+        stats.sent60j++;
+      } else {
+        stats.skippedTestList++;
+      }
+      await setMemberCheckbox(m.id, 'emailRenouv60jEnvoye', true);
+      budget--;
+      console.log(`[retention] 60j reminder to ${m.email}`);
+    } catch (err) {
+      stats.failed++;
+      stats.errors.push({ stage: '60j', email: m.email, error: err.message });
+    }
+  }
+
+  // Daily admin recap (only if there are upcoming archivals AND we have admin recipients)
+  if (upcoming7d.length > 0 && adminRecipients.length > 0) {
+    try {
+      // Safe-guard: in test mode, send admin recap only to test recipients
+      const recipients = testRecipients
+        ? adminRecipients.filter(r => testRecipients.includes(r.toLowerCase()))
+        : adminRecipients;
+      if (recipients.length > 0) {
+        const list = upcoming7d.map(m => ({ name: fullName(m), email: m.email, dateRenouvellement: m.dateRenouvellement }));
+        await sendAdminRetentionRecap(recipients, list);
+        console.log(`[retention] Admin recap sent to ${recipients.join(', ')} (${list.length} fiches)`);
+      }
+    } catch (err) {
+      stats.failed++;
+      stats.errors.push({ stage: 'admin-recap', error: err.message });
+    }
+  }
+
+  console.log(`[retention] Done. Sent: archive=${stats.sentArchive} 30j=${stats.sent30j} 60j=${stats.sent60j} | Archived: ${stats.archivedPages} | Test-skipped: ${stats.skippedTestList} | Failed: ${stats.failed}`);
+  return stats;
+}
+
+module.exports.runRetentionCron = runRetentionCron;
 
 // Vercel serverless config
 module.exports.config = { maxDuration: 60 };
@@ -185,6 +383,15 @@ module.exports = async function handler(req, res) {
     }
     if (emailsSent > 0 || emailsFailed > 0) {
       console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed`);
+    }
+
+    // Run the membership retention cron (Phase 3, Loi 25).
+    // Reuses the `members` list already fetched above. Wrapped in try/catch so
+    // any failure here doesn't break the CSV response.
+    try {
+      await runRetentionCron(members);
+    } catch (retErr) {
+      console.error('[retention] Top-level error:', retErr.message, retErr.stack);
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');

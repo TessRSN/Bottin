@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSN — Renouveler mon adhésion</title>
+<meta name="robots" content="noindex, nofollow">
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('rsn-theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})();
+</script>
+<style>
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#cbd5e0; --error:#c53030; --success:#38a169; }
+  [data-theme="dark"] { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#60a5fa; --border:#334155; --error:#fca5a5; --success:#86efac; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .container { background:var(--card); border-radius:.75rem; padding:2.5rem 2rem; max-width:480px; width:100%; box-shadow:0 4px 20px rgba(0,0,0,0.08); }
+  h1 { color:var(--primary); margin:0 0 1.25rem; font-size:1.4rem; text-align:center; }
+  p { margin:0 0 1rem; }
+  .info { background:rgba(43,108,176,.08); border-left:3px solid var(--primary); padding:.75rem 1rem; border-radius:.3rem; margin:1.25rem 0; font-size:.9rem; }
+  .info strong { color:var(--primary); }
+  .btn { display:block; width:100%; padding:.85rem 1.5rem; border-radius:.5rem; font-size:1rem; font-weight:600; cursor:pointer; border:none; transition:all .2s; margin-bottom:.5rem; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover:not(:disabled) { opacity:.9; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-secondary { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-secondary:hover { color:var(--text); }
+  .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
+  .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; display:inline-flex; align-items:center; }
+  .theme-toggle svg { width:14px; height:14px; }
+  .hidden { display:none !important; }
+  .state-msg { text-align:center; }
+  .state-msg.success h1 { color:var(--success); }
+  .state-msg.error h1 { color:var(--error); }
+  .icon { font-size:3rem; text-align:center; margin-bottom:1rem; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Theme">
+  <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+
+<div class="container" id="loading">
+  <p style="text-align:center;color:var(--muted)" id="loadingText">Chargement...</p>
+</div>
+
+<div class="container hidden" id="confirmCard">
+  <h1 id="title">Renouveler mon adhésion</h1>
+  <p id="hello">Bonjour <strong id="memberName">…</strong>,</p>
+  <p id="explain">Votre adhésion au RSN arrive à échéance le <strong id="memberExpiry">…</strong>.</p>
+  <div class="info"><span id="confirmHint">En confirmant ci-dessous, votre adhésion sera renouvelée pour 2 ans supplémentaires.</span></div>
+  <button class="btn btn-primary" id="confirmBtn" onclick="confirmRenew()">Confirmer le renouvellement</button>
+  <a href="/" class="btn btn-secondary" style="text-decoration:none;text-align:center" id="cancelBtn">Annuler</a>
+</div>
+
+<div class="container hidden state-msg success" id="successCard">
+  <div class="icon">✅</div>
+  <h1 id="successTitle">Adhésion renouvelée !</h1>
+  <p id="successMsg">Merci. Votre adhésion est renouvelée jusqu'au <strong id="newExpiry">…</strong>. Un courriel de confirmation vient de vous être envoyé.</p>
+  <a href="/" class="btn btn-primary" style="text-decoration:none;text-align:center" id="backBtn">Retour au bottin</a>
+</div>
+
+<div class="container hidden state-msg error" id="errorCard">
+  <div class="icon">⚠️</div>
+  <h1 id="errorTitle">Lien invalide ou expiré</h1>
+  <p id="errorMsg">Ce lien de renouvellement n'est pas valide. Si vous pensez qu'il s'agit d'une erreur, contactez <a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a>.</p>
+  <a href="/" class="btn btn-secondary" style="text-decoration:none;text-align:center" id="backBtn2">Retour au bottin</a>
+</div>
+
+<script>
+var lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
+var I18N = {
+  fr: {
+    loadingText: 'Chargement...',
+    title: 'Renouveler mon adhésion',
+    hello: 'Bonjour ',
+    explain: 'Votre adhésion au RSN arrive à échéance le ',
+    confirmHint: 'En confirmant ci-dessous, votre adhésion sera renouvelée pour 2 ans supplémentaires.',
+    confirmBtn: 'Confirmer le renouvellement',
+    confirming: 'Renouvellement en cours...',
+    cancelBtn: 'Annuler',
+    successTitle: 'Adhésion renouvelée !',
+    successMsgBefore: "Merci. Votre adhésion est renouvelée jusqu'au ",
+    successMsgAfter: '. Un courriel de confirmation vient de vous être envoyé.',
+    backBtn: 'Retour au bottin',
+    errorTitle: 'Lien invalide ou expiré',
+    errorMsg: "Ce lien de renouvellement n'est pas valide. Si vous pensez qu'il s'agit d'une erreur, contactez ",
+    langBtn: 'EN',
+  },
+  en: {
+    loadingText: 'Loading...',
+    title: 'Renew my membership',
+    hello: 'Hello ',
+    explain: 'Your RSN membership expires on ',
+    confirmHint: 'By confirming below, your membership will be renewed for another 2 years.',
+    confirmBtn: 'Confirm renewal',
+    confirming: 'Renewing...',
+    cancelBtn: 'Cancel',
+    successTitle: 'Membership renewed!',
+    successMsgBefore: 'Thank you. Your membership is renewed until ',
+    successMsgAfter: '. A confirmation email has just been sent to you.',
+    backBtn: 'Back to the directory',
+    errorTitle: 'Invalid or expired link',
+    errorMsg: 'This renewal link is not valid. If you think this is a mistake, please contact ',
+    langBtn: 'FR',
+  }
+};
+function t(key) { return (I18N[lang] || I18N.fr)[key] || key; }
+
+function frDate(iso) {
+  var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso || '';
+  return parseInt(m[3], 10) + ' ' + months[parseInt(m[2], 10) - 1] + ' ' + m[1];
+}
+function enDate(iso) {
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso || '';
+  return months[parseInt(m[2], 10) - 1] + ' ' + parseInt(m[3], 10) + ', ' + m[1];
+}
+function fmtDate(iso) { return lang === 'fr' ? frDate(iso) : enDate(iso); }
+
+function applyI18n() {
+  document.getElementById('loadingText').textContent = t('loadingText');
+  document.getElementById('title').textContent = t('title');
+  document.getElementById('confirmHint').textContent = t('confirmHint');
+  document.getElementById('confirmBtn').textContent = t('confirmBtn');
+  document.getElementById('cancelBtn').textContent = t('cancelBtn');
+  document.getElementById('successTitle').textContent = t('successTitle');
+  document.getElementById('backBtn').textContent = t('backBtn');
+  document.getElementById('backBtn2').textContent = t('backBtn');
+  document.getElementById('errorTitle').textContent = t('errorTitle');
+  document.getElementById('langBtn').textContent = t('langBtn');
+  // Hello + explain need re-rendering when lang changes (they hold dynamic data)
+  if (memberData) renderConfirm();
+  if (newRenewalDate) renderSuccess();
+  // Error message (with mailto link)
+  var errMsg = document.getElementById('errorMsg');
+  while (errMsg.firstChild) errMsg.removeChild(errMsg.firstChild);
+  errMsg.appendChild(document.createTextNode(t('errorMsg')));
+  var a = document.createElement('a');
+  a.href = 'mailto:rsn.gestion@rimuhc.ca';
+  a.textContent = 'rsn.gestion@rimuhc.ca';
+  errMsg.appendChild(a);
+  errMsg.appendChild(document.createTextNode('.'));
+}
+function toggleLang() { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('rsn-lang', lang); } catch(e) {} document.documentElement.setAttribute('lang', lang); applyI18n(); }
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') || 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('rsn-theme', next); } catch(e) {}
+  updateThemeIcons();
+}
+function updateThemeIcons() {
+  var theme = document.documentElement.getAttribute('data-theme') || 'light';
+  var sun = document.getElementById('iconSun'), moon = document.getElementById('iconMoon');
+  if (theme === 'dark') { sun.classList.add('hidden'); moon.classList.remove('hidden'); }
+  else { sun.classList.remove('hidden'); moon.classList.add('hidden'); }
+}
+
+var memberData = null;
+var newRenewalDate = null;
+
+function showCard(id) {
+  ['loading','confirmCard','successCard','errorCard'].forEach(function(c) {
+    document.getElementById(c).classList.toggle('hidden', c !== id);
+  });
+}
+
+function renderConfirm() {
+  document.getElementById('memberName').textContent = memberData.name || 'Membre';
+  document.getElementById('memberExpiry').textContent = fmtDate(memberData.dateRenouvellement);
+  // Update hello + explain prefixes (they're static text)
+  document.getElementById('hello').firstChild.textContent = t('hello');
+  document.getElementById('explain').firstChild.textContent = t('explain');
+}
+function renderSuccess() {
+  var msg = document.getElementById('successMsg');
+  while (msg.firstChild) msg.removeChild(msg.firstChild);
+  msg.appendChild(document.createTextNode(t('successMsgBefore')));
+  var b = document.createElement('strong');
+  b.textContent = fmtDate(newRenewalDate);
+  msg.appendChild(b);
+  msg.appendChild(document.createTextNode(t('successMsgAfter')));
+}
+
+function getToken() {
+  var p = new URLSearchParams(window.location.search);
+  return p.get('token') || '';
+}
+
+function confirmRenew() {
+  var btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.textContent = t('confirming');
+  var token = getToken();
+  fetch('/api/renew?token=' + encodeURIComponent(token), { method: 'POST' })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+    .then(function(res) {
+      if (!res.ok || !res.j.ok) throw new Error(res.j.error || 'Server error');
+      newRenewalDate = res.j.dateRenouvellement;
+      renderSuccess();
+      showCard('successCard');
+    })
+    .catch(function(err) {
+      console.error(err);
+      showCard('errorCard');
+    });
+}
+
+(function init() {
+  applyI18n();
+  updateThemeIcons();
+  document.documentElement.setAttribute('lang', lang);
+
+  var token = getToken();
+  if (!token) { showCard('errorCard'); return; }
+  fetch('/api/renew?token=' + encodeURIComponent(token), { method: 'GET' })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+    .then(function(res) {
+      if (!res.ok || !res.j.ok) throw new Error(res.j.error || 'Invalid token');
+      memberData = res.j;
+      renderConfirm();
+      showCard('confirmCard');
+    })
+    .catch(function() { showCard('errorCard'); });
+})();
+</script>
+</body>
+</html>
