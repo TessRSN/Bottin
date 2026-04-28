@@ -22,3 +22,4 @@ generate_qr_flyers.py
 
 # Local tooling
 .claude/
+data/forgotten-members.js
