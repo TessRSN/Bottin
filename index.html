@@ -953,6 +953,17 @@ function render() {
 function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function trunc(s,n){ if(!s||s.length<=n)return s; return s.slice(0,n)+'…'; }
+// Display "Prénom NOM" with last name in uppercase to distinguish from
+// first name (academic French convention). Falls back to m.name if
+// prenom/nom aren't set individually.
+function displayName(m) {
+    const p = (m.prenom || '').trim();
+    const n = (m.nom || '').trim();
+    if (!p && !n) return esc(m.name || '');
+    if (!p) return `<strong>${esc(n.toUpperCase())}</strong>`;
+    if (!n) return esc(p);
+    return `${esc(p)} <strong>${esc(n.toUpperCase())}</strong>`;
+}
 
 function renderCards() {
     const el=document.getElementById('cardsView'), items=pgItems();
@@ -990,7 +1001,7 @@ function renderCards() {
         if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${t('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
         return `<div class="member-card ${cc}${pendingClass}">
-            <div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
+            <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(m.type||'N/A')}</span></div>
             ${badgesHtml}
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||t('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
@@ -1023,7 +1034,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td><strong>${esc(m.name)}</strong>${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(m.type||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -1126,7 +1137,7 @@ function showMemberPopup(name) {
     modal.appendChild(closeBtn);
     const content = document.createElement('div');
     content.innerHTML = [
-        `<div class="card-header"><div class="card-name">${esc(m.name)}</div><span class="card-tag ${tc}">${esc(m.type || 'N/A')}</span></div>`,
+        `<div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(m.type || 'N/A')}</span></div>`,
         `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || t('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
@@ -1385,7 +1396,7 @@ function renderMap() {
             weight: 1.5, opacity: 0.9, fillOpacity: 0.6
         });
         // Build member names list for popup
-        const namesList = data.members.slice(0, 15).map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${esc(m.name)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
+        const namesList = data.members.slice(0, 15).map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(m.type||'')}</span></div>`).join('');
         const moreNames = n > 15 ? `<div style="font-size:0.72rem;color:var(--rsn-muted);margin-top:2px;">+ ${n-15} ${t('map_members')}…</div>` : '';
         marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:180px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}${moreNames}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
