@@ -284,6 +284,9 @@ async function fetchProfile(token) {
 }
 
 async function init() {
+  // Apply translations immediately (langue lue depuis URL ou localStorage au top du script)
+  applyI18n();
+  updateThemeIcons();
   token = new URLSearchParams(location.search).get('token');
   if (!token) { showExpired(); return; }
   document.getElementById('loading').style.display = 'block';
