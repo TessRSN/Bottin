@@ -960,9 +960,9 @@ function displayName(m) {
     const p = (m.prenom || '').trim();
     const n = (m.nom || '').trim();
     if (!p && !n) return esc(m.name || '');
-    if (!p) return `<strong>${esc(n.toUpperCase())}</strong>`;
+    if (!p) return esc(n.toUpperCase());
     if (!n) return esc(p);
-    return `${esc(p)} <strong>${esc(n.toUpperCase())}</strong>`;
+    return `${esc(p)} ${esc(n.toUpperCase())}`;
 }
 
 function renderCards() {
