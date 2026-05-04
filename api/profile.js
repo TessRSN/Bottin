@@ -57,6 +57,15 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'No editable fields provided' });
       }
 
+      // Phase 2e (2026-05-04): regle metier — droit de vote = type Regulier.
+      // Si le type d'adhesion est dans la requete, on calcule droitVote
+      // cote serveur (le client ne peut pas l'envoyer directement, il
+      // n'est pas dans EDITABLE_FIELDS). Cela ajuste automatiquement quand
+      // un membre passe Etudiant -> Regulier ou inverse.
+      if (data.type !== undefined) {
+        data.droitVote = (data.type === 'Régulier');
+      }
+
       // Phase 2a: handle institution Relation sync + new institutions creation.
       // Same logic as api/join.js, factorized only for the institution part
       // (profile already exists so no createMember).

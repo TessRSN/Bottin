@@ -18,6 +18,12 @@
  *   mode=fix-fields-apply    : applique les corrections planifiees dans Notion.
  *                               Idempotent : rerunable sans effet de bord
  *                               (skip si la valeur est deja a jour).
+ *   mode=fix-droit-vote-dry-run / fix-droit-vote-apply :
+ *                               regle metier 'seuls les Reguliers ont le
+ *                               droit de vote'. Pour chaque membre, compare
+ *                               la valeur actuelle de droitVote au type
+ *                               d'adhesion ; planifie/applique le fix si
+ *                               necessaire. Idempotent.
  *   mode=full-data           : retourne les champs essentiels de tous les
  *                               membres pour cross-check local (CSV).
  *
@@ -394,6 +400,64 @@ async function fixFieldsReport(dryRun) {
   return { mode: 'fix-fields-apply', totalPlanned: planned.length, counts, appliedPages: applied.length, failedPages: failed.length, failed };
 }
 
+// ─── Droit de vote sync (mode=fix-droit-vote-*) ───
+// Regle metier (decision Tess 2026-05-04) :
+//   type 'Regulier'    → droitVote = true
+//   type Etudiant/Partenaire/autre → droitVote = false
+// Le droit de vote est ajuste automatiquement a chaque update via join/profile,
+// mais ce mode permet de redresser la base existante en une passe.
+async function fixDroitVoteReport(dryRun) {
+  const all = await getAllMembers();
+  const planned = [];
+
+  for (const m of all) {
+    const isEmpty = !m.prenom && !m.nom && !m.email;
+    if (isEmpty) continue;
+
+    const expected = (m.type === 'Régulier');
+    const current = !!m.droitVote;
+    if (current === expected) continue;
+
+    planned.push({
+      id: m.id,
+      prenom: m.prenom, nom: m.nom, email: m.email,
+      type: m.type || '',
+      before: current,
+      after: expected,
+    });
+  }
+
+  const counts = {
+    toCheck: planned.filter(p => p.after === true).length,
+    toUncheck: planned.filter(p => p.after === false).length,
+  };
+
+  if (dryRun) {
+    return { mode: 'fix-droit-vote-dry-run', total: planned.length, counts, planned };
+  }
+
+  const applied = [], failed = [];
+  for (const p of planned) {
+    try {
+      await notion().pages.update({
+        page_id: p.id,
+        properties: { [PROP.droitVote]: { checkbox: p.after } },
+      });
+      applied.push(p);
+    } catch (err) {
+      failed.push({ ...p, error: err.message });
+    }
+  }
+  return {
+    mode: 'fix-droit-vote-apply',
+    totalPlanned: planned.length,
+    counts,
+    appliedCount: applied.length,
+    failedCount: failed.length,
+    failed,
+  };
+}
+
 // ─── Field audit (mode=field-audit) ───
 async function fieldAuditReport() {
   const all = await getAllMembers();
@@ -539,6 +603,16 @@ module.exports = async function handler(req, res) {
 
     if (mode === 'fix-fields-apply') {
       const report = await fixFieldsReport(false);
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'fix-droit-vote-dry-run') {
+      const report = await fixDroitVoteReport(true);
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'fix-droit-vote-apply') {
+      const report = await fixDroitVoteReport(false);
       return res.status(200).json({ ok: true, ...report });
     }
 

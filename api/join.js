@@ -54,6 +54,7 @@ module.exports = async function handler(req, res) {
 
     // Create the member (returns the created Notion page so we can link
     // the institution Relation afterwards)
+    const cleanType = type.trim();
     const newMemberPage = await createMember({
       prenom: prenom.trim(),
       nom: nom.trim(),
@@ -61,7 +62,11 @@ module.exports = async function handler(req, res) {
       email2: (body.email2 || '').toLowerCase().trim() || null,
       statut: statut.trim(),
       institution: institution.trim(),
-      type: type.trim(),
+      type: cleanType,
+      // Phase 2e (2026-05-04): regle metier — seuls les membres reguliers
+      // ont automatiquement le droit de vote a la creation. L'admin peut
+      // ensuite ajuster manuellement dans Notion en cas de besoin.
+      droitVote: cleanType === 'Régulier',
       themes: (themes || '').trim(),
       cv: body.cv || null,
       orcid: body.orcid || null,
