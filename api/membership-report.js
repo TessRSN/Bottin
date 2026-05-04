@@ -81,7 +81,10 @@ const CHAMPS_OPTIONS = [
   'Renforcement des capacités',
 ];
 const CONSENT_OPTIONS = ['Oui', 'Non', ''];
-const EVALUATEUR_OPTIONS = ['Oui', 'Non', ''];
+// 'Incertain' est ajoute a la liste de reference suite a la decision avec
+// Tess (2026-05-04) — c'est une reponse legitime que l'admin donne aux
+// nouveaux membres et qui doit donc etre une valeur valide.
+const EVALUATEUR_OPTIONS = ['Oui', 'Non', 'Incertain', ''];
 
 function expectedRenewal(dateDebutISO) {
   if (!dateDebutISO) return null;
