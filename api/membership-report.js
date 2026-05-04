@@ -41,20 +41,24 @@ function notion() {
   return _notion;
 }
 
-// ─── Reference values (must stay in sync with join.html) ───
+// ─── Reference values (nouvelle taxonomie 14 options, validee 2026-05-04 par Tess) ───
+// Ecriture epicene neutre (sans "X ou Y" binaire), inspiree du FRQ-RGC mais
+// elargie pour couvrir tous les profils du RSN (sante numerique).
+// Les libelles definitifs vivent dans join.html (a aligner en Phase 2).
 const STATUT_OPTIONS = [
-  'Chercheur universitaire',
-  'Chercheur clinicien universitaire',
-  'Chercheur de collège',
-  'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)',
-  'Professionnel de recherche',
+  'Personne en recherche universitaire',
+  'Personne en recherche clinique universitaire',
+  'Personne en recherche au collégial',
+  'Autres statuts en recherche',
   'Personne aux études au 1er cycle',
   'Personne aux études à la maîtrise',
   'Personne aux études au doctorat',
-  'Stagiaire postdoctoral',
-  'Direction ou gestion',
-  "Membre de l'industrie",
-  'Professionnel de la santé',
+  'Personne en stage postdoctoral',
+  'Personnel de recherche',
+  'Personnel de la santé',
+  'Direction, gestion ou coordination',
+  'Personne en milieu industriel ou gouvernemental',
+  'Personne partenaire citoyenne',
   'Autre',
 ];
 const TYPE_OPTIONS = ['Régulier', 'Étudiant', 'Partenaire'];
@@ -210,59 +214,99 @@ function isValidUrl(s) {
 }
 
 // ─── Field correction mappings (mode=fix-fields) ───
-// Validated by Tess on 2026-05-04 from the field-audit report.
-const STATUT_FALLBACK_AUTRES = STATUT_OPTIONS.find(s => s.startsWith('Autres statuts'));
+// Validee 2026-05-04 par Tess. Cible: nouvelle taxonomie 14 options
+// epicene neutre (cf. STATUT_OPTIONS plus haut).
+//
+// Convention pour la cat. 14 "Autre" : on prefixe la valeur par "Autre — "
+// suivi de la precision originale pour conserver l'info qualitative.
+// Ex: "Bibliothecaire" -> "Autre — Bibliothecaire"
+//
+// Ces valeurs cibles, une fois appliquees, deviendront toutes valides
+// vis-a-vis du nouveau STATUT_OPTIONS (au moment de la conversion en
+// select Notion, on devra rajouter une option "Autre" generique et
+// migrer le suffixe vers un champ de precision separe).
 const STATUT_FIXES = {
-  'Chercheur ou chercheuse universitaire': 'Chercheur universitaire',
+  // ─── Anciennes valeurs "valides" (forme masculine seule) → nouvelle forme neutre
+  'Chercheur universitaire': 'Personne en recherche universitaire',
+  'Chercheur clinicien universitaire': 'Personne en recherche clinique universitaire',
+  'Chercheur de collège': 'Personne en recherche au collégial',
+  'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)': 'Autres statuts en recherche',
+  'Professionnel de recherche': 'Personnel de recherche',
+  'Stagiaire postdoctoral': 'Personne en stage postdoctoral',
+  'Direction ou gestion': 'Direction, gestion ou coordination',
+  "Membre de l'industrie": 'Personne en milieu industriel ou gouvernemental',
+  'Professionnel de la santé': 'Personnel de la santé',
+
+  // ─── Anciennes valeurs "epicene avec X ou Y" → nouvelle forme neutre
+  'Chercheur ou chercheuse universitaire': 'Personne en recherche universitaire',
+  'Chercheur universitaire clinicien ou chercheuse universitaire clinicienne': 'Personne en recherche clinique universitaire',
+  'Chercheur ou chercheuse de collège': 'Personne en recherche au collégial',
+  'Professionnel·le de la recherche': 'Personnel de recherche',
+  'Professionnel·le de la santé': 'Personnel de la santé',
+  'Stagiaire postdoctoral·e': 'Personne en stage postdoctoral',
+  'Gestionnaire ou cadre': 'Direction, gestion ou coordination',
+
+  // ─── Personnes aux etudes (point median ou termes alternatifs) → forme neutre
   'Etudiant·e au doctorat': 'Personne aux études au doctorat',
   'Étudiant·e à la maîtrise': 'Personne aux études à la maîtrise',
-  'Professionnel·le de la recherche': 'Professionnel de recherche',
   'Étudiant·e au baccalauréat': 'Personne aux études au 1er cycle',
-  'Gestionnaire ou cadre': 'Direction ou gestion',
-  'Professionnel·le de la santé': 'Professionnel de la santé',
-  'Chercheur universitaire clinicien ou chercheuse universitaire clinicienne': 'Chercheur clinicien universitaire',
-  'Autres statuts de recherche': STATUT_FALLBACK_AUTRES,
-  "Autres statuts de recherche (Chercheur ou chercheuse d’une institution gouvernementale, d'une organisation du secteur gouvernemental ou privé, personne des milieux de pratique, artiste ou contribuant individuel)": STATUT_FALLBACK_AUTRES,
-  'Stagiaire postdoctoral·e': 'Stagiaire postdoctoral',
-  'Chercheur ou chercheuse de collège': 'Chercheur de collège',
   'Étudiant·e à la maîtrise au doctorat': 'Personne aux études au doctorat',
-  'Professeure adjointe': 'Chercheur universitaire',
-  'Professeur': 'Chercheur universitaire',
-  'Professeur adjoint de clinique': 'Chercheur universitaire',
-  'Chercheur ou chercheuse': 'Chercheur universitaire',
-  'Physician, Medical Geneticist at MUHC; Clinician Researcher, Faculty at McGill': 'Chercheur universitaire',
-  'Radiologiste; Professeur titulaire': 'Chercheur universitaire',
+
+  // ─── Profs / chercheur·euses (cas individuels)
+  'Professeure adjointe': 'Personne en recherche universitaire',
+  'Professeur': 'Personne en recherche universitaire',
+  'Professeur adjoint de clinique': 'Personne en recherche universitaire',
+  'Chercheur ou chercheuse': 'Personne en recherche universitaire',
+  // Profil chercheur·euse clinicien·ne → recherche clinique
+  'Physician, Medical Geneticist at MUHC; Clinician Researcher, Faculty at McGill': 'Personne en recherche clinique universitaire',
+  'Radiologiste; Professeur titulaire': 'Personne en recherche clinique universitaire',
+
+  // ─── Etudiant·es niveau medecine / 3e cycle
   'Étudiant en médecine': 'Personne aux études au doctorat',
   'Étudiante au programme de 3è cycle AnÉSOSS': 'Personne aux études au doctorat',
   'Étudiante au doctorat, Département de médecine, Faculté de médecine, Université Laval': 'Personne aux études au doctorat',
   'Enseignant chercheur et à la fois doctorant': 'Personne aux études au doctorat',
   'Medical Student and Researcher': 'Personne aux études au doctorat',
-  'Associé·e de recherche': 'Professionnel de recherche',
-  'Biostatisticien': 'Professionnel de recherche',
-  'Gestionnaire de projet en santé numerique': 'Direction ou gestion',
-  'Professionnel de la santé + Master Student': 'Professionnel de la santé',
-  "Professionnelle de la santé inscrite au DESS en gestion - analyse d'affaires - TI": 'Professionnel de la santé',
-  'Research Associate': STATUT_FALLBACK_AUTRES,
-  'Research staff (Open Science Program Coordinator)': STATUT_FALLBACK_AUTRES,
-  'Resident Physician': STATUT_FALLBACK_AUTRES,
-  'Postgraduate Resident': STATUT_FALLBACK_AUTRES,
-  'Clinical Informatics Specialist': STATUT_FALLBACK_AUTRES,
-  'patiente-partenaire': STATUT_FALLBACK_AUTRES,
-  'Patiente partenaire': STATUT_FALLBACK_AUTRES,
-  'Citoyen partenaire': STATUT_FALLBACK_AUTRES,
-  'Bibliothécaire': STATUT_FALLBACK_AUTRES,
-  'CNIO': STATUT_FALLBACK_AUTRES,
-  'Présidente du Prix Hippocrate': STATUT_FALLBACK_AUTRES,
-  'Coordonnatrice du Pôle': STATUT_FALLBACK_AUTRES,
-  'Coordonnatrice académique numérique de la santé': STATUT_FALLBACK_AUTRES,
-  'Affaires professorales': STATUT_FALLBACK_AUTRES,
-  'Transcriptrice médical': STATUT_FALLBACK_AUTRES,
-  "Analyste d'affaires systemes comptables": STATUT_FALLBACK_AUTRES,
-  'gestion de projets scientifiques': STATUT_FALLBACK_AUTRES,
-  'Member of the RSN gestion team :)': STATUT_FALLBACK_AUTRES,
-  'Chef de programmes santé publique - Direction de Santé Publique': STATUT_FALLBACK_AUTRES,
-  "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": STATUT_FALLBACK_AUTRES,
-  'reconnue par les FRQ ou privé': STATUT_FALLBACK_AUTRES,
+
+  // ─── Personnel de recherche (coord., technique, biostat., associe·e)
+  'Associé·e de recherche': 'Personnel de recherche',
+  'Biostatisticien': 'Personnel de recherche',
+  'Research Associate': 'Personnel de recherche',
+  'Research staff (Open Science Program Coordinator)': 'Personnel de recherche',
+
+  // ─── Personnel de la sante (medecins resident·es, profil sante non-recherche)
+  'Resident Physician': 'Personnel de la santé',
+  'Postgraduate Resident': 'Personnel de la santé',
+  'Clinical Informatics Specialist': 'Personnel de la santé',
+  'Professionnel de la santé + Master Student': 'Personnel de la santé',
+  "Professionnelle de la santé inscrite au DESS en gestion - analyse d'affaires - TI": 'Personnel de la santé',
+
+  // ─── Direction, gestion ou coordination
+  'Gestionnaire de projet en santé numerique': 'Direction, gestion ou coordination',
+  'Coordonnatrice du Pôle': 'Direction, gestion ou coordination',
+  'Coordonnatrice académique numérique de la santé': 'Direction, gestion ou coordination',
+  'gestion de projets scientifiques': 'Direction, gestion ou coordination',
+  'Member of the RSN gestion team :)': 'Direction, gestion ou coordination',
+  'Chef de programmes santé publique - Direction de Santé Publique': 'Direction, gestion ou coordination',
+  'Présidente du Prix Hippocrate': 'Direction, gestion ou coordination',
+  'CNIO': 'Direction, gestion ou coordination',
+
+  // ─── Personnes partenaires citoyennes
+  'patiente-partenaire': 'Personne partenaire citoyenne',
+  'Patiente partenaire': 'Personne partenaire citoyenne',
+  'Citoyen partenaire': 'Personne partenaire citoyenne',
+
+  // ─── Autres statuts en recherche (chercheur·euse hors academie)
+  'Autres statuts de recherche': 'Autres statuts en recherche',
+  "Autres statuts de recherche (Chercheur ou chercheuse d’une institution gouvernementale, d'une organisation du secteur gouvernemental ou privé, personne des milieux de pratique, artiste ou contribuant individuel)": 'Autres statuts en recherche',
+  'reconnue par les FRQ ou privé': 'Autres statuts en recherche',
+
+  // ─── Cat. "Autre" avec precision conservee (suffixe)
+  'Bibliothécaire': 'Autre — Bibliothécaire',
+  'Transcriptrice médical': 'Autre — Transcriptrice médicale',
+  "Analyste d'affaires systemes comptables": "Autre — Analyste d'affaires systèmes comptables",
+  'Affaires professorales': 'Autre — Affaires professorales',
+  "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": "Autre — Organisation à but non lucratif",
 };
 
 const EVALUATEUR_FIXES = {
@@ -372,8 +416,9 @@ async function fieldAuditReport() {
     const isEmpty = !m.prenom && !m.nom && !m.email;
     if (isEmpty) continue;
 
-    // statut: rich_text, must be in STATUT_OPTIONS (or empty)
-    if (m.statut && STATUT_OPTIONS.indexOf(m.statut) === -1) {
+    // statut: rich_text, must be in STATUT_OPTIONS (or empty).
+    // "Autre — <precision>" est aussi accepte (cat. 14 avec libre).
+    if (m.statut && STATUT_OPTIONS.indexOf(m.statut) === -1 && !m.statut.startsWith('Autre — ')) {
       statutBad.push({ value: m.statut, member: summary(m) });
     }
 
