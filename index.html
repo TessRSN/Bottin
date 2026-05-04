@@ -276,8 +276,9 @@
         .popup-inst-name { font-size: 0.95rem; font-weight: 600; color: var(--rsn-accent); margin-bottom: 0.3rem; }
         .popup-count { font-size: 1.4rem; font-weight: 700; color: var(--rsn-accent); }
         .popup-type-row { font-size: 0.78rem; color: var(--rsn-muted); }
-        .marker-cluster-custom { background: rgba(43, 108, 176, 0.15); border-radius: 50%; }
-        .marker-cluster-custom div { background: var(--rsn-secondary); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        /* Phase 2d : clusters mauves coherents avec les cercles individuels */
+        .marker-cluster-custom { background: rgba(168, 85, 247, 0.15); border-radius: 50%; }
+        .marker-cluster-custom div { background: rgba(168, 85, 247, 0.85); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
         /* ─── CONSENT BADGES ─── */
         .member-card.pending-consent .card-details,
@@ -1431,9 +1432,12 @@ function renderMap() {
     if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${t('map_loading')}</p>`; return; }
     if (!map) {
         map = L.map('mapView').setView([47.0, -71.5], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 18
+        // Phase 2d (2026-05-04): tiles CARTO Voyager (style pastel/leger,
+        // identique au projet rsn-cartographie-vercel pour coherence visuelle).
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
         }).addTo(map);
     }
     if (clusterGroup) { map.removeLayer(clusterGroup); }
@@ -1516,10 +1520,13 @@ function renderMap() {
         const h = hashStr(inst);
         const lat = data.coords[0] + ((h % 1000) / 1000 - 0.5) * 0.004;
         const lng = data.coords[1] + (((h >> 10) % 1000) / 1000 - 0.5) * 0.004;
+        // Phase 2d (2026-05-04): cercles mauves transparents (style projet
+        // rsn-cartographie-vercel). Taille proportionnelle au nombre de
+        // membres a l'institution (14px base + sqrt(n) * 5, max 44px).
         const marker = L.circleMarker([lat, lng], {
-            radius: Math.min(6 + Math.sqrt(n) * 3, 20),
-            fillColor: '#2b6cb0', color: '#1a365d',
-            weight: 1.5, opacity: 0.9, fillOpacity: 0.6
+            radius: Math.min(7 + Math.sqrt(n) * 2.5, 22),
+            fillColor: '#a855f7', color: '#a855f7',
+            weight: 1, opacity: 0.7, fillOpacity: 0.4
         });
         // Build member names list for popup
         // No artificial slice — show all members with scroll if needed
