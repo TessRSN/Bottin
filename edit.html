@@ -113,7 +113,7 @@
     </div>
     <div class="field">
       <label id="l_email">Courriel principal<span class="required-mark">*</span></label>
-      <input id="f_email" type="email" required readonly>
+      <input id="f_email" type="email" required>
       <div class="field-hint" id="h_email"></div>
     </div>
     <div class="field"><label id="l_email2">Courriel secondaire</label><input id="f_email2" type="email"></div>
@@ -248,7 +248,10 @@ function t(key) {
       msg_success:'Profil mis à jour ! Vos modifications seront visibles après approbation.',
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
-      h_email_before:'Pour modifier ce courriel, contactez-nous à ', h_email_after:'.',
+      h_email:"Si vous modifiez ce courriel, vous recevrez un lien de confirmation à la nouvelle adresse pour valider le changement.",
+      msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.',
+      msg_email_taken:"Ce courriel est déjà utilisé par un autre membre. Le changement n'a pas été effectué.",
+      msg_email_error:"Profil sauvegardé, mais l'envoi du courriel de confirmation a échoué. Vous pouvez réessayer.",
       h_institution:"Tapez pour rechercher dans notre catalogue. Si votre institution n'apparaît pas, écrivez son nom complet et fournissez son adresse pour qu'on l'ajoute à la carte.",
       inst_placeholder:'Commencez à taper le nom de votre institution',
       inst_remove:'Retirer', inst_add:'+ Ajouter une autre institution',
@@ -268,7 +271,10 @@ function t(key) {
       msg_success:'Profile updated! Changes will be visible after approval.',
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
-      h_email_before:'To change this email, please contact us at ', h_email_after:'.',
+      h_email:'If you change this email, you will receive a confirmation link at the new address to validate the change.',
+      msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.',
+      msg_email_taken:'This email is already used by another member. The change was not applied.',
+      msg_email_error:'Profile saved, but sending the confirmation email failed. You can try again.',
       h_institution:"Start typing to search our catalog. If your institution doesn't appear, write its full name and provide its address so we can add it to the map.",
       inst_placeholder:'Start typing your institution name',
       inst_remove:'Remove', inst_add:'+ Add another institution',
@@ -313,17 +319,9 @@ function applyI18n() {
     if (addrInput) addrInput.placeholder = t('h_inst_address');
   });
 
-  // Hint sous le champ email principal: "Pour modifier ce courriel, contactez-nous a [mailto]."
+  // Phase 2b : hint courriel principal indique le flow de confirmation
   const hEmail = document.getElementById('h_email');
-  if (hEmail) {
-    while (hEmail.firstChild) hEmail.removeChild(hEmail.firstChild);
-    hEmail.appendChild(document.createTextNode(t('h_email_before')));
-    const a = document.createElement('a');
-    a.href = 'mailto:rsn.gestion@rimuhc.ca';
-    a.textContent = 'rsn.gestion@rimuhc.ca';
-    hEmail.appendChild(a);
-    hEmail.appendChild(document.createTextNode(t('h_email_after')));
-  }
+  if (hEmail) hEmail.textContent = t('h_email');
 }
 
 function toggleLang() {
@@ -683,10 +681,37 @@ async function save() {
   const btn = document.getElementById('saveBtn');
   btn.disabled = true; btn.textContent = t('saving');
   var instData = collectInstitutions();
+  var newEmail = (document.getElementById('f_email').value || '').trim().toLowerCase();
+  var currentEmail = (profile.email || '').trim().toLowerCase();
+  var emailChanged = newEmail && currentEmail && newEmail !== currentEmail;
+
+  // Phase 2b — Decision D.2 : si on change le courriel principal et qu'un
+  // secondaire existe deja, on previent qu'il sera remplace par l'ancien
+  // principal. La personne peut annuler.
+  if (emailChanged) {
+    var existingSecondary = (profile.email2 || '').trim().toLowerCase();
+    if (existingSecondary && existingSecondary !== newEmail) {
+      var warningMsg = lang === 'fr'
+        ? 'Vous changez votre courriel principal pour ' + newEmail + '.\n\n' +
+          'Votre ancien courriel principal (' + currentEmail + ') deviendra votre courriel secondaire et remplacera votre courriel secondaire actuel (' + existingSecondary + ').\n\n' +
+          'Continuer ?'
+        : 'You are changing your primary email to ' + newEmail + '.\n\n' +
+          'Your previous primary email (' + currentEmail + ') will become your secondary email and will replace your current secondary email (' + existingSecondary + ').\n\n' +
+          'Continue?';
+      if (!confirm(warningMsg)) {
+        btn.disabled = false; btn.textContent = t('saveBtn');
+        return;
+      }
+    }
+  }
+
+  // On envoie l'ancien email dans le body POST /api/profile pour ne PAS
+  // ecraser le courriel principal — le swap se fait via /api/email-change
+  // apres clic sur le lien de confirmation.
   const data = {
     prenom: document.getElementById('f_prenom').value.trim(),
     nom: document.getElementById('f_nom').value.trim(),
-    email: document.getElementById('f_email').value.trim() || null,
+    email: emailChanged ? (profile.email || null) : (newEmail || null),
     email2: document.getElementById('f_email2').value.trim() || null,
     institution: instData.map(function(i){ return i.name; }).join('; '),
     newInstitutions: instData.filter(function(i){ return i.needsAddress && i.address; }).map(function(i){ return { name: i.name, address: i.address }; }),
@@ -704,13 +729,43 @@ async function save() {
     principes: getChips('principes_group'),
     champs: getChips('champs_group'),
   };
+
   try {
+    // 1) Sauvegarder le profil (sans toucher email principal si change)
     const resp = await fetch('/api/profile?token=' + token, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
     });
-    if (resp.ok) { showMsg(t('msg_success'), 'success'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else showMsg(t('msg_error'), 'error');
-  } catch (e) { showMsg(t('msg_error'), 'error'); }
+    if (!resp.ok) {
+      showMsg(t('msg_error'), 'error');
+      btn.disabled = false; btn.textContent = t('saveBtn');
+      return;
+    }
+
+    // 2) Si email a change : declencher la demande de confirmation
+    if (emailChanged) {
+      try {
+        const r2 = await fetch('/api/email-change?token=' + token, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newEmail: newEmail, lang: lang }),
+        });
+        const j2 = await r2.json().catch(function(){ return {}; });
+        if (r2.ok && j2.ok) {
+          showMsg(t('msg_email_pending').replace('{email}', newEmail), 'success');
+        } else if (j2.code === 'EMAIL_TAKEN') {
+          showMsg(t('msg_email_taken'), 'error');
+        } else {
+          showMsg(t('msg_email_error'), 'error');
+        }
+      } catch (e) {
+        showMsg(t('msg_email_error'), 'error');
+      }
+    } else {
+      showMsg(t('msg_success'), 'success');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    showMsg(t('msg_error'), 'error');
+  }
   btn.disabled = false; btn.textContent = t('saveBtn');
 }
 

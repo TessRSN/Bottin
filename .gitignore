@@ -11,6 +11,8 @@ data/*-private.*
 # Node
 node_modules/
 .env
+.env.local
+.env.*.local
 
 # Vercel
 .vercel/
