@@ -1473,11 +1473,23 @@ function renderMap() {
     }
     // Each member can be affiliated to multiple institutions (split on ';' upstream).
     // Add the member to every institution so they appear at every relevant location.
+    // Phase 2c (2026-05-04): si le filtre Region est actif, on ne montre QUE
+    // les institutions du membre qui matchent une region cochee. Sinon un
+    // membre bi-affilie (ex. UdeM + ULaval) afficherait ses 2 markers meme
+    // quand on filtre par une seule region — peu intuitif.
+    const activeRegions = (msState && msState.filterRegion && msState.filterRegion.length) ? msState.filterRegion : null;
     mapMembers.forEach(m => {
         const list = (m.institutions && m.institutions.length) ? m.institutions : (m.institution ? [m.institution] : []);
         list.forEach(inst => {
             const canonical = resolveCanonical(inst);
             if (!canonical) return;
+            // Si filtre region actif → ne garder que les institutions de cette region
+            if (activeRegions) {
+                const c = GEOCODE[canonical];
+                if (!c || !Array.isArray(c) || c.length < 2) return;
+                const r = regionFromCoords(c[0], c[1]);
+                if (!activeRegions.includes(r)) return;
+            }
             if (!byInst[canonical]) byInst[canonical] = { members: [], coords: GEOCODE[canonical] || null };
             // Avoid double-counting if a member's two institutions both resolve to the same canonical name
             if (!byInst[canonical].members.includes(m)) byInst[canonical].members.push(m);
