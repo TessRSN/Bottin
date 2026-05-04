@@ -1015,26 +1015,125 @@ function populateFilters() {
     buildMS('filterFocus', focusItems, t('all_m'));
 }
 
+// ─── Fuse.js — recherche fuzzy multilingue (Phase 2g, 2026-05-04) ───
+// Normalisation : enleve les diacritiques pour matcher 'francois' ↔ 'François'.
+function fold(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+// Mapping FR → EN pour les champs structures (statut + type d'adhesion).
+// Synchronise avec join.html / edit.html / api/membership-report.js.
+const STATUT_FR_TO_EN = {
+    'Personne en recherche universitaire': 'University researcher',
+    'Personne en recherche clinique universitaire': 'Clinical university researcher',
+    'Personne en recherche au collégial': 'College researcher',
+    'Autres statuts en recherche': 'Other research statuses',
+    'Personne aux études au 1er cycle': 'Undergraduate student',
+    'Personne aux études à la maîtrise': "Master's student",
+    'Personne aux études au doctorat': 'PhD student',
+    'Personne en stage postdoctoral': 'Postdoctoral fellow',
+    'Personnel de recherche': 'Research staff',
+    'Personnel de la santé': 'Health professional',
+    "Coordination ou gestion d'équipe": 'Team coordination or management',
+    'Personne en milieu industriel ou gouvernemental': 'Industry or government professional',
+    'Personne partenaire citoyenne': 'Citizen partner',
+    'Autre': 'Other',
+};
+const TYPE_FR_TO_EN = {
+    'Régulier': 'Regular member',
+    'Étudiant': 'Student member',
+    'Partenaire': 'Partner member',
+};
+
+// Construit un document Fuse pour un membre (avec champs normalises FR + EN).
+function buildFuseDoc(m) {
+    return {
+        _ref: m, // pour retrouver l'original apres search
+        name: fold([m.prenom, m.nom].filter(Boolean).join(' ')),
+        email: fold(m.email || ''),
+        institutions: fold((m.institutions || []).join(' ')),
+        statutFR: fold(m.statut || ''),
+        statutEN: fold(STATUT_FR_TO_EN[m.statut] || ''),
+        typeFR: fold(m.type || ''),
+        typeEN: fold(TYPE_FR_TO_EN[m.type] || ''),
+        expertise: fold(m.expertise || ''),
+        themes: fold(m.themes || ''),
+        projet: fold(m.projet || ''),
+        axes: fold((m.axes || []).join(' ')),
+        principes: fold((m.principes || []).join(' ')),
+        champsAction: fold((m.champsAction || []).join(' ')),
+        reseau: fold(m.reseau || ''),
+    };
+}
+
+const FUSE_OPTIONS = {
+    includeScore: true,
+    threshold: 0.3,
+    ignoreLocation: true,
+    useExtendedSearch: true,
+    minMatchCharLength: 2,
+    keys: [
+        { name: 'name',         weight: 4.0 },
+        { name: 'institutions', weight: 3.5 },
+        { name: 'expertise',    weight: 4.0 },
+        { name: 'themes',       weight: 4.0 },
+        { name: 'projet',       weight: 4.0 },
+        { name: 'statutFR',     weight: 2.0 },
+        { name: 'statutEN',     weight: 2.0 },
+        { name: 'typeFR',       weight: 1.0 },
+        { name: 'typeEN',       weight: 1.0 },
+        { name: 'axes',         weight: 1.5 },
+        { name: 'principes',    weight: 1.5 },
+        { name: 'champsAction', weight: 1.5 },
+        { name: 'email',        weight: 0.5 },
+        { name: 'reseau',       weight: 0.5 },
+    ],
+};
+
 function applyFilters() {
-    const s = document.getElementById('searchInput').value.toLowerCase().trim();
+    const rawSearch = document.getElementById('searchInput').value.trim();
+    const queryNorm = fold(rawSearch);
     const ft = msState.filterType;
     const fr = msState.filterRegion;
     const fs = msState.filterStatut;
     const fa = msState.filterFocus;
-    filteredMembers = allMembers.filter(m => {
-        if(m.consent==='non') return false;
-        if(s && !m._search.includes(s)) return false;
-        if(ft.length && !ft.includes(m.type)) return false;
+
+    // 1) Filtres exacts d'abord (rapide, reduit le pool indexe par Fuse)
+    let pool = allMembers.filter(m => {
+        if (m.consent === 'non') return false;
+        if (ft.length && !ft.includes(m.type)) return false;
         if (fr.length) {
             const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
             if (!fr.some(f => memberRegions.includes(f))) return false;
         }
-        if(fs.length && !fs.includes(m.statutGroup)) return false;
-        if(fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
+        if (fs.length && !fs.includes(m.statutGroup)) return false;
+        if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
         return true;
     });
-    if(sortCol) { filteredMembers.sort((a,b)=>{ const cmp=(a[sortCol]||'').toLowerCase().localeCompare((b[sortCol]||'').toLowerCase(),'fr'); return sortDir==='asc'?cmp:-cmp; }); }
-    currentPage=1;
+
+    // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
+    if (queryNorm && typeof Fuse !== 'undefined') {
+        const docs = pool.map(buildFuseDoc);
+        const fuse = new Fuse(docs, FUSE_OPTIONS);
+        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
+        const results = fuse.search(queryNorm);
+        filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
+    } else if (queryNorm) {
+        // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
+        filteredMembers = pool.filter(m => m._search && m._search.includes(rawSearch.toLowerCase()));
+    } else {
+        filteredMembers = pool;
+    }
+
+    // Tri custom du tableau (uniquement si query vide, sinon on respecte l'ordre Fuse)
+    if (!queryNorm && sortCol) {
+        filteredMembers.sort((a, b) => {
+            const cmp = (a[sortCol] || '').toLowerCase().localeCompare((b[sortCol] || '').toLowerCase(), 'fr');
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
+    }
+
+    currentPage = 1;
     document.getElementById('filteredCount').textContent = filteredMembers.length;
     render();
 }
@@ -1716,5 +1815,7 @@ function restoreHash() {
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<!-- Phase 2g (2026-05-04): Fuse.js pour recherche fuzzy multilingue ponderee -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 </body>
 </html>
