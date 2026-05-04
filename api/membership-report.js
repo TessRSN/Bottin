@@ -13,6 +13,11 @@
  *                               + verif formats (email, orcid, cv).
  *                               Sert de base a la Phase 1 du nettoyage
  *                               avant la refonte de edit.html.
+ *   mode=fix-fields-dry-run  : retourne le plan de correction (avant/apres)
+ *                               sans rien modifier dans Notion.
+ *   mode=fix-fields-apply    : applique les corrections planifiees dans Notion.
+ *                               Idempotent : rerunable sans effet de bord
+ *                               (skip si la valeur est deja a jour).
  *   mode=full-data           : retourne les champs essentiels de tous les
  *                               membres pour cross-check local (CSV).
  *
@@ -27,7 +32,14 @@
  *   - noDate             : date de debut d'adhesion vide
  *   - dateRenouvDifferent: date renouv. != date debut + 2 ans
  */
-const { getAllMembers, getValidatedInstitutions } = require('../lib/notion');
+const { getAllMembers, getValidatedInstitutions, PROP } = require('../lib/notion');
+const { Client } = require('@notionhq/client');
+
+let _notion;
+function notion() {
+  if (!_notion) _notion = new Client({ auth: process.env.NOTION_KEY });
+  return _notion;
+}
 
 // ─── Reference values (must stay in sync with join.html) ───
 const STATUT_OPTIONS = [
@@ -197,6 +209,134 @@ function isValidUrl(s) {
   }
 }
 
+// ─── Field correction mappings (mode=fix-fields) ───
+// Validated by Tess on 2026-05-04 from the field-audit report.
+const STATUT_FALLBACK_AUTRES = STATUT_OPTIONS.find(s => s.startsWith('Autres statuts'));
+const STATUT_FIXES = {
+  'Chercheur ou chercheuse universitaire': 'Chercheur universitaire',
+  'Etudiant·e au doctorat': 'Personne aux études au doctorat',
+  'Étudiant·e à la maîtrise': 'Personne aux études à la maîtrise',
+  'Professionnel·le de la recherche': 'Professionnel de recherche',
+  'Étudiant·e au baccalauréat': 'Personne aux études au 1er cycle',
+  'Gestionnaire ou cadre': 'Direction ou gestion',
+  'Professionnel·le de la santé': 'Professionnel de la santé',
+  'Chercheur universitaire clinicien ou chercheuse universitaire clinicienne': 'Chercheur clinicien universitaire',
+  'Autres statuts de recherche': STATUT_FALLBACK_AUTRES,
+  "Autres statuts de recherche (Chercheur ou chercheuse d’une institution gouvernementale, d'une organisation du secteur gouvernemental ou privé, personne des milieux de pratique, artiste ou contribuant individuel)": STATUT_FALLBACK_AUTRES,
+  'Stagiaire postdoctoral·e': 'Stagiaire postdoctoral',
+  'Chercheur ou chercheuse de collège': 'Chercheur de collège',
+  'Étudiant·e à la maîtrise au doctorat': 'Personne aux études au doctorat',
+  'Professeure adjointe': 'Chercheur universitaire',
+  'Professeur': 'Chercheur universitaire',
+  'Professeur adjoint de clinique': 'Chercheur universitaire',
+  'Chercheur ou chercheuse': 'Chercheur universitaire',
+  'Physician, Medical Geneticist at MUHC; Clinician Researcher, Faculty at McGill': 'Chercheur universitaire',
+  'Radiologiste; Professeur titulaire': 'Chercheur universitaire',
+  'Étudiant en médecine': 'Personne aux études au doctorat',
+  'Étudiante au programme de 3è cycle AnÉSOSS': 'Personne aux études au doctorat',
+  'Étudiante au doctorat, Département de médecine, Faculté de médecine, Université Laval': 'Personne aux études au doctorat',
+  'Enseignant chercheur et à la fois doctorant': 'Personne aux études au doctorat',
+  'Medical Student and Researcher': 'Personne aux études au doctorat',
+  'Associé·e de recherche': 'Professionnel de recherche',
+  'Biostatisticien': 'Professionnel de recherche',
+  'Gestionnaire de projet en santé numerique': 'Direction ou gestion',
+  'Professionnel de la santé + Master Student': 'Professionnel de la santé',
+  "Professionnelle de la santé inscrite au DESS en gestion - analyse d'affaires - TI": 'Professionnel de la santé',
+  'Research Associate': STATUT_FALLBACK_AUTRES,
+  'Research staff (Open Science Program Coordinator)': STATUT_FALLBACK_AUTRES,
+  'Resident Physician': STATUT_FALLBACK_AUTRES,
+  'Postgraduate Resident': STATUT_FALLBACK_AUTRES,
+  'Clinical Informatics Specialist': STATUT_FALLBACK_AUTRES,
+  'patiente-partenaire': STATUT_FALLBACK_AUTRES,
+  'Patiente partenaire': STATUT_FALLBACK_AUTRES,
+  'Citoyen partenaire': STATUT_FALLBACK_AUTRES,
+  'Bibliothécaire': STATUT_FALLBACK_AUTRES,
+  'CNIO': STATUT_FALLBACK_AUTRES,
+  'Présidente du Prix Hippocrate': STATUT_FALLBACK_AUTRES,
+  'Coordonnatrice du Pôle': STATUT_FALLBACK_AUTRES,
+  'Coordonnatrice académique numérique de la santé': STATUT_FALLBACK_AUTRES,
+  'Affaires professorales': STATUT_FALLBACK_AUTRES,
+  'Transcriptrice médical': STATUT_FALLBACK_AUTRES,
+  "Analyste d'affaires systemes comptables": STATUT_FALLBACK_AUTRES,
+  'gestion de projets scientifiques': STATUT_FALLBACK_AUTRES,
+  'Member of the RSN gestion team :)': STATUT_FALLBACK_AUTRES,
+  'Chef de programmes santé publique - Direction de Santé Publique': STATUT_FALLBACK_AUTRES,
+  "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": STATUT_FALLBACK_AUTRES,
+  'reconnue par les FRQ ou privé': STATUT_FALLBACK_AUTRES,
+};
+
+const EVALUATEUR_FIXES = {
+  'Incertain·e pour le moment': 'Incertain',
+  'Incertain': 'Incertain',
+};
+
+function fixOrcid(value) {
+  if (!value) return null;
+  const m = /^https?:\/\/(\d{4}-\d{4}-\d{4}-\d{3}[\dxX])\/?$/.exec(value);
+  if (m) return `https://orcid.org/${m[1]}`;
+  return null;
+}
+
+function fixCv(value) {
+  if (!value) return null;
+  const v = String(value).trim();
+  if (v.toUpperCase() === 'CV') return '';
+  if (/^(www\.)?[a-z0-9-]+\.[a-z]{2,}\//i.test(v)) return `https://${v}`;
+  return null;
+}
+
+async function fixFieldsReport(dryRun) {
+  const all = await getAllMembers();
+  const planned = [];
+  for (const m of all) {
+    const empty = !m.prenom && !m.nom && !m.email;
+    if (empty) continue;
+    const sum = { id: m.id, prenom: m.prenom, nom: m.nom, email: m.email };
+    if (m.statut && STATUT_FIXES[m.statut] !== undefined) {
+      const after = STATUT_FIXES[m.statut];
+      if (after !== m.statut) planned.push({ ...sum, field: 'statut', before: m.statut, after });
+    }
+    if (m.evaluateur && EVALUATEUR_FIXES[m.evaluateur] !== undefined) {
+      const after = EVALUATEUR_FIXES[m.evaluateur];
+      if (after !== m.evaluateur) planned.push({ ...sum, field: 'evaluateur', before: m.evaluateur, after });
+    }
+    if (m.orcid) {
+      const fixed = fixOrcid(m.orcid);
+      if (fixed && fixed !== m.orcid) planned.push({ ...sum, field: 'orcid', before: m.orcid, after: fixed });
+    }
+    if (m.cv) {
+      const fixed = fixCv(m.cv);
+      if (fixed !== null && fixed !== m.cv) planned.push({ ...sum, field: 'cv', before: m.cv, after: fixed });
+    }
+  }
+  const counts = {};
+  for (const f of planned) counts[f.field] = (counts[f.field] || 0) + 1;
+  if (dryRun) return { mode: 'fix-fields-dry-run', total: planned.length, counts, planned };
+
+  const byPage = new Map();
+  for (const f of planned) {
+    if (!byPage.has(f.id)) byPage.set(f.id, []);
+    byPage.get(f.id).push(f);
+  }
+  const applied = [], failed = [];
+  for (const [pageId, fixes] of byPage) {
+    const props = {};
+    for (const fx of fixes) {
+      if (fx.field === 'statut') props[PROP.statut] = { rich_text: [{ text: { content: String(fx.after).slice(0, 2000) } }] };
+      else if (fx.field === 'evaluateur') props[PROP.evaluateur] = { rich_text: [{ text: { content: String(fx.after).slice(0, 2000) } }] };
+      else if (fx.field === 'orcid') props[PROP.orcid] = { url: fx.after || null };
+      else if (fx.field === 'cv') props[PROP.cv] = { url: fx.after || null };
+    }
+    try {
+      await notion().pages.update({ page_id: pageId, properties: props });
+      applied.push({ pageId, fixes });
+    } catch (err) {
+      failed.push({ pageId, fixes, error: err.message });
+    }
+  }
+  return { mode: 'fix-fields-apply', totalPlanned: planned.length, counts, appliedPages: applied.length, failedPages: failed.length, failed };
+}
+
 // ─── Field audit (mode=field-audit) ───
 async function fieldAuditReport() {
   const all = await getAllMembers();
@@ -331,6 +471,16 @@ module.exports = async function handler(req, res) {
 
     if (mode === 'field-audit') {
       const report = await fieldAuditReport();
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'fix-fields-dry-run') {
+      const report = await fixFieldsReport(true);
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'fix-fields-apply') {
+      const report = await fixFieldsReport(false);
       return res.status(200).json({ ok: true, ...report });
     }
 
