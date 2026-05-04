@@ -24,6 +24,13 @@
  *                               la valeur actuelle de droitVote au type
  *                               d'adhesion ; planifie/applique le fix si
  *                               necessaire. Idempotent.
+ *   mode=migrate-afficher-courriel-dry-run / migrate-afficher-courriel-apply :
+ *                               Phase 2f. Met explicitement 'Afficher
+ *                               courriel = true' sur les membres avec
+ *                               consent='Oui' (statu quo : ils sont deja
+ *                               visibles, donc l'email reste public).
+ *                               A lancer UNE FOIS apres creation de la
+ *                               propriete Notion 'Afficher courriel'.
  *   mode=full-data           : retourne les champs essentiels de tous les
  *                               membres pour cross-check local (CSV).
  *
@@ -400,6 +407,77 @@ async function fixFieldsReport(dryRun) {
   return { mode: 'fix-fields-apply', totalPlanned: planned.length, counts, appliedPages: applied.length, failedPages: failed.length, failed };
 }
 
+// ─── Migration 'Afficher courriel' (Phase 2f) ───
+// Pour chaque membre avec consent='Oui', met explicitement 'Afficher
+// courriel = true' (statu quo visuel : ils sont deja visibles dans le
+// bottin et leurs emails y figurent). A lancer UNE FOIS apres creation
+// de la propriete Notion 'Afficher courriel'. Idempotent.
+//
+// Pour distinguer "deja explicitement coche" de "pas encore rempli",
+// on lit la propriete brute via pages.retrieve plutot que getAllMembers
+// (qui applique la regle de retro-compat '!== false' et ne nous dirait
+// pas qui n'a pas la valeur explicite).
+async function migrateAfficherCourrielReport(dryRun) {
+  const all = await getAllMembers();
+  const ouiMembers = all.filter(m => {
+    const c = (m.consent || '').toLowerCase();
+    return c.startsWith('oui');
+  });
+
+  // Pour chaque Oui, lecture brute pour savoir si la valeur est deja set
+  const toMigrate = [];
+  const alreadySet = [];
+  for (const m of ouiMembers) {
+    if (!m.prenom && !m.nom && !m.email) continue;
+    try {
+      const page = await notion().pages.retrieve({ page_id: m.id });
+      const prop = page.properties[PROP.afficherCourriel];
+      const raw = (prop && prop.checkbox !== undefined) ? prop.checkbox : null; // null = pas encore set
+      if (raw === true) {
+        alreadySet.push({ id: m.id, prenom: m.prenom, nom: m.nom, email: m.email });
+      } else {
+        toMigrate.push({
+          id: m.id, prenom: m.prenom, nom: m.nom, email: m.email,
+          before: raw, // null ou false
+        });
+      }
+    } catch (err) {
+      console.error(`migrate read failed for ${m.email}:`, err.message);
+    }
+  }
+
+  if (dryRun) {
+    return {
+      mode: 'migrate-afficher-courriel-dry-run',
+      totalOuiMembers: ouiMembers.length,
+      alreadySetCount: alreadySet.length,
+      toMigrateCount: toMigrate.length,
+      toMigrate,
+    };
+  }
+
+  const applied = [], failed = [];
+  for (const p of toMigrate) {
+    try {
+      await notion().pages.update({
+        page_id: p.id,
+        properties: { [PROP.afficherCourriel]: { checkbox: true } },
+      });
+      applied.push(p);
+    } catch (err) {
+      failed.push({ ...p, error: err.message });
+    }
+  }
+  return {
+    mode: 'migrate-afficher-courriel-apply',
+    totalOuiMembers: ouiMembers.length,
+    alreadySetCount: alreadySet.length,
+    appliedCount: applied.length,
+    failedCount: failed.length,
+    failed,
+  };
+}
+
 // ─── Droit de vote sync (mode=fix-droit-vote-*) ───
 // Regle metier (decision Tess 2026-05-04) :
 //   type 'Regulier'    → droitVote = true
@@ -613,6 +691,16 @@ module.exports = async function handler(req, res) {
 
     if (mode === 'fix-droit-vote-apply') {
       const report = await fixDroitVoteReport(false);
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'migrate-afficher-courriel-dry-run') {
+      const report = await migrateAfficherCourrielReport(true);
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'migrate-afficher-courriel-apply') {
+      const report = await migrateAfficherCourrielReport(false);
       return res.status(200).json({ ok: true, ...report });
     }
 

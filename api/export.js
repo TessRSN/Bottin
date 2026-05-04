@@ -243,11 +243,22 @@ function memberToCSVRow(m, consent) {
   const principes = Array.isArray(m.principes) ? m.principes : [];
   const champs = Array.isArray(m.champs) ? m.champs : [];
 
+  // Phase 2f (2026-05-04):
+  //  - Email principal : visible sauf si toggle 'afficherCourriel' = false.
+  //    On utilise '!== false' (et pas '=== true') pour la retro-compatibilite :
+  //    pendant la fenetre entre deploiement code et migration de la base,
+  //    les fiches existantes peuvent encore avoir undefined → traite comme
+  //    visible (default safe, statu quo avant la fonctionnalite).
+  //    La migration met explicitement true pour tous les consent=Oui actuels,
+  //    et les nouveaux membres ont la valeur du toggle (default true coche).
+  //  - Email secondaire : JAMAIS dans le CSV public (canal admin uniquement).
+  const showEmail = m.afficherCourriel !== false;
+
   const row = {
     [CSV_COL.prenom]: m.prenom,
     [CSV_COL.nom]: m.nom,
-    [CSV_COL.email]: m.email,
-    [CSV_COL.email2]: m.email2,
+    [CSV_COL.email]: showEmail ? m.email : '',
+    [CSV_COL.email2]: '',
     [CSV_COL.statut]: m.statut,
     [CSV_COL.institution]: m.institution,
     [CSV_COL.type]: m.type,

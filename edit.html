@@ -115,8 +115,17 @@
       <label id="l_email">Courriel principal<span class="required-mark">*</span></label>
       <input id="f_email" type="email" required>
       <div class="field-hint" id="h_email"></div>
+      <label class="checkbox-inline" style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.5rem;font-size:.85rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)">
+        <input type="checkbox" id="f_afficher_courriel" checked style="width:auto;margin-top:3px;flex-shrink:0;cursor:pointer">
+        <span id="l_afficher_courriel">Afficher mon courriel dans le bottin public</span>
+      </label>
+      <div class="field-hint" id="h_afficher_courriel" style="margin-top:.25rem">Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.</div>
     </div>
-    <div class="field"><label id="l_email2">Courriel secondaire</label><input id="f_email2" type="email"></div>
+    <div class="field">
+      <label id="l_email2">Courriel secondaire</label>
+      <input id="f_email2" type="email">
+      <div class="field-hint" id="h_email2"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -249,6 +258,9 @@ function t(key) {
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
       h_email:"Si vous modifiez ce courriel, vous recevrez un lien de confirmation à la nouvelle adresse pour valider le changement.",
+      l_afficher_courriel:'Afficher mon courriel dans le bottin public',
+      h_afficher_courriel:'Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.',
+      h_email2:"Optionnel. Jamais affiché publiquement, sert uniquement aux administrateurs du RSN pour vous joindre.",
       msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.\n\nVos autres modifications seront examinées par notre équipe et publiées sous 1 à 2 semaines. Sans nouvelles, contactez-nous à rsn.gestion@rimuhc.ca.',
       msg_email_taken:"Ce courriel est déjà utilisé par un autre membre. Le changement n'a pas été effectué.",
       msg_email_error:"Profil sauvegardé, mais l'envoi du courriel de confirmation a échoué. Vous pouvez réessayer.",
@@ -272,6 +284,9 @@ function t(key) {
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
       h_email:'If you change this email, you will receive a confirmation link at the new address to validate the change.',
+      l_afficher_courriel:'Display my email in the public directory',
+      h_afficher_courriel:'Uncheck to limit sharing of your address to RSN administrators only.',
+      h_email2:'Optional. Never publicly displayed, used only by RSN administrators to reach you.',
       msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.\n\nYour other changes will be reviewed by our team and published within 1 to 2 weeks. If you don\'t hear back, please contact us at rsn.gestion@rimuhc.ca.',
       msg_email_taken:'This email is already used by another member. The change was not applied.',
       msg_email_error:'Profile saved, but sending the confirmation email failed. You can try again.',
@@ -322,6 +337,13 @@ function applyI18n() {
   // Phase 2b : hint courriel principal indique le flow de confirmation
   const hEmail = document.getElementById('h_email');
   if (hEmail) hEmail.textContent = t('h_email');
+  // Phase 2f : toggle afficher courriel + hint courriel secondaire
+  const lAff = document.getElementById('l_afficher_courriel');
+  if (lAff) lAff.textContent = t('l_afficher_courriel');
+  const hAff = document.getElementById('h_afficher_courriel');
+  if (hAff) hAff.textContent = t('h_afficher_courriel');
+  const hE2 = document.getElementById('h_email2');
+  if (hE2) hE2.textContent = t('h_email2');
 }
 
 function toggleLang() {
@@ -561,6 +583,8 @@ async function init() {
     document.getElementById('f_nom').value = profile.nom || '';
     document.getElementById('f_email').value = profile.email || '';
     document.getElementById('f_email2').value = profile.email2 || '';
+    // Phase 2f: precharger toggle afficher courriel
+    document.getElementById('f_afficher_courriel').checked = (profile.afficherCourriel !== false);
     document.getElementById('f_expertise').value = profile.expertise || '';
     document.getElementById('f_themes').value = profile.themes || '';
     document.getElementById('f_reseau').value = profile.reseau || '';
@@ -728,6 +752,8 @@ async function save() {
     axes: getChips('axes_group'),
     principes: getChips('principes_group'),
     champs: getChips('champs_group'),
+    // Phase 2f: toggle afficher courriel
+    afficherCourriel: document.getElementById('f_afficher_courriel').checked,
   };
 
   try {

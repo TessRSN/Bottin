@@ -122,8 +122,16 @@
         <div class="field"><label class="field-label" id="l_prenom">Prénom<span class="required-mark">*</span></label><input id="f_prenom" required></div>
         <div class="field"><label class="field-label" id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
       </div>
-      <div class="field"><label class="field-label" id="l_email">Courriel<span class="required-mark">*</span></label><input id="f_email" type="email" required></div>
-      <div class="field"><label class="field-label" id="l_email2">Courriel secondaire</label><div class="field-hint" id="h_email2">Optionnel. Ex. courriel personnel ou d'une autre institution.</div><input id="f_email2" type="email"></div>
+      <div class="field">
+        <label class="field-label" id="l_email">Courriel<span class="required-mark">*</span></label>
+        <input id="f_email" type="email" required>
+        <label class="checkbox-inline" style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.5rem;font-size:.85rem;cursor:pointer">
+          <input type="checkbox" id="f_afficher_courriel" checked style="width:auto;margin-top:3px;flex-shrink:0;cursor:pointer">
+          <span id="l_afficher_courriel">Afficher mon courriel dans le bottin public</span>
+        </label>
+        <div class="field-hint" id="h_afficher_courriel" style="margin-top:.25rem">Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.</div>
+      </div>
+      <div class="field"><label class="field-label" id="l_email2">Courriel secondaire</label><div class="field-hint" id="h_email2">Optionnel. Ex. courriel personnel ou d'une autre institution. Jamais affiché publiquement.</div><input id="f_email2" type="email"></div>
     </div>
 
     <div class="card">
@@ -290,7 +298,9 @@ var I18N = {
     s_identity: 'Identité',
     l_prenom: 'Prénom', l_nom: 'Nom', l_email: 'Courriel',
     l_email2: 'Courriel secondaire',
-    h_email2: "Optionnel. Ex. courriel personnel ou d'une autre institution.",
+    h_email2: "Optionnel. Ex. courriel personnel ou d'une autre institution. Jamais affiché publiquement.",
+    l_afficher_courriel: 'Afficher mon courriel dans le bottin public',
+    h_afficher_courriel: 'Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.',
     s_status: 'Statut actuel',
     h_status_text: 'Voir les définitions du FRQ',
     h_status_link: 'PDF',
@@ -341,7 +351,9 @@ var I18N = {
     s_identity: 'Identity',
     l_prenom: 'First name', l_nom: 'Last name', l_email: 'Email',
     l_email2: 'Secondary email',
-    h_email2: 'Optional. E.g. personal email or another institution.',
+    h_email2: 'Optional. E.g. personal email or another institution. Never publicly displayed.',
+    l_afficher_courriel: 'Display my email in the public directory',
+    h_afficher_courriel: 'Uncheck to limit sharing of your address to RSN administrators only.',
     s_status: 'Present Status',
     h_status_text: 'Refer to the FRQ definitions',
     h_status_link: 'PDF',
@@ -424,6 +436,11 @@ function applyI18n() {
   setWithRequired('l_nom', t('l_nom'), true);
   setWithRequired('l_email', t('l_email'), true);
   setWithRequired('l_email2', t('l_email2'), false);
+  // Phase 2f: toggle afficher courriel
+  var lAff = document.getElementById('l_afficher_courriel');
+  if (lAff) lAff.textContent = t('l_afficher_courriel');
+  var hAff = document.getElementById('h_afficher_courriel');
+  if (hAff) hAff.textContent = t('h_afficher_courriel');
   setWithRequired('l_themes', t('l_themes'), true);
   setWithRequired('l_cv', t('l_cv'), false);
   setWithRequired('l_orcid', t('l_orcid'), false);
@@ -702,6 +719,8 @@ function submit() {
     principes: getChips('principes_group'),
     champs: getChips('champs_group'),
     consent: document.getElementById('f_consent').value,
+    // Phase 2f: toggle afficher courriel (default true si la case est cochee)
+    afficherCourriel: document.getElementById('f_afficher_courriel').checked,
   };
 
   fetch('/api/join', {

@@ -67,6 +67,9 @@ module.exports = async function handler(req, res) {
       // ont automatiquement le droit de vote a la creation. L'admin peut
       // ensuite ajuster manuellement dans Notion en cas de besoin.
       droitVote: cleanType === 'Régulier',
+      // Phase 2f (2026-05-04): toggle 'Afficher courriel' (default true).
+      // Si le toggle n'est pas dans le body (ancien client), default true.
+      afficherCourriel: body.afficherCourriel !== false,
       themes: (themes || '').trim(),
       cv: body.cv || null,
       orcid: body.orcid || null,

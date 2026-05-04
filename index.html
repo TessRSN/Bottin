@@ -1106,7 +1106,8 @@ function renderCards() {
             const pBtn = pLong ? `<button class="modal-projet-toggle" onclick="event.stopPropagation();this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
             exParts.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${pCol}">${esc(m.projet)}</div>${pBtn}</div>`);
         }
-        if(m.etudiants) exParts.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
+        // Phase 2f: champ Etudiants retire du bottin public (peu utilise — 3% — et
+        // pas pertinent pour les visiteurs externes). Conserve dans Notion pour usage admin.
         const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${t('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
         // Consent & form badges
         const isPending = m.consent !== 'oui';
@@ -1241,7 +1242,7 @@ function showMemberPopup(name) {
         const toggleBtn = projetLong ? `<button class="modal-projet-toggle" onclick="this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
         details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${colClass}">${esc(m.projet)}</div>${toggleBtn}</div>`);
     }
-    if (m.etudiants) details.push(`<div class="card-detail"><span class="dl">${t('lbl_students')}</span><span>${esc(m.etudiants)}</span></div>`);
+    // Phase 2f: champ Etudiants retire de la modal aussi (cohérence avec les cards).
     const modal = document.getElementById('memberModalContent');
     // Build content safely — all user data goes through esc()
     modal.textContent = '';

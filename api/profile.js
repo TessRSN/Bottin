@@ -23,6 +23,7 @@ const EDITABLE_FIELDS = [
   'prenom', 'nom', 'email', 'email2', 'institution', 'statut', 'type',
   'reseau', 'expertise', 'themes', 'projet', 'etudiants',
   'axes', 'principes', 'champs', 'orcid', 'cv', 'consent',
+  'afficherCourriel', // Phase 2f (2026-05-04): toggle email public
 ];
 
 module.exports = async function handler(req, res) {
