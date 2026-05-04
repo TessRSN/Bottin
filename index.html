@@ -754,34 +754,72 @@ function csvToObjects(text) {
     });
 }
 
-// ─── REGION MAPPING ───
-const REGION_MAP = {
-    'Montréal': ['Montréal','McGill','Concordia','HEC Montréal','Polytechnique','UQAM','ETS','MUHC','CHUM','CHU Sainte-Justine','Douglas','INRS','ESPUM','MILA','Jewish General','CIUSSS du Centre-Ouest','CIUSSS du Nord-de-l','CIUSSS de l\'Est','Sacré-Coeur','Philippe-Pinel','CRIUGM','MNI','ICM','Montreal Children','CRCHUM','INESSS','FRQ','MEDTEQ','Cégep du Vieux Montréal','Cégep Marie Victorin','Armand-Frappier','INPLPP','Centre de médecine comportementale','CMCM','D3SM','STATQAM','CRDP','CReSP','CEPPP','Urgences-santé','Videotron','AWS','Axelys','Collège LaSalle','optométrie','Pharmacie','RSJQ','RQSPAL','RBIQ','RRSPQ','RRCancer','RQRM','CMDO','MICE','REPAR','RTSA','REED','RRSV','AMRQ','AIRS','Impulsions','Strataide','Wikimedica','OBVIA','RSN','Santé Numérique','Passerelle','OROT','MaSanté','StatSciences','Numana','Careteam','Universus','CATALIS','RQ-SGIG','Centre de médecine','NIM Intelliance','CÉAMS','CANSSI'],
-    'Québec (Capitale-Nationale)': ['Université Laval','CHU de Québec','IUCPQ','CR-IUCPQ','VITAM','CIRRIS','MSSS','INSPQ','Santé Québec','Capitale-Nationale','ENAP','TÉLUQ','Industrial Alliance','INTER','CRDM','OBVIA'],
-    'Estrie': ['Sherbrooke','CRCHUS','CHUS'],
-    'Outaouais': ['UQO','Outaouais'],
-    'Saguenay–Lac-Saint-Jean': ['UQAC','Chicoutimi','jounquiere','Saguenay'],
-    'Bas-Saint-Laurent': ['UQAR','Rimouski','Bas-Saint-Laurent'],
-    'Mauricie–Centre-du-Québec': ['UQTR','Trois-Rivières','Mauricie','Living Lab Éclair'],
-    'Chaudière-Appalaches': ['Chaudière-Appalaches'],
-    'Nord-du-Québec': ['Baie-James'],
-    'Hors Québec': ['Ottawa','Madagascar','Thessaloniki','Saint-Etienne','Poitiers','Weill Cornell','Hariri','INEAS','CERRHUD','Guinée','KI-ZERBO','Manitoba','Hasso Plattner','ENOLL','Canada Health Infoway']
-};
+// ─── REGION MAPPING (Phase 2c, 2026-05-04) ───
+// Refonte via lat/long depuis le catalogue GEOCODE (charge depuis Notion
+// via /api/institutions). Au lieu de matcher le nom de l'institution
+// contre des mots-cles (fragile, demande maintenance manuelle a chaque
+// nouvelle institution), on lit les coordonnees et on determine la
+// region administrative via des bounding boxes.
+//
+// Bounding boxes [lat_min, lat_max, lng_min, lng_max] des 17 regions
+// administratives du Quebec. Ordre du plus specifique au plus large
+// pour gerer les chevauchements (Montreal teste avant Monteregie etc.).
+// Approximations suffisantes pour classifier les institutions
+// academiques/hospitalieres. Hors Quebec en fallback final.
+const REGION_BOXES = [
+    { name: 'Montréal',                          box: [45.40, 45.72, -73.99, -73.45] },
+    { name: 'Laval',                             box: [45.52, 45.73, -73.92, -73.50] },
+    { name: 'Québec (Capitale-Nationale)',       box: [46.55, 47.40, -72.00, -70.40] },
+    { name: 'Estrie',                            box: [45.00, 45.95, -72.55, -71.20] },
+    { name: 'Outaouais',                         box: [45.40, 47.10, -78.30, -75.20] },
+    { name: 'Bas-Saint-Laurent',                 box: [47.40, 48.90, -69.80, -67.20] },
+    { name: 'Saguenay–Lac-Saint-Jean',           box: [47.50, 50.50, -73.50, -69.30] },
+    { name: 'Chaudière-Appalaches',              box: [45.40, 46.55, -71.80, -69.80] },
+    { name: 'Mauricie',                          box: [46.00, 49.00, -73.50, -72.00] },
+    { name: 'Centre-du-Québec',                  box: [45.85, 46.50, -72.55, -71.30] },
+    { name: 'Lanaudière',                        box: [45.70, 47.50, -74.30, -73.30] },
+    { name: 'Laurentides',                       box: [45.70, 47.50, -75.30, -74.00] },
+    { name: 'Montérégie',                        box: [45.00, 45.55, -74.30, -72.55] },
+    { name: 'Côte-Nord',                         box: [48.50, 53.00, -68.50, -57.00] },
+    { name: 'Gaspésie–Îles-de-la-Madeleine',     box: [47.20, 49.30, -67.30, -61.30] },
+    { name: 'Abitibi-Témiscamingue',             box: [46.50, 49.00, -79.90, -76.50] },
+    { name: 'Nord-du-Québec',                    box: [49.00, 62.60, -79.90, -57.00] },
+];
+
+function regionFromCoords(lat, lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) return '';
+    for (const r of REGION_BOXES) {
+        const b = r.box;
+        if (lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3]) return r.name;
+    }
+    return 'Hors Québec';
+}
+// getRegion(institutionName) reste l'API publique. Si plusieurs institutions
+// (separees par ';'), on utilise la PREMIERE (typiquement la principale).
+// On lookup ses coordonnees dans GEOCODE (catalogue Notion) puis on
+// applique regionFromCoords. Pour une institution non trouvee dans le
+// catalogue, on retourne '' ('vide' dans le filtre) — c'est un signal
+// que cette institution doit etre validee/geocodee dans Notion avant
+// d'apparaitre proprement dans le filtre.
 function getRegion(inst) {
     if (!inst) return '';
-    const ni = inst.replace(/[\u2018\u2019\u2032]/g, "'").toLowerCase();
-    // Check Hors Québec first (higher priority for Ottawa, international)
-    for (const kw of REGION_MAP['Hors Québec']) {
-        if (ni.includes(kw.toLowerCase())) return 'Hors Québec';
-    }
-    // Then check other regions
-    for (const [region, keywords] of Object.entries(REGION_MAP)) {
-        if (region === 'Hors Québec') continue;
-        for (const kw of keywords) {
-            if (ni.includes(kw.toLowerCase())) return region;
+    const firstInst = String(inst).split(';')[0].trim();
+    if (!firstInst) return '';
+    const ni = firstInst.replace(/[\u2018\u2019\u2032]/g, "'");
+
+    // Recherche directe dans GEOCODE
+    let coords = (typeof GEOCODE !== 'undefined') ? (GEOCODE[firstInst] || GEOCODE[ni]) : null;
+
+    // Recherche tolerante (case-insensitive)
+    if (!coords && typeof GEOCODE !== 'undefined') {
+        const lower = ni.toLowerCase();
+        for (const key of Object.keys(GEOCODE)) {
+            if (key.toLowerCase() === lower) { coords = GEOCODE[key]; break; }
         }
     }
-    return '';
+
+    if (!coords || !Array.isArray(coords) || coords.length < 2) return '';
+    return regionFromCoords(coords[0], coords[1]);
 }
 
 // ─── STATUT GROUPING ───
@@ -1625,8 +1663,19 @@ function restoreHash() {
         if (!result) return;
         GEOCODE = result.data;
         saveInstCache(result.data, result.etag);
-        // If the map is currently visible, re-render to apply any new institutions
-        if (currentView === 'map' && typeof renderMap === 'function') renderMap();
+        // Phase 2c (2026-05-04): la region des membres depend de GEOCODE
+        // (lookup lat/long → bounding box). Si les membres ont ete charges
+        // avant que GEOCODE ne soit complet (1ere visite, cache vide),
+        // les regions sont incompletes/vides. On recalcule m.region pour
+        // tous les membres et on re-rend la vue + le filtre.
+        if (typeof allMembers !== 'undefined' && Array.isArray(allMembers) && allMembers.length) {
+            for (const m of allMembers) {
+                m.region = getRegion(m.institution);
+            }
+            if (typeof render === 'function') render();
+        } else if (currentView === 'map' && typeof renderMap === 'function') {
+            renderMap();
+        }
     }).catch(err => {
         // On error, keep the hardcoded fallback already loaded
         console.warn('Failed to load institutions catalog:', err && err.message);
