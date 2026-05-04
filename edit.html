@@ -64,7 +64,7 @@
   .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
   [data-theme="dark"] .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); }
   .consent-section label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
-  .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; }
+  .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; white-space:pre-line; line-height:1.5; }
   .msg.success { display:block; background:#c6f6d5; color:#22543d; }
   .msg.error { display:block; background:#fed7d7; color:#9b2c2c; }
   [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
@@ -245,11 +245,11 @@ function t(key) {
       l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
       opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
-      msg_success:'Profil mis à jour ! Vos modifications seront visibles après approbation.',
+      msg_success:"Merci ! Vos modifications nous sont bien parvenues. Notre équipe les examinera et les publiera dans le bottin sous 1 à 2 semaines.\n\nUne fois approuvées, pensez à rafraîchir la page du bottin pour les voir (Cmd + Maj + R sur Mac, Ctrl + Maj + R sur Windows).\n\nSi vous n'avez pas de nouvelles d'ici deux semaines, n'hésitez pas à nous écrire à rsn.gestion@rimuhc.ca — nous serons ravi·es de répondre.",
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
       h_email:"Si vous modifiez ce courriel, vous recevrez un lien de confirmation à la nouvelle adresse pour valider le changement.",
-      msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.',
+      msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.\n\nVos autres modifications seront examinées par notre équipe et publiées sous 1 à 2 semaines. Sans nouvelles, contactez-nous à rsn.gestion@rimuhc.ca.',
       msg_email_taken:"Ce courriel est déjà utilisé par un autre membre. Le changement n'a pas été effectué.",
       msg_email_error:"Profil sauvegardé, mais l'envoi du courriel de confirmation a échoué. Vous pouvez réessayer.",
       h_institution:"Tapez pour rechercher dans notre catalogue. Si votre institution n'apparaît pas, écrivez son nom complet et fournissez son adresse pour qu'on l'ajoute à la carte.",
@@ -268,11 +268,11 @@ function t(key) {
       l_consent:'Do you authorize RSN to create a public member profile?',
       opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
-      msg_success:'Profile updated! Changes will be visible after approval.',
+      msg_success:"Thank you! We've received your changes. Our team will review and publish them in the directory within 1 to 2 weeks.\n\nOnce approved, refresh the directory page to see them (Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows).\n\nIf you don't hear back within two weeks, feel free to email us at rsn.gestion@rimuhc.ca — we'll be happy to help.",
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
       h_email:'If you change this email, you will receive a confirmation link at the new address to validate the change.',
-      msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.',
+      msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.\n\nYour other changes will be reviewed by our team and published within 1 to 2 weeks. If you don\'t hear back, please contact us at rsn.gestion@rimuhc.ca.',
       msg_email_taken:'This email is already used by another member. The change was not applied.',
       msg_email_error:'Profile saved, but sending the confirmation email failed. You can try again.',
       h_institution:"Start typing to search our catalog. If your institution doesn't appear, write its full name and provide its address so we can add it to the map.",
