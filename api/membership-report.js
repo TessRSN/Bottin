@@ -7,6 +7,14 @@
  *                               membres avec le catalogue Institutions
  *                               (Validee). Liste les ecarts + suggestions
  *                               de fuzzy match.
+ *   mode=field-audit         : audit exhaustif des champs a valeurs
+ *                               contraintes (statut, type, axes,
+ *                               principes, champs, consent, evaluateur)
+ *                               + verif formats (email, orcid, cv).
+ *                               Sert de base a la Phase 1 du nettoyage
+ *                               avant la refonte de edit.html.
+ *   mode=full-data           : retourne les champs essentiels de tous les
+ *                               membres pour cross-check local (CSV).
  *
  * Issues detectees (mode default):
  *   - noEmail            : fiches sans email principal
@@ -20,6 +28,44 @@
  *   - dateRenouvDifferent: date renouv. != date debut + 2 ans
  */
 const { getAllMembers, getValidatedInstitutions } = require('../lib/notion');
+
+// ─── Reference values (must stay in sync with join.html) ───
+const STATUT_OPTIONS = [
+  'Chercheur universitaire',
+  'Chercheur clinicien universitaire',
+  'Chercheur de collège',
+  'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)',
+  'Professionnel de recherche',
+  'Personne aux études au 1er cycle',
+  'Personne aux études à la maîtrise',
+  'Personne aux études au doctorat',
+  'Stagiaire postdoctoral',
+  'Direction ou gestion',
+  "Membre de l'industrie",
+  'Professionnel de la santé',
+  'Autre',
+];
+const TYPE_OPTIONS = ['Régulier', 'Étudiant', 'Partenaire'];
+const AXES_OPTIONS = [
+  'Axe 1 - Plateformes numériques et gouvernance informationnelle',
+  'Axe 2 - Modélisation et méthodes numériques',
+  'Axe 3 - Intervention numérique',
+  'Axe 4 - Transformation numérique',
+];
+const PRINCIPES_OPTIONS = [
+  'Science ouverte',
+  'Numérique de confiance',
+  'Santé durable',
+  'Engagement citoyen',
+  'Équité diversité inclusion et accessibilité',
+];
+const CHAMPS_OPTIONS = [
+  'Formation interdisciplinaire',
+  'Mobilisation des connaissances',
+  'Renforcement des capacités',
+];
+const CONSENT_OPTIONS = ['Oui', 'Non', ''];
+const EVALUATEUR_OPTIONS = ['Oui', 'Non', ''];
 
 function expectedRenewal(dateDebutISO) {
   if (!dateDebutISO) return null;
@@ -122,6 +168,152 @@ async function institutionMismatchReport() {
   };
 }
 
+// ─── Format validators ───
+function isValidEmail(s) {
+  if (!s) return true; // empty is OK (handled separately as "noEmail")
+  const trimmed = String(s).trim();
+  if (trimmed !== s) return false;        // leading/trailing whitespace
+  if (/\s/.test(trimmed)) return false;   // any whitespace inside
+  if (!trimmed.includes('@')) return false;
+  if (trimmed.indexOf('@') !== trimmed.lastIndexOf('@')) return false;
+  return true;
+}
+function isValidOrcid(s) {
+  if (!s) return true; // empty is OK
+  const trimmed = String(s).trim();
+  // Accept either full URL (https://orcid.org/XXXX-XXXX-XXXX-XXXX) or bare id (XXXX-XXXX-XXXX-XXXX)
+  if (/^https?:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[\dxX]$/.test(trimmed)) return true;
+  if (/^\d{4}-\d{4}-\d{4}-\d{3}[\dxX]$/.test(trimmed)) return true;
+  return false;
+}
+function isValidUrl(s) {
+  if (!s) return true; // empty is OK
+  const trimmed = String(s).trim();
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+// ─── Field audit (mode=field-audit) ───
+async function fieldAuditReport() {
+  const all = await getAllMembers();
+  const summary = (m) => ({ id: m.id, prenom: m.prenom, nom: m.nom, email: m.email });
+
+  // Group anomalies by problematic value -> list of members
+  function groupByValue(items) {
+    const map = new Map();
+    for (const it of items) {
+      const key = it.value;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(it.member);
+    }
+    return Array.from(map.entries())
+      .map(([value, members]) => ({ value, count: members.length, members }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  // Collect raw anomalies
+  const statutBad = [];
+  const typeBad = [];
+  const axesBad = [];
+  const principesBad = [];
+  const champsBad = [];
+  const consentBad = [];
+  const evaluateurBad = [];
+  const emailBad = [];
+  const email2Bad = [];
+  const orcidBad = [];
+  const cvBad = [];
+
+  for (const m of all) {
+    const isEmpty = !m.prenom && !m.nom && !m.email;
+    if (isEmpty) continue;
+
+    // statut: rich_text, must be in STATUT_OPTIONS (or empty)
+    if (m.statut && STATUT_OPTIONS.indexOf(m.statut) === -1) {
+      statutBad.push({ value: m.statut, member: summary(m) });
+    }
+
+    // type: select, must be in TYPE_OPTIONS (or empty)
+    if (m.type && TYPE_OPTIONS.indexOf(m.type) === -1) {
+      typeBad.push({ value: m.type, member: summary(m) });
+    }
+
+    // axes / principes / champs are arrays of multi_select values
+    for (const a of (m.axes || [])) {
+      if (AXES_OPTIONS.indexOf(a) === -1) axesBad.push({ value: a, member: summary(m) });
+    }
+    for (const a of (m.principes || [])) {
+      if (PRINCIPES_OPTIONS.indexOf(a) === -1) principesBad.push({ value: a, member: summary(m) });
+    }
+    for (const a of (m.champs || [])) {
+      if (CHAMPS_OPTIONS.indexOf(a) === -1) champsBad.push({ value: a, member: summary(m) });
+    }
+
+    // consent: select, must be in CONSENT_OPTIONS
+    if (m.consent && CONSENT_OPTIONS.indexOf(m.consent) === -1) {
+      consentBad.push({ value: m.consent, member: summary(m) });
+    }
+
+    // evaluateur: rich_text, must be in EVALUATEUR_OPTIONS
+    if (m.evaluateur && EVALUATEUR_OPTIONS.indexOf(m.evaluateur) === -1) {
+      evaluateurBad.push({ value: m.evaluateur, member: summary(m) });
+    }
+
+    // email format
+    if (m.email && !isValidEmail(m.email)) {
+      emailBad.push({ value: m.email, member: summary(m) });
+    }
+    if (m.email2 && !isValidEmail(m.email2)) {
+      email2Bad.push({ value: m.email2, member: summary(m) });
+    }
+
+    // orcid format
+    if (m.orcid && !isValidOrcid(m.orcid)) {
+      orcidBad.push({ value: m.orcid, member: summary(m) });
+    }
+
+    // cv format
+    if (m.cv && !isValidUrl(m.cv)) {
+      cvBad.push({ value: m.cv, member: summary(m) });
+    }
+  }
+
+  return {
+    mode: 'field-audit',
+    totalMembers: all.length,
+    counts: {
+      statut: statutBad.length,
+      type: typeBad.length,
+      axes: axesBad.length,
+      principes: principesBad.length,
+      champs: champsBad.length,
+      consent: consentBad.length,
+      evaluateur: evaluateurBad.length,
+      email: emailBad.length,
+      email2: email2Bad.length,
+      orcid: orcidBad.length,
+      cv: cvBad.length,
+    },
+    anomalies: {
+      statut: groupByValue(statutBad),
+      type: groupByValue(typeBad),
+      axes: groupByValue(axesBad),
+      principes: groupByValue(principesBad),
+      champs: groupByValue(champsBad),
+      consent: groupByValue(consentBad),
+      evaluateur: groupByValue(evaluateurBad),
+      email: groupByValue(emailBad),
+      email2: groupByValue(email2Bad),
+      orcid: groupByValue(orcidBad),
+      cv: groupByValue(cvBad),
+    },
+  };
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const providedKey = (req.query && req.query.key) || '';
@@ -134,6 +326,11 @@ module.exports = async function handler(req, res) {
   try {
     if (mode === 'institution-mismatch') {
       const report = await institutionMismatchReport();
+      return res.status(200).json({ ok: true, ...report });
+    }
+
+    if (mode === 'field-audit') {
+      const report = await fieldAuditReport();
       return res.status(200).json({ ok: true, ...report });
     }
 
