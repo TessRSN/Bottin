@@ -801,22 +801,27 @@ const STATUT_GROUP_MAP = {
     'Personnel de recherche': 'Personnel de recherche',
     'Personnel de la santé': 'Personnel de la santé',
     "Coordination ou gestion d'équipe": 'Direction ou coordination',
-    'Personne en milieu industriel ou gouvernemental': 'Partenaire / Industrie / Autre',
-    'Personne partenaire citoyenne': 'Partenaire / Industrie / Autre',
-    'Autre': 'Partenaire / Industrie / Autre',
+    'Personne en milieu industriel ou gouvernemental': 'Partenaire ou autre',
+    'Personne partenaire citoyenne': 'Partenaire ou autre',
+    'Autre': 'Partenaire ou autre',
 };
 function groupStatut(raw) {
     if (!raw) return '';
+    // Match exact contre la nouvelle taxonomie (cas normal post-Phase 1).
+    // Comparaison tolerante a l'apostrophe typographique (Notion auto-convertit).
+    const norm = String(raw).replace(/[‘’′]/g, "'");
     if (STATUT_GROUP_MAP[raw]) return STATUT_GROUP_MAP[raw];
+    if (STATUT_GROUP_MAP[norm]) return STATUT_GROUP_MAP[norm];
     // Fallback regex pour les anciennes valeurs si une fiche n'a pas encore
-    // ete migree (ne devrait plus arriver post-Phase 1, mais securite).
-    const s = String(raw).toLowerCase();
+    // ete migree (rare). Default: '' (apparaitra comme 'vide' dans le filtre,
+    // pour ne pas masquer un probleme dans une fausse categorie 'Autre').
+    const s = norm.toLowerCase();
     if (/chercheu|researcher|physician|clinici|radiologiste|enseignant chercheur|professeu/i.test(s)) return 'Chercheur·e';
     if (/[ée]tudiant|student|doctorat|ma[iî]trise|baccalaur|postdoc|stagiaire/i.test(s)) return 'Étudiant·e';
     if (/professionnel|research (associate|staff)|associé.*recherche|coordonn|transcripti|analyste|informatics|open science/i.test(s)) return 'Personnel de recherche';
     if (/gestionnaire|cadre|chef|cnio|affaires professorales|member of the rsn/i.test(s)) return 'Direction ou coordination';
-    if (/industrie|partenaire|patient|citoyen|organisa|présidente/i.test(s)) return 'Partenaire / Industrie / Autre';
-    return 'Partenaire / Industrie / Autre';
+    if (/industrie|partenaire|patient|citoyen|organisa|présidente/i.test(s)) return 'Partenaire ou autre';
+    return '';
 }
 
 // ─── DATA LOADING ───
