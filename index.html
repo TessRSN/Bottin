@@ -794,32 +794,32 @@ function regionFromCoords(lat, lng) {
     }
     return 'Hors Québec';
 }
-// getRegion(institutionName) reste l'API publique. Si plusieurs institutions
-// (separees par ';'), on utilise la PREMIERE (typiquement la principale).
-// On lookup ses coordonnees dans GEOCODE (catalogue Notion) puis on
-// applique regionFromCoords. Pour une institution non trouvee dans le
-// catalogue, on retourne '' ('vide' dans le filtre) — c'est un signal
-// que cette institution doit etre validee/geocodee dans Notion avant
-// d'apparaitre proprement dans le filtre.
+// getRegion(inst) retourne un ARRAY de regions (une par institution
+// affiliee). Si le membre a plusieurs institutions (separees par ';'),
+// chacune est lookup dans GEOCODE et sa region calculee. Le filtre
+// montre alors le membre dans toutes les regions concernees (decision
+// Tess Phase 2c, 2026-05-04). Doublons et regions vides retires.
 function getRegion(inst) {
-    if (!inst) return '';
-    const firstInst = String(inst).split(';')[0].trim();
-    if (!firstInst) return '';
-    const ni = firstInst.replace(/[\u2018\u2019\u2032]/g, "'");
+    if (!inst) return [];
+    const parts = String(inst).split(';').map(s => s.trim()).filter(Boolean);
+    if (parts.length === 0) return [];
 
-    // Recherche directe dans GEOCODE
-    let coords = (typeof GEOCODE !== 'undefined') ? (GEOCODE[firstInst] || GEOCODE[ni]) : null;
-
-    // Recherche tolerante (case-insensitive)
-    if (!coords && typeof GEOCODE !== 'undefined') {
-        const lower = ni.toLowerCase();
-        for (const key of Object.keys(GEOCODE)) {
-            if (key.toLowerCase() === lower) { coords = GEOCODE[key]; break; }
+    const regions = [];
+    for (const raw of parts) {
+        const ni = raw.replace(/[\u2018\u2019\u2032]/g, "'");
+        let coords = (typeof GEOCODE !== 'undefined') ? (GEOCODE[raw] || GEOCODE[ni]) : null;
+        if (!coords && typeof GEOCODE !== 'undefined') {
+            const lower = ni.toLowerCase();
+            for (const key of Object.keys(GEOCODE)) {
+                if (key.toLowerCase() === lower) { coords = GEOCODE[key]; break; }
+            }
+        }
+        if (coords && Array.isArray(coords) && coords.length >= 2) {
+            const r = regionFromCoords(coords[0], coords[1]);
+            if (r && regions.indexOf(r) === -1) regions.push(r);
         }
     }
-
-    if (!coords || !Array.isArray(coords) || coords.length < 2) return '';
-    return regionFromCoords(coords[0], coords[1]);
+    return regions;
 }
 
 // ─── STATUT GROUPING ───
@@ -988,7 +988,16 @@ function closeAllMS() {
 document.addEventListener('click', () => closeAllMS());
 
 function populateFilters() {
-    const countMap = (arr) => { const c = {}; arr.filter(Boolean).forEach(v => { c[v]=(c[v]||0)+1; }); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([v,n])=>({value:v,count:n})); };
+    // countMap accepte string OU array (cas region : un membre peut avoir
+    // plusieurs regions s'il est affilie a plusieurs institutions).
+    const countMap = (arr) => {
+        const c = {};
+        arr.forEach(v => {
+            if (Array.isArray(v)) v.forEach(x => { if (x) c[x] = (c[x]||0)+1; });
+            else if (v) c[v] = (c[v]||0)+1;
+        });
+        return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([v,n])=>({value:v,count:n}));
+    };
 
     buildMS('filterType', countMap(allMembers.map(m=>m.type)), t('all_m'));
     buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), t('all_f'));
@@ -1015,7 +1024,10 @@ function applyFilters() {
         if(m.consent==='non') return false;
         if(s && !m._search.includes(s)) return false;
         if(ft.length && !ft.includes(m.type)) return false;
-        if(fr.length && !fr.includes(m.region)) return false;
+        if (fr.length) {
+            const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
+            if (!fr.some(f => memberRegions.includes(f))) return false;
+        }
         if(fs.length && !fs.includes(m.statutGroup)) return false;
         if(fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
         return true;
