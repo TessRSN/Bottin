@@ -56,7 +56,7 @@ const STATUT_OPTIONS = [
   'Personne en stage postdoctoral',
   'Personnel de recherche',
   'Personnel de la santé',
-  'Direction, gestion ou coordination',
+  "Coordination ou gestion d'équipe", // sans virgule pour eviter le split Notion select
   'Personne en milieu industriel ou gouvernemental',
   'Personne partenaire citoyenne',
   'Autre',
@@ -220,9 +220,9 @@ function isValidUrl(s) {
 // Validee 2026-05-04 par Tess. Cible: nouvelle taxonomie 14 options
 // epicene neutre (cf. STATUT_OPTIONS plus haut).
 //
-// Convention pour la cat. 14 "Autre" : on prefixe la valeur par "Autre — "
+// Convention pour la cat. 14 "Autre" : on prefixe la valeur par "Autre : "
 // suivi de la precision originale pour conserver l'info qualitative.
-// Ex: "Bibliothecaire" -> "Autre — Bibliothecaire"
+// Ex: "Bibliothecaire" -> "Autre : Bibliothecaire"
 //
 // Ces valeurs cibles, une fois appliquees, deviendront toutes valides
 // vis-a-vis du nouveau STATUT_OPTIONS (au moment de la conversion en
@@ -236,7 +236,7 @@ const STATUT_FIXES = {
   'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)': 'Autres statuts en recherche',
   'Professionnel de recherche': 'Personnel de recherche',
   'Stagiaire postdoctoral': 'Personne en stage postdoctoral',
-  'Direction ou gestion': 'Direction, gestion ou coordination',
+  'Direction ou gestion': "Coordination ou gestion d'équipe",
   "Membre de l'industrie": 'Personne en milieu industriel ou gouvernemental',
   'Professionnel de la santé': 'Personnel de la santé',
 
@@ -247,7 +247,7 @@ const STATUT_FIXES = {
   'Professionnel·le de la recherche': 'Personnel de recherche',
   'Professionnel·le de la santé': 'Personnel de la santé',
   'Stagiaire postdoctoral·e': 'Personne en stage postdoctoral',
-  'Gestionnaire ou cadre': 'Direction, gestion ou coordination',
+  'Gestionnaire ou cadre': "Coordination ou gestion d'équipe",
 
   // ─── Personnes aux etudes (point median ou termes alternatifs) → forme neutre
   'Etudiant·e au doctorat': 'Personne aux études au doctorat',
@@ -284,15 +284,15 @@ const STATUT_FIXES = {
   'Professionnel de la santé + Master Student': 'Personnel de la santé',
   "Professionnelle de la santé inscrite au DESS en gestion - analyse d'affaires - TI": 'Personnel de la santé',
 
-  // ─── Direction, gestion ou coordination
-  'Gestionnaire de projet en santé numerique': 'Direction, gestion ou coordination',
-  'Coordonnatrice du Pôle': 'Direction, gestion ou coordination',
-  'Coordonnatrice académique numérique de la santé': 'Direction, gestion ou coordination',
-  'gestion de projets scientifiques': 'Direction, gestion ou coordination',
-  'Member of the RSN gestion team :)': 'Direction, gestion ou coordination',
-  'Chef de programmes santé publique - Direction de Santé Publique': 'Direction, gestion ou coordination',
-  'Présidente du Prix Hippocrate': 'Direction, gestion ou coordination',
-  'CNIO': 'Direction, gestion ou coordination',
+  // ─── Coordination ou gestion d'équipe
+  'Gestionnaire de projet en santé numerique': "Coordination ou gestion d'équipe",
+  'Coordonnatrice du Pôle': "Coordination ou gestion d'équipe",
+  'Coordonnatrice académique numérique de la santé': "Coordination ou gestion d'équipe",
+  'gestion de projets scientifiques': "Coordination ou gestion d'équipe",
+  'Member of the RSN gestion team :)': "Coordination ou gestion d'équipe",
+  'Chef de programmes santé publique - Direction de Santé Publique': "Coordination ou gestion d'équipe",
+  'Présidente du Prix Hippocrate': "Coordination ou gestion d'équipe",
+  'CNIO': "Coordination ou gestion d'équipe",
 
   // ─── Personnes partenaires citoyennes
   'patiente-partenaire': 'Personne partenaire citoyenne',
@@ -304,12 +304,14 @@ const STATUT_FIXES = {
   "Autres statuts de recherche (Chercheur ou chercheuse d’une institution gouvernementale, d'une organisation du secteur gouvernemental ou privé, personne des milieux de pratique, artiste ou contribuant individuel)": 'Autres statuts en recherche',
   'reconnue par les FRQ ou privé': 'Autres statuts en recherche',
 
-  // ─── Cat. "Autre" avec precision conservee (suffixe)
-  'Bibliothécaire': 'Autre — Bibliothécaire',
-  'Transcriptrice médical': 'Autre — Transcriptrice médicale',
-  "Analyste d'affaires systemes comptables": "Autre — Analyste d'affaires systèmes comptables",
-  'Affaires professorales': 'Autre — Affaires professorales',
-  "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": "Autre — Organisation à but non lucratif",
+  // ─── Cat. "Autre" — generique (decision Tess 2026-05-04 : pas de
+  // suffixe XX pour rester en select-only et faciliter la traduction
+  // anglaise. Le libelle dans les formulaires sera explicite.)
+  'Bibliothécaire': 'Autre',
+  'Transcriptrice médical': 'Autre',
+  "Analyste d'affaires systemes comptables": 'Autre',
+  'Affaires professorales': 'Autre',
+  "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": 'Autre',
 };
 
 const EVALUATEUR_FIXES = {
@@ -369,8 +371,9 @@ async function fixFieldsReport(dryRun) {
   for (const [pageId, fixes] of byPage) {
     const props = {};
     for (const fx of fixes) {
-      if (fx.field === 'statut') props[PROP.statut] = { rich_text: [{ text: { content: String(fx.after).slice(0, 2000) } }] };
-      else if (fx.field === 'evaluateur') props[PROP.evaluateur] = { rich_text: [{ text: { content: String(fx.after).slice(0, 2000) } }] };
+      // Phase 1 (2026-05-04): statut et evaluateur convertis en select
+      if (fx.field === 'statut') props[PROP.statut] = { select: fx.after ? { name: fx.after } : null };
+      else if (fx.field === 'evaluateur') props[PROP.evaluateur] = { select: fx.after ? { name: fx.after } : null };
       else if (fx.field === 'orcid') props[PROP.orcid] = { url: fx.after || null };
       else if (fx.field === 'cv') props[PROP.cv] = { url: fx.after || null };
     }
@@ -420,8 +423,8 @@ async function fieldAuditReport() {
     if (isEmpty) continue;
 
     // statut: rich_text, must be in STATUT_OPTIONS (or empty).
-    // "Autre — <precision>" est aussi accepte (cat. 14 avec libre).
-    if (m.statut && STATUT_OPTIONS.indexOf(m.statut) === -1 && !m.statut.startsWith('Autre — ')) {
+    // "Autre : <precision>" est aussi accepte (cat. 14 avec libre).
+    if (m.statut && STATUT_OPTIONS.indexOf(m.statut) === -1 && !m.statut.startsWith('Autre : ')) {
       statutBad.push({ value: m.statut, member: summary(m) });
     }
 
