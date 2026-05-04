@@ -604,7 +604,7 @@ const I18N = {
 };
 
 let currentLang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
-function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fr[key]) || key; }
+function tr(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fr[key]) || key; }
 
 // ─── QR Modal ───
 function generateQR(container, text, size) {
@@ -635,7 +635,7 @@ function openQrModal(type) {
     document.getElementById('qrModalTitle').textContent = t(titleKey);
     document.getElementById('qrModalSubtitle').textContent = t(subtitleKey);
     document.getElementById('qrOnlineLink').href = url;
-    document.getElementById('qrOnlineLink').textContent = t('qr_open');
+    document.getElementById('qrOnlineLink').textContent = tr('qr_open');
     document.querySelectorAll('.qr-modal [data-i18n]').forEach(el => {
         el.textContent = t(el.getAttribute('data-i18n'));
     });
@@ -1000,19 +1000,19 @@ function populateFilters() {
         return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([v,n])=>({value:v,count:n}));
     };
 
-    buildMS('filterType', countMap(allMembers.map(m=>m.type)), t('all_m'));
-    buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), t('all_f'));
-    buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), t('all_m'));
+    buildMS('filterType', countMap(allMembers.map(m=>m.type)), tr('all_m'));
+    buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), tr('all_f'));
+    buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), tr('all_m'));
 
     // Focus filter: axes first, then principes, then champs — with group labels
     const axeItems = countMap(allMembers.map(m=>m.axes[0]));
     const principeItems = countMap(allMembers.map(m=>m.principes[0]));
     const champItems = countMap(allMembers.map(m=>m.champsAction[0]));
     const focusItems = [];
-    if (axeItems.length) { focusItems.push({group: t('th_axis')}); focusItems.push(...axeItems); }
-    if (principeItems.length) { focusItems.push({group: t('th_principle')}); focusItems.push(...principeItems); }
-    if (champItems.length) { focusItems.push({group: t('th_action')}); focusItems.push(...champItems); }
-    buildMS('filterFocus', focusItems, t('all_m'));
+    if (axeItems.length) { focusItems.push({group: tr('th_axis')}); focusItems.push(...axeItems); }
+    if (principeItems.length) { focusItems.push({group: tr('th_principle')}); focusItems.push(...principeItems); }
+    if (champItems.length) { focusItems.push({group: tr('th_action')}); focusItems.push(...champItems); }
+    buildMS('filterFocus', focusItems, tr('all_m'));
 }
 
 // ─── Fuse.js — recherche fuzzy multilingue (Phase 2g, 2026-05-04) ───
@@ -1202,40 +1202,40 @@ function renderCards() {
         if(m.projet) {
             const pLong = m.projet.length > 300;
             const pCol = pLong ? ' collapsed' : '';
-            const pBtn = pLong ? `<button class="modal-projet-toggle" onclick="event.stopPropagation();this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
-            exParts.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${pCol}">${esc(m.projet)}</div>${pBtn}</div>`);
+            const pBtn = pLong ? `<button class="modal-projet-toggle" onclick="event.stopPropagation();this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?tr('lbl_see_more'):tr('lbl_see_less')">${tr('lbl_see_more')}</button>` : '';
+            exParts.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span><div class="modal-projet-text${pCol}">${esc(m.projet)}</div>${pBtn}</div>`);
         }
         // Phase 2f: champ Etudiants retire du bottin public (peu utilise — 3% — et
         // pas pertinent pour les visiteurs externes). Conserve dans Notion pour usage admin.
-        const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${t('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
+        const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${tr('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
         // Consent & form badges
         const isPending = m.consent !== 'oui';
         const pendingClass = isPending ? ' pending-consent' : '';
         let badges = [];
-        if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳ ${t('badge_pending_consent')}</span>`);
-        if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${t('badge_incomplete_form')}</span>`);
+        if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳ ${tr('badge_pending_consent')}</span>`);
+        if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${tr('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
             ${badgesHtml}
-            <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||t('lbl_no_institution'))}</div>
+            <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
             <div class="card-details">
-                ${m.statut?`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
-                ${expertiseText?`<div class="card-detail"><span class="dl">${t('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
-                ${m.reseau?`<div class="card-detail"><span class="dl">${t('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
+                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
+                ${expertiseText?`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
+                ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
             </div>
             ${chipsHtml}
             ${exH}${lnkH}
         </div>`;
     }).join('');
 }
-function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?t('lbl_see_less'):t('lbl_see_more'); }
+function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?tr('lbl_see_less'):tr('lbl_see_more'); }
 
 function renderTable() {
     const el=document.getElementById('tableView'), items=pgItems();
     const mth=(c,l)=>{ const a=sortCol===c?(sortDir==='asc'?'▲':'▼'):'⇅'; return `<th class="${sortCol===c?'sorted':''}" onclick="doSort('${c}')">${l} <span class="sa">${a}</span></th>`; };
-    const hd=`<tr>${mth('name',t('th_name'))}${mth('institution',t('th_institution'))}<th>${t('th_email')}</th>${mth('statut',t('th_status'))}${mth('type',t('th_type'))}<th>${t('th_axis')}</th><th>${t('th_principle')}</th><th>${t('th_action')}</th><th>${t('th_expertise')}</th><th>${t('th_links')}</th></tr>`;
+    const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
     const bd=items.map(m=>{
         const tc=`tag-${m.typeNorm}`;
         const ax1=m.axes[0]?m.axes[0].replace(/Axe \d+ - /,''):'';
@@ -1257,10 +1257,10 @@ function renderTable() {
 function renderPag() {
     const el=document.getElementById('pagination'), tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE);
     if(tp<=1){el.innerHTML='';return;}
-    let h=`<button class="page-btn" onclick="goP(${currentPage-1})" ${currentPage===1?'disabled':''}>${t('prev')}</button>`;
+    let h=`<button class="page-btn" onclick="goP(${currentPage-1})" ${currentPage===1?'disabled':''}>${tr('prev')}</button>`;
     const pgs=new Set([1,tp]); for(let i=Math.max(1,currentPage-2);i<=Math.min(tp,currentPage+2);i++)pgs.add(i);
     let prev=0; [...pgs].sort((a,b)=>a-b).forEach(p=>{ if(p-prev>1)h+=`<span style="color:var(--rsn-muted)">…</span>`; h+=`<button class="page-btn ${p===currentPage?'active':''}" onclick="goP(${p})">${p}</button>`; prev=p; });
-    h+=`<button class="page-btn" onclick="goP(${currentPage+1})" ${currentPage===tp?'disabled':''}>${t('next')}</button>`;
+    h+=`<button class="page-btn" onclick="goP(${currentPage+1})" ${currentPage===tp?'disabled':''}>${tr('next')}</button>`;
     el.innerHTML=h;
 }
 function goP(p){ const tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE); if(p<1||p>tp)return; currentPage=p; render(); saveHash(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
@@ -1274,7 +1274,7 @@ document.getElementById('resetFilters').addEventListener('click',()=>{
         msState[id] = [];
         const wrap = document.getElementById(id);
         wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        updateMS(id, id==='filterRegion' ? t('all_f') : t('all_m'));
+        updateMS(id, id==='filterRegion' ? tr('all_f') : tr('all_m'));
     });
     sortCol=null;sortDir='asc';applyFilters();saveHash();
 });
@@ -1332,14 +1332,14 @@ function showMemberPopup(name) {
     if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
     const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
     let details = [];
-    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${t('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
-    if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${t('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
-    if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${t('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
+    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
+    if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
+    if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
     if (m.projet) {
         const projetLong = m.projet.length > 300;
         const colClass = projetLong ? ' collapsed' : '';
-        const toggleBtn = projetLong ? `<button class="modal-projet-toggle" onclick="this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?t('lbl_see_more'):t('lbl_see_less')">${t('lbl_see_more')}</button>` : '';
-        details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${t('lbl_project')}</span><div class="modal-projet-text${colClass}">${esc(m.projet)}</div>${toggleBtn}</div>`);
+        const toggleBtn = projetLong ? `<button class="modal-projet-toggle" onclick="this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?tr('lbl_see_more'):tr('lbl_see_less')">${tr('lbl_see_more')}</button>` : '';
+        details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span><div class="modal-projet-text${colClass}">${esc(m.projet)}</div>${toggleBtn}</div>`);
     }
     // Phase 2f: champ Etudiants retire de la modal aussi (cohérence avec les cards).
     const modal = document.getElementById('memberModalContent');
@@ -1353,7 +1353,7 @@ function showMemberPopup(name) {
     const content = document.createElement('div');
     content.innerHTML = [
         `<div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span></div>`,
-        `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || t('lbl_no_institution'))}</div>`,
+        `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || tr('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
         chipsHtml, lnkH
@@ -1529,7 +1529,7 @@ let GEOCODE = {
 };
 
 function renderMap() {
-    if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${t('map_loading')}</p>`; return; }
+    if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${tr('map_loading')}</p>`; return; }
     if (!map) {
         map = L.map('mapView').setView([47.0, -71.5], 6);
         // Phase 2d (2026-05-04): tiles CARTO Voyager (style pastel/leger,
@@ -1613,9 +1613,9 @@ function renderMap() {
         const types = { regulier: 0, etudiant: 0, partenaire: 0 };
         data.members.forEach(m => { if (types[m.typeNorm] !== undefined) types[m.typeNorm]++; });
         let typeParts = [];
-        if (types.regulier) typeParts.push(`<span style="color:var(--rsn-tag-regulier)">${types.regulier} ${types.regulier>1?t('map_regulars'):t('map_regular')}</span>`);
-        if (types.etudiant) typeParts.push(`<span style="color:var(--rsn-tag-etudiant)">${types.etudiant} ${types.etudiant>1?t('map_students_s'):t('map_student_s')}</span>`);
-        if (types.partenaire) typeParts.push(`<span style="color:var(--rsn-tag-partenaire)">${types.partenaire} ${types.partenaire>1?t('map_partners_s'):t('map_partner_s')}</span>`);
+        if (types.regulier) typeParts.push(`<span style="color:var(--rsn-tag-regulier)">${types.regulier} ${types.regulier>1?tr('map_regulars'):tr('map_regular')}</span>`);
+        if (types.etudiant) typeParts.push(`<span style="color:var(--rsn-tag-etudiant)">${types.etudiant} ${types.etudiant>1?tr('map_students_s'):tr('map_student_s')}</span>`);
+        if (types.partenaire) typeParts.push(`<span style="color:var(--rsn-tag-partenaire)">${types.partenaire} ${types.partenaire>1?tr('map_partners_s'):tr('map_partner_s')}</span>`);
         // Deterministic jitter based on institution name
         const h = hashStr(inst);
         const lat = data.coords[0] + ((h % 1000) / 1000 - 0.5) * 0.004;
@@ -1631,16 +1631,16 @@ function renderMap() {
         // Build member names list for popup
         // No artificial slice — show all members with scroll if needed
         const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span></div>`).join('');
-        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?t('map_members'):t('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
+        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
     });
     map.addLayer(clusterGroup);
     mapped = uniqueMappedMembers.size;
-    document.getElementById('mapStats').textContent = `${mapped} ${t('map_geolocated')}`;
+    document.getElementById('mapStats').textContent = `${mapped} ${tr('map_geolocated')}`;
     const pct = filteredMembers.length > 0 ? Math.round(mapped / filteredMembers.length * 100) : 0;
     const instMapped = Object.keys(byInst).filter(k=>byInst[k].coords).length;
     const instTotal = Object.keys(byInst).length;
-    document.getElementById('mapCoverage').textContent = `${t('map_coverage')} : ${pct}% (${instMapped} ${t('map_institutions_on')} ${instTotal})`;
+    document.getElementById('mapCoverage').textContent = `${tr('map_coverage')} : ${pct}% (${instMapped} ${tr('map_institutions_on')} ${instTotal})`;
     if (clusterGroup.getLayers().length > 0) {
         setTimeout(() => map.invalidateSize(), 100);
         setTimeout(() => map.fitBounds(clusterGroup.getBounds().pad(0.1)), 200);
@@ -1678,7 +1678,7 @@ function restoreHash() {
         msState[id] = vals;
         const wrap = document.getElementById(id);
         wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = vals.includes(cb.value); });
-        const allLabel = id === 'filterRegion' ? t('all_f') : t('all_m');
+        const allLabel = id === 'filterRegion' ? tr('all_f') : tr('all_m');
         updateMS(id, allLabel);
     });
     // Sort
