@@ -785,15 +785,38 @@ function getRegion(inst) {
 }
 
 // ─── STATUT GROUPING ───
+// Phase 1/2 (2026-05-04) : nouvelle taxonomie 14 options epicene neutre.
+// Le statut est desormais en select strict dans Notion, donc on peut faire
+// un mapping direct au lieu de regex flou. Decision Tess : 6 groupes
+// pour le filtre (Option 1 — finesse Personnel recherche / Personnel sante).
+const STATUT_GROUP_MAP = {
+    'Personne en recherche universitaire': 'Chercheur·e',
+    'Personne en recherche clinique universitaire': 'Chercheur·e',
+    'Personne en recherche au collégial': 'Chercheur·e',
+    'Autres statuts en recherche': 'Chercheur·e',
+    'Personne aux études au 1er cycle': 'Étudiant·e',
+    'Personne aux études à la maîtrise': 'Étudiant·e',
+    'Personne aux études au doctorat': 'Étudiant·e',
+    'Personne en stage postdoctoral': 'Étudiant·e',
+    'Personnel de recherche': 'Personnel de recherche',
+    'Personnel de la santé': 'Personnel de la santé',
+    "Coordination ou gestion d'équipe": 'Direction ou coordination',
+    'Personne en milieu industriel ou gouvernemental': 'Partenaire / Industrie / Autre',
+    'Personne partenaire citoyenne': 'Partenaire / Industrie / Autre',
+    'Autre': 'Partenaire / Industrie / Autre',
+};
 function groupStatut(raw) {
     if (!raw) return '';
-    const s = raw.toLowerCase();
+    if (STATUT_GROUP_MAP[raw]) return STATUT_GROUP_MAP[raw];
+    // Fallback regex pour les anciennes valeurs si une fiche n'a pas encore
+    // ete migree (ne devrait plus arriver post-Phase 1, mais securite).
+    const s = String(raw).toLowerCase();
     if (/chercheu|researcher|physician|clinici|radiologiste|enseignant chercheur|professeu/i.test(s)) return 'Chercheur·e';
     if (/[ée]tudiant|student|doctorat|ma[iî]trise|baccalaur|postdoc|stagiaire/i.test(s)) return 'Étudiant·e';
-    if (/professionnel|research (associate|staff)|associé.*recherche|coordonn|transcripti|analyste|informatics|open science/i.test(s)) return 'Professionnel·le';
-    if (/gestionnaire|cadre|chef|cnio|affaires professorales|member of the rsn/i.test(s)) return 'Gestionnaire / Cadre';
-    if (/industrie|partenaire|patient|citoyen|organisa|présidente/i.test(s)) return 'Industrie / Partenaire';
-    return 'Autre';
+    if (/professionnel|research (associate|staff)|associé.*recherche|coordonn|transcripti|analyste|informatics|open science/i.test(s)) return 'Personnel de recherche';
+    if (/gestionnaire|cadre|chef|cnio|affaires professorales|member of the rsn/i.test(s)) return 'Direction ou coordination';
+    if (/industrie|partenaire|patient|citoyen|organisa|présidente/i.test(s)) return 'Partenaire / Industrie / Autre';
+    return 'Partenaire / Industrie / Autre';
 }
 
 // ─── DATA LOADING ───
