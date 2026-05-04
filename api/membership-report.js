@@ -305,13 +305,20 @@ const STATUT_FIXES = {
   'reconnue par les FRQ ou privé': 'Autres statuts en recherche',
 
   // ─── Cat. "Autre" — generique (decision Tess 2026-05-04 : pas de
-  // suffixe XX pour rester en select-only et faciliter la traduction
-  // anglaise. Le libelle dans les formulaires sera explicite.)
+  // suffixe ': precision' pour rester en select-only et faciliter la
+  // traduction anglaise. Le libelle dans les formulaires sera explicite.)
   'Bibliothécaire': 'Autre',
   'Transcriptrice médical': 'Autre',
   "Analyste d'affaires systemes comptables": 'Autre',
   'Affaires professorales': 'Autre',
   "Organisation à but non lucratif oeuvrant dans le champ d'intérêt du RSN": 'Autre',
+  // Valeurs intermediaires (apres le premier fix-fields-apply qui avait
+  // mis 'Autre : XXX') -> on simplifie en 'Autre' generique.
+  'Autre : Bibliothécaire': 'Autre',
+  'Autre : Transcriptrice médicale': 'Autre',
+  "Autre : Analyste d'affaires systèmes comptables": 'Autre',
+  'Autre : Affaires professorales': 'Autre',
+  'Autre : Organisation à but non lucratif': 'Autre',
 };
 
 const EVALUATEUR_FIXES = {
