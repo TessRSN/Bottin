@@ -192,6 +192,15 @@
         <div class="field-hint" id="h_reseau">Excluant le RSN</div>
         <input id="f_reseau">
       </div>
+      <div class="field">
+        <label class="field-label" id="l_etudiants_referer">Personnes que vous souhaitez référer pour rejoindre le RSN</label>
+        <div class="field-hint" id="h_etudiants_referer">Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Nous les contacterons et leur proposerons de remplir le formulaire d'inscription.</div>
+        <textarea id="f_etudiants_referer" rows="3" placeholder="Marie Dupont, marie.dupont@institution.ca"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" id="l_evaluateur">Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?</label>
+        <div class="radio-group" id="evaluateur_group"></div>
+      </div>
     </div>
 
     <div class="actions">
@@ -278,6 +287,13 @@ var MEMBERSHIP_OPTIONS = [
   { fr: "Membre étudiant (inscrit dans un établissement d'enseignement)", en: 'Student member (enrolled in an educational institution)', value: 'Étudiant' },
 ];
 
+// Phase 2i (2026-05-04): options evaluateur (radio Oui/Non/Incertain)
+var EVALUATEUR_OPTIONS = [
+  { fr: 'Oui', en: 'Yes', value: 'Oui' },
+  { fr: 'Non', en: 'No', value: 'Non' },
+  { fr: 'Incertain', en: 'Unsure at this moment', value: 'Incertain' },
+];
+
 var AXES_OPTIONS = [
   'Axe 1 - Plateformes numériques et gouvernance informationnelle',
   'Axe 2 - Modélisation et méthodes numériques',
@@ -325,6 +341,9 @@ var I18N = {
     h_refere: 'Nom, institution et courriel de la personne qui vous réfère',
     l_reseau: 'Autres réseaux de recherche financés par les FRQ',
     h_reseau: 'Excluant le RSN',
+    l_etudiants_referer: 'Personnes que vous souhaitez référer pour rejoindre le RSN',
+    h_etudiants_referer: "Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Nous les contacterons et leur proposerons de remplir le formulaire d'inscription.",
+    l_evaluateur: "Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?",
     s_axes: "Vos thématiques d'intérêt",
     h_themes_pick: 'Choisissez au moins une option parmi les trois familles ci-dessous.',
     l_axes: 'Axes', l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
@@ -378,6 +397,9 @@ var I18N = {
     h_refere: 'Name, institution and email of the person referring you',
     l_reseau: 'Other FRQ-funded research networks',
     h_reseau: 'Excluding the RSN',
+    l_etudiants_referer: 'Members you would like to refer to join the RSN',
+    h_etudiants_referer: 'Optional. List the name and email of each person, one per line. We will contact them and invite them to complete the registration form.',
+    l_evaluateur: 'Would you like to act as an evaluator for RSN funding programs?',
     s_axes: 'Your topics of interest',
     h_themes_pick: 'Choose at least one option from any of the three families below.',
     l_axes: 'Axes', l_principes: 'Founding principles', l_champs: 'Action fields',
@@ -504,6 +526,15 @@ function applyI18n() {
   // Rebuild radio groups with current language
   buildRadios('status_group', STATUS_OPTIONS, 'status');
   buildRadios('membership_group', MEMBERSHIP_OPTIONS, 'membership');
+  buildRadios('evaluateur_group', EVALUATEUR_OPTIONS, 'evaluateur');
+
+  // Phase 2i: labels Q16 + Q17
+  var lEr = document.getElementById('l_etudiants_referer');
+  if (lEr) lEr.textContent = t('l_etudiants_referer');
+  var hEr = document.getElementById('h_etudiants_referer');
+  if (hEr) hEr.textContent = t('h_etudiants_referer');
+  var lEv = document.getElementById('l_evaluateur');
+  if (lEv) lEv.textContent = t('l_evaluateur');
 }
 
 function toggleLang() {
@@ -721,6 +752,9 @@ function submit() {
     consent: document.getElementById('f_consent').value,
     // Phase 2f: toggle afficher courriel (default true si la case est cochee)
     afficherCourriel: document.getElementById('f_afficher_courriel').checked,
+    // Phase 2i (2026-05-04): Q16 + Q17 reintegrees depuis l'ancien formulaire
+    etudiants: document.getElementById('f_etudiants_referer').value.trim(),
+    evaluateur: radioState.evaluateur || '',
   };
 
   fetch('/api/join', {

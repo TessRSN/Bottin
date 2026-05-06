@@ -75,6 +75,9 @@ module.exports = async function handler(req, res) {
       orcid: body.orcid || null,
       refere: (body.refere || '').trim(),
       reseau: (body.reseau || '').trim(),
+      // Phase 2i (2026-05-04): champs reintegres depuis l'ancien formulaire
+      etudiants: (body.etudiants || '').trim(),
+      evaluateur: (body.evaluateur || '').trim() || null,
       axes: axes || [],
       principes: body.principes || [],
       champs: body.champs || [],

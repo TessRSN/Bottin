@@ -152,7 +152,15 @@
     <div class="field"><label id="l_themes">Thèmes d'intérêt</label><textarea id="f_themes"></textarea></div>
     <div class="field"><label id="l_reseau">Réseau</label><input id="f_reseau"></div>
     <div class="field"><label id="l_projet">Projet de recherche</label><textarea id="f_projet"></textarea></div>
-    <div class="field"><label id="l_etudiants">Étudiants</label><textarea id="f_etudiants"></textarea></div>
+    <div class="field"><label id="l_etudiants">Personnes à référer ou étudiants supervisés</label><div class="field-hint" id="h_etudiants"></div><textarea id="f_etudiants"></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" id="s_evaluateur">Évaluation</div>
+    <div class="field">
+      <label id="l_evaluateur">Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?</label>
+      <div class="radio-group" id="evaluateur_group"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -222,8 +230,15 @@ var MEMBERSHIP_OPTIONS = [
   { fr: "Membre étudiant (inscrit·e dans un établissement d'enseignement)", en: 'Student member (enrolled in an educational institution)', value: 'Étudiant' },
 ];
 
+// Phase 2i (2026-05-04): options evaluateur
+var EVALUATEUR_OPTIONS = [
+  { fr: 'Oui', en: 'Yes', value: 'Oui' },
+  { fr: 'Non', en: 'No', value: 'Non' },
+  { fr: 'Incertain', en: 'Unsure at this moment', value: 'Incertain' },
+];
+
 // Stocke la selection des radios pour pouvoir la lire au save
-var radioState = { status: '', membership: '' };
+var radioState = { status: '', membership: '', evaluateur: '' };
 
 // Stocke le catalogue d'institutions une fois charge depuis /api/institutions
 var INSTITUTIONS_CATALOG = [];
@@ -249,7 +264,10 @@ function t(key) {
       s_status:'Statut actuel', s_institution:"Institution(s) d'affiliation", s_membership:"Type d'adhésion",
       l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel principal', l_email2:'Courriel secondaire',
       l_expertise:'Expertise',
-      l_themes:"Thèmes d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Étudiants',
+      l_themes:"Thèmes d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Personnes à référer ou étudiants supervisés',
+      h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. L'équipe du RSN les contactera et leur proposera de rejoindre le réseau.",
+      s_evaluateur:'Évaluation',
+      l_evaluateur:'Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?',
       l_axes:"Axes d'intérêt", l_principes:'Principes fondateurs', l_champs:"Champs d'action",
       l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
       opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
@@ -275,7 +293,10 @@ function t(key) {
       s_status:'Present status', s_institution:'Institution(s) of affiliation', s_membership:'Membership type',
       l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
       l_expertise:'Expertise',
-      l_themes:'Research themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'Students',
+      l_themes:'Research themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'Members to refer or students supervised',
+      h_etudiants:'Optional. List the name and email of each person, one per line. The RSN team will reach out and invite them to join the network.',
+      s_evaluateur:'Evaluation',
+      l_evaluateur:'Would you like to act as an evaluator for RSN funding programs?',
       l_axes:'Research axes', l_principes:'Founding principles', l_champs:'Action fields',
       l_consent:'Do you authorize RSN to create a public member profile?',
       opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
@@ -302,12 +323,15 @@ function t(key) {
 
 function applyI18n() {
   ['title','subtitle','langBtn','expiredTitle','expiredMsg','expiredBtn',
-   's_identity','s_research','s_axes','s_links','s_status','s_institution','s_membership',
+   's_identity','s_research','s_axes','s_links','s_status','s_institution','s_membership','s_evaluateur',
    'l_prenom','l_nom','l_email','l_email2',
-   'l_expertise','l_themes','l_reseau','l_projet','l_etudiants',
+   'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+  // Phase 2i: hint sous le textarea etudiants/referer
+  const hEtu = document.getElementById('h_etudiants');
+  if (hEtu) hEtu.textContent = t('h_etudiants');
 
   // Section institutions: hint + bouton ajouter
   var hInst = document.getElementById('h_institution');
@@ -427,6 +451,7 @@ function buildRadioGroup(groupId, options, name, currentValue) {
 function rebuildRadios() {
   buildRadioGroup('status_group', STATUS_OPTIONS, 'status', radioState.status);
   buildRadioGroup('membership_group', MEMBERSHIP_OPTIONS, 'membership', radioState.membership);
+  buildRadioGroup('evaluateur_group', EVALUATEUR_OPTIONS, 'evaluateur', radioState.evaluateur);
 }
 
 // ─── Institutions catalog (autocomplete) ───
@@ -597,6 +622,7 @@ async function init() {
     // Phase 2a: pre-remplir les radios statut + type d'adhesion
     radioState.status = profile.statut || '';
     radioState.membership = profile.type || '';
+    radioState.evaluateur = profile.evaluateur || '';
     rebuildRadios();
 
     // Pre-remplir les institutions (split sur ';')
@@ -754,6 +780,8 @@ async function save() {
     champs: getChips('champs_group'),
     // Phase 2f: toggle afficher courriel
     afficherCourriel: document.getElementById('f_afficher_courriel').checked,
+    // Phase 2i: champ evaluateur
+    evaluateur: radioState.evaluateur || '',
   };
 
   try {
