@@ -568,10 +568,10 @@ const I18N = {
         connexions_count_legend: '{N} membres, {L} connexions affichées',
         connexions_export_png: 'Exporter en image',
         connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
-        connexions_pair_score: '{N} critères en commun',
+        connexions_pair_score: '{N} mots-clés en commun',
         connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
         similar_profiles_title: 'Profils proches',
-        similar_profiles_show_criteria: 'Voir les critères communs',
+        similar_profiles_show_criteria: 'Voir les mots-clés communs',
         similar_profiles_btn: 'Voir les profils proches',
         lbl_axis_short: 'Axes',
         lbl_principle_short: 'Principes',
@@ -632,10 +632,10 @@ const I18N = {
         connexions_count_legend: '{N} members, {L} connections shown',
         connexions_export_png: 'Export as image',
         connexions_insights_title: 'High-potential cross-institution pairs',
-        connexions_pair_score: '{N} criteria in common',
+        connexions_pair_score: '{N} keywords in common',
         connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
         similar_profiles_title: 'Similar profiles',
-        similar_profiles_show_criteria: 'View shared criteria',
+        similar_profiles_show_criteria: 'View shared keywords',
         similar_profiles_btn: 'View similar profiles',
         lbl_axis_short: 'Axes',
         lbl_principle_short: 'Principles',
@@ -1244,19 +1244,22 @@ function connexionsSimilarity(a, b, tokensCache) {
   return connexionsSimilarityDetail(a, b, tokensCache).score;
 }
 
-// Phase 2j v3: retourne le detail (axes, principes, champs, tokens partages)
-// pour pouvoir afficher pourquoi 2 personnes sont proches.
+// Phase 2j v4: la similarite est basee UNIQUEMENT sur les mots-cles
+// distinctifs (apres filtrage TF-IDF / DF). Les axes/principes/champs
+// ne sont plus utilises (sur-renseignes par tout le monde dans l'ancien
+// formulaire). On retourne quand meme la liste des shared categories
+// pour info eventuelle, mais elle n'entre plus dans le score.
 function connexionsSimilarityDetail(a, b, tokensCache) {
   if (!a || !b || a === b) return { score: 0, sharedAxes: [], sharedPrinc: [], sharedChamps: [], sharedTokens: [] };
-  const sharedAxes = (a.axes || []).filter(x => (b.axes || []).includes(x));
-  const sharedPrinc = (a.principes || []).filter(x => (b.principes || []).includes(x));
-  const sharedChamps = (a.champsAction || []).filter(x => (b.champsAction || []).includes(x));
   const tokensA = tokensCache.get(a);
   const tokensB = tokensCache.get(b);
   const sharedTokens = [];
   for (const t of tokensA) if (tokensB.has(t)) sharedTokens.push(t);
-  const score = sharedAxes.length + sharedPrinc.length + sharedChamps.length + sharedTokens.length * 2;
-  return { score, sharedAxes, sharedPrinc, sharedChamps, sharedTokens };
+  return {
+    score: sharedTokens.length,
+    sharedAxes: [], sharedPrinc: [], sharedChamps: [], // non utilises
+    sharedTokens,
+  };
 }
 
 let _connexionsCache = null;
@@ -1344,16 +1347,46 @@ function buildAndShowConnexionsGraph() {
     return;
   }
   const eligible = allMembers.filter(m => m.consent === 'oui');
-  const tokensCache = new Map();
+
+  // Phase 2j v4: tokenisation + filtrage TF-IDF par document frequency.
+  // Tokens trop frequents ('projet', 'recherche', 'via'...) ne sont pas
+  // distinctifs. Tokens trop rares (1 seul profil) ne peuvent pas matcher.
+  // On garde les tokens dont DF est entre 2 et 35% du corpus.
+  const N_eligible = eligible.length;
+  const DF_MIN = 2;
+  const DF_MAX_RATIO = 0.35; // ignore tokens presents dans > 35% des profils
+  const DF_MAX = Math.max(DF_MIN + 1, Math.floor(N_eligible * DF_MAX_RATIO));
+
+  // 1ere passe: collecte tous les tokens bruts par membre + DF
+  const rawTokensByMember = new Map();
+  const docFreq = new Map();
   for (const m of eligible) {
-    tokensCache.set(m, new Set([
+    const set = new Set([
       ...connexionsTokenize(m.expertise),
       ...connexionsTokenize(m.themes),
       ...connexionsTokenize(m.projet),
-    ]));
+    ]);
+    rawTokensByMember.set(m, set);
+    for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
   }
+
+  // 2e passe: ne garder que les tokens distinctifs (DF dans la fenetre)
+  const tokensCache = new Map();
+  for (const m of eligible) {
+    const filtered = new Set();
+    for (const t of rawTokensByMember.get(m)) {
+      const df = docFreq.get(t);
+      if (df >= DF_MIN && df <= DF_MAX) filtered.add(t);
+    }
+    tokensCache.set(m, filtered);
+  }
+  console.log(`[Connexions] DF filter: kept tokens with DF in [${DF_MIN}, ${DF_MAX}] (${N_eligible} members)`);
+
   const TOP_K = 5;
-  const MIN_SCORE = 3;
+  // Phase 2j v4: nouveau calibrage. Le score est maintenant le nombre de
+  // tokens distinctifs partages (sans contribution des categories).
+  // 2 mots distinctifs partages = signal correct.
+  const MIN_SCORE = 2;
   const N = eligible.length;
   const neighborsByIdx = eligible.map(() => []);
   for (let i = 0; i < N; i++) {
@@ -1709,30 +1742,58 @@ function readF(file){
 // ─── MEMBER POPUP (from map) ───
 // Phase 2j v2 — calcul des "profils proches" pour l'affichage dans la modal.
 // Reutilise la logique de similarite de la vue Connexions.
-function getTopNeighbors(member, k) {
-    if (!member) return [];
-    k = k || 5;
-    const eligible = allMembers.filter(m => m.consent === 'oui' && m !== member);
-    const memberTokens = new Set([
-        ...connexionsTokenize(member.expertise),
-        ...connexionsTokenize(member.themes),
-        ...connexionsTokenize(member.projet),
-    ]);
-    const tmpCache = new Map();
-    tmpCache.set(member, memberTokens);
-    const scored = [];
-    for (const other of eligible) {
-        let tokensOther = tmpCache.get(other);
-        if (!tokensOther) {
-            tokensOther = new Set([
-                ...connexionsTokenize(other.expertise),
-                ...connexionsTokenize(other.themes),
-                ...connexionsTokenize(other.projet),
-            ]);
-            tmpCache.set(other, tokensOther);
+// Cache global du DF (calcule une fois sur l'ensemble des consentants)
+// Reutilise par la modal pour les "Profils proches" — pas besoin de
+// recalculer le DF a chaque ouverture de modal.
+let _dfCache = null;
+function ensureDfCache() {
+    if (_dfCache) return _dfCache;
+    const eligible = allMembers.filter(m => m.consent === 'oui');
+    const N = eligible.length;
+    const DF_MIN = 2;
+    const DF_MAX_RATIO = 0.35;
+    const DF_MAX = Math.max(DF_MIN + 1, Math.floor(N * DF_MAX_RATIO));
+    const rawByMember = new Map();
+    const docFreq = new Map();
+    for (const m of eligible) {
+        const set = new Set([
+            ...connexionsTokenize(m.expertise),
+            ...connexionsTokenize(m.themes),
+            ...connexionsTokenize(m.projet),
+        ]);
+        rawByMember.set(m, set);
+        for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
+    }
+    const filteredByMember = new Map();
+    for (const m of eligible) {
+        const filtered = new Set();
+        for (const t of rawByMember.get(m)) {
+            const df = docFreq.get(t);
+            if (df >= DF_MIN && df <= DF_MAX) filtered.add(t);
         }
-        const detail = connexionsSimilarityDetail(member, other, tmpCache);
-        if (detail.score >= 3) scored.push({ member: other, score: detail.score, detail });
+        filteredByMember.set(m, filtered);
+    }
+    _dfCache = { eligible, tokensByMember: filteredByMember, signature: allMembers };
+    return _dfCache;
+}
+
+function getTopNeighbors(member, k) {
+    if (!member || member.consent !== 'oui') return [];
+    k = k || 5;
+    // Invalider le cache DF si allMembers change de reference
+    if (_dfCache && _dfCache.signature !== allMembers) _dfCache = null;
+    const cache = ensureDfCache();
+    const memberTokens = cache.tokensByMember.get(member) || new Set();
+    const scored = [];
+    for (const other of cache.eligible) {
+        if (other === member) continue;
+        const otherTokens = cache.tokensByMember.get(other) || new Set();
+        const sharedTokens = [];
+        for (const t of memberTokens) if (otherTokens.has(t)) sharedTokens.push(t);
+        const score = sharedTokens.length;
+        if (score >= 2) {
+            scored.push({ member: other, score, detail: { score, sharedAxes: [], sharedPrinc: [], sharedChamps: [], sharedTokens } });
+        }
     }
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, k);
@@ -1775,9 +1836,8 @@ function buildNeighborsBlock(neighbors) {
         header.appendChild(nameLine); header.appendChild(subLine);
         card.appendChild(header);
 
-        // Toggle "Voir les criteres communs"
-        const totalCriteria = (detail.sharedAxes.length + detail.sharedPrinc.length +
-                               detail.sharedChamps.length + detail.sharedTokens.length);
+        // Toggle "Voir les mots-cles communs" — Phase 2j v4: que les tokens
+        const totalCriteria = detail.sharedTokens.length;
         if (totalCriteria > 0) {
             const toggle = document.createElement('button');
             toggle.type = 'button';
@@ -1803,10 +1863,8 @@ function buildNeighborsBlock(neighbors) {
                 });
                 detailsBox.appendChild(line);
             }
-            addCategory(tr('lbl_axis_short'), detail.sharedAxes, 'var(--rsn-light)');
-            addCategory(tr('lbl_principle_short'), detail.sharedPrinc, '#fefcbf');
-            addCategory(tr('lbl_action_short'), detail.sharedChamps, '#c6f6d5');
-            // Tokens : afficher max 12 pour ne pas saturer, le reste resume
+            // Phase 2j v4: axes/principes/champs retires (signal pourri).
+            // On affiche uniquement les mots-cles distinctifs partages.
             if (detail.sharedTokens.length) {
                 const line = document.createElement('div');
                 const lbl = document.createElement('span');
