@@ -481,30 +481,18 @@
             <span style="font-size:0.75rem;color:var(--rsn-muted);margin-left:auto;" id="mapCoverage">—</span>
         </div>
     </div>
-    <!-- Phase 2j: vue Connexions (graphe de proximite vis-network) -->
-    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:1fr 280px;gap:0;height:calc(100vh - 280px);min-height:600px">
-      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);height:100%;min-height:600px;width:100%">
-        <!-- Phase 2j v2: bandeau d'aide si aucun filtre n'est applique -->
+    <!-- Phase 2j v3: vue Connexions plein ecran avec legende compacte en bas -->
+    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:600px">
+      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0">
         <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
-      <aside id="connexionsSidebar" style="border-left:1.5px solid var(--rsn-border);padding:1rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem">
-        <div>
-          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.4rem" data-i18n="connexions_legend_label">Légende</div>
-          <div style="display:flex;flex-direction:column;gap:0.3rem;font-size:0.8rem">
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-regulier);border:2px solid #2b6cb0"></span> <span data-i18n="regular">Régulier</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
-            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
-          </div>
-        </div>
-        <div id="connexionsCount" style="font-size:0.78rem;color:var(--rsn-muted);padding:0.5rem 0;border-top:1px solid var(--rsn-border)">—</div>
-        <div>
-          <button id="connexionsExportBtn" class="reset-btn" style="width:100%;cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
-        </div>
-        <details id="connexionsInsightsDetails" style="border-top:1px solid var(--rsn-border);padding-top:0.75rem">
-          <summary style="cursor:pointer;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted)" data-i18n="connexions_insights_title">Connexions inter-institutions</summary>
-          <div id="connexionsInsightsList" style="margin-top:0.6rem;font-size:0.78rem;display:flex;flex-direction:column;gap:0.4rem"></div>
-        </details>
-      </aside>
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-regulier);border:2px solid #2b6cb0"></span> <span data-i18n="regular">Régulier</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
+        <span id="connexionsCount" style="color:var(--rsn-muted);margin-left:auto">—</span>
+        <button id="connexionsExportBtn" class="reset-btn" style="cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
+      </div>
     </div>
     <div id="connexionsLoading" class="hidden" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
       <div style="font-size:2rem;margin-bottom:1rem">⏳</div>
@@ -583,6 +571,12 @@ const I18N = {
         connexions_pair_score: '{N} critères en commun',
         connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
         similar_profiles_title: 'Profils proches',
+        similar_profiles_show_criteria: 'Voir les critères communs',
+        similar_profiles_btn: 'Voir les profils proches',
+        lbl_axis_short: 'Axes',
+        lbl_principle_short: 'Principes',
+        lbl_action_short: "Champs d'action",
+        lbl_keywords: 'Mots-clés',
         no_results: 'Aucun membre trouvé',
         no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
         upload_title: 'Mettre à jour les données :',
@@ -641,6 +635,12 @@ const I18N = {
         connexions_pair_score: '{N} criteria in common',
         connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
         similar_profiles_title: 'Similar profiles',
+        similar_profiles_show_criteria: 'View shared criteria',
+        similar_profiles_btn: 'View similar profiles',
+        lbl_axis_short: 'Axes',
+        lbl_principle_short: 'Principles',
+        lbl_action_short: 'Action fields',
+        lbl_keywords: 'Keywords',
         no_results: 'No members found',
         no_results_hint: 'Try adjusting your search criteria or filters.',
         upload_title: 'Update data:',
@@ -1241,18 +1241,22 @@ function connexionsTokenize(text) {
 }
 
 function connexionsSimilarity(a, b, tokensCache) {
-  if (!a || !b || a === b) return 0;
-  let score = 0;
+  return connexionsSimilarityDetail(a, b, tokensCache).score;
+}
+
+// Phase 2j v3: retourne le detail (axes, principes, champs, tokens partages)
+// pour pouvoir afficher pourquoi 2 personnes sont proches.
+function connexionsSimilarityDetail(a, b, tokensCache) {
+  if (!a || !b || a === b) return { score: 0, sharedAxes: [], sharedPrinc: [], sharedChamps: [], sharedTokens: [] };
   const sharedAxes = (a.axes || []).filter(x => (b.axes || []).includes(x));
   const sharedPrinc = (a.principes || []).filter(x => (b.principes || []).includes(x));
   const sharedChamps = (a.champsAction || []).filter(x => (b.champsAction || []).includes(x));
-  score += sharedAxes.length + sharedPrinc.length + sharedChamps.length;
   const tokensA = tokensCache.get(a);
   const tokensB = tokensCache.get(b);
-  let common = 0;
-  for (const t of tokensA) if (tokensB.has(t)) common++;
-  score += common * 2;
-  return score;
+  const sharedTokens = [];
+  for (const t of tokensA) if (tokensB.has(t)) sharedTokens.push(t);
+  const score = sharedAxes.length + sharedPrinc.length + sharedChamps.length + sharedTokens.length * 2;
+  return { score, sharedAxes, sharedPrinc, sharedChamps, sharedTokens };
 }
 
 let _connexionsCache = null;
@@ -1380,6 +1384,10 @@ function buildAndShowConnexionsGraph() {
     'Partenaire': { background: '#c6f6d5', border: '#276749' },
   };
   const DEFAULT_COLOR = { background: '#e2e8f0', border: '#718096' };
+  // Phase 2j v3: detection theme pour la couleur des labels (lisible en dark mode).
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const nodeFontColor = isDark ? '#f1f5f9' : '#1a202c';
+  const nodeFontStrokeColor = isDark ? '#0f172a' : '#ffffff';
   const nodes = eligible.map((m, i) => {
     const t = (m.type || '').trim();
     const c = TYPE_COLORS[t] || DEFAULT_COLOR;
@@ -1393,12 +1401,15 @@ function buildAndShowConnexionsGraph() {
       borderWidth: 2,
       size: Math.min(Math.max(baseSize, 6), 28),
       shape: 'dot',
+      font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
       _ref: m,
     };
   });
+  // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
+  const edgeColor = isDark ? 'rgba(200,200,220,0.3)' : 'rgba(120,120,140,0.35)';
   const edges = Array.from(edgeSet.values()).map(e => ({
     from: e.from, to: e.to, value: e.score,
-    color: { color: 'rgba(160,160,180,0.35)', highlight: '#a855f7', hover: '#a855f7' },
+    color: { color: edgeColor, highlight: '#a855f7', hover: '#a855f7' },
     width: Math.min(0.5 + e.score / 6, 4),
   }));
   const countEl = document.getElementById('connexionsCount');
@@ -1412,17 +1423,21 @@ function buildAndShowConnexionsGraph() {
   const edgesDS = new vis.DataSet(edges);
   const data = { nodes: nodesDS, edges: edgesDS };
   const options = {
-    nodes: { shape: 'dot', borderWidth: 2, font: { size: 11 } },
+    nodes: { shape: 'dot', borderWidth: 2 },
     edges: { smooth: { type: 'continuous', roundness: 0.2 }, scaling: { min: 0.5, max: 4 } },
     physics: {
-      forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.005, springLength: 100, springConstant: 0.06, damping: 0.5 },
+      // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
+      // pas une fixation totale. Garde un effet "vivant" sans deriver loin.
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 110, springConstant: 0.05, damping: 0.92 },
       solver: 'forceAtlas2Based',
-      stabilization: { iterations: 200, fit: true },
+      stabilization: { iterations: 250, fit: true, updateInterval: 25 },
+      timestep: 0.3,
+      adaptiveTimestep: true,
     },
     interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragNodes: true },
   };
   _connexionsNetwork = new vis.Network(graphEl, data, options);
-  // Phase 2j fix: forcer setSize + redraw apres que le container soit visible.
+  // Forcer setSize + redraw apres que le container soit visible.
   setTimeout(function(){
     if (_connexionsNetwork && graphEl) {
       const r = graphEl.getBoundingClientRect();
@@ -1431,12 +1446,6 @@ function buildAndShowConnexionsGraph() {
       _connexionsNetwork.fit({ animation: false });
     }
   }, 50);
-  // Phase 2j v2: desactiver la physique des que la stabilisation est finie.
-  // Sinon le graphe continue de bouger, ce qui rend la recherche/focus
-  // peu utilisable (les noeuds derivent hors du champ).
-  _connexionsNetwork.once('stabilizationIterationsDone', function(){
-    if (_connexionsNetwork) _connexionsNetwork.setOptions({ physics: { enabled: false } });
-  });
   // Stockons les datasets pour pouvoir reagir aux filtres et a la recherche
   _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible };
   _connexionsNetwork.on('click', function(params) {
@@ -1462,7 +1471,8 @@ function buildAndShowConnexionsGraph() {
       } catch (e) { console.warn('Export PNG failed:', e); }
     });
   }
-  renderConnexionsInsights(eligible, edgeSet);
+  // Phase 2j v3: insights inter-institutions retires (sidebar supprimee).
+  // Si besoin un jour: les remettre dans une vue admin separee.
   _connexionsCache = { members: allMembers };
 }
 
@@ -1590,6 +1600,11 @@ function renderCards() {
         if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳ ${tr('badge_pending_consent')}</span>`);
         if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${tr('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
+        // Phase 2j v3: bouton "Voir profils proches" sur chaque card consentante
+        // → ouvre la modal classique qui inclut deja le bloc Profils proches.
+        const neighborsBtn = (m.consent === 'oui')
+          ? `<button class="card-link" style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);color:var(--rsn-accent);cursor:pointer;font-family:inherit;margin-top:0.4rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})">🔗 ${tr('similar_profiles_btn')}</button>`
+          : '';
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
             ${badgesHtml}
@@ -1601,7 +1616,7 @@ function renderCards() {
                 ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
             </div>
             ${chipsHtml}
-            ${exH}${lnkH}
+            ${exH}${lnkH}${neighborsBtn}
         </div>`;
     }).join('');
 }
@@ -1698,7 +1713,6 @@ function getTopNeighbors(member, k) {
     if (!member) return [];
     k = k || 5;
     const eligible = allMembers.filter(m => m.consent === 'oui' && m !== member);
-    // Pre-tokenise member courant
     const memberTokens = new Set([
         ...connexionsTokenize(member.expertise),
         ...connexionsTokenize(member.themes),
@@ -1717,11 +1731,118 @@ function getTopNeighbors(member, k) {
             ]);
             tmpCache.set(other, tokensOther);
         }
-        const score = connexionsSimilarity(member, other, tmpCache);
-        if (score >= 3) scored.push({ member: other, score });
+        const detail = connexionsSimilarityDetail(member, other, tmpCache);
+        if (detail.score >= 3) scored.push({ member: other, score: detail.score, detail });
     }
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, k);
+}
+
+// Phase 2j v3: construit un bloc "Profils proches" avec details
+// des criteres communs (axes/principes/champs/tokens) et toggle expand.
+function buildNeighborsBlock(neighbors) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:1.25rem;padding-top:0.9rem;border-top:1px solid var(--rsn-border)';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.5rem';
+    title.textContent = tr('similar_profiles_title');
+    wrap.appendChild(title);
+    const list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem';
+
+    for (const { member: nb, score, detail } of neighbors) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--rsn-light);border:1px solid var(--rsn-border);border-radius:6px;padding:0.55rem 0.75rem;font-family:inherit;color:var(--rsn-text)';
+
+        // Header (clic ouvre la modal)
+        const header = document.createElement('button');
+        header.type = 'button';
+        header.style.cssText = 'background:none;border:none;padding:0;text-align:left;cursor:pointer;color:inherit;font-family:inherit;display:block;width:100%';
+        header.onclick = () => { showMemberPopup(nb.name); };
+        const nameLine = document.createElement('div');
+        nameLine.style.cssText = 'font-size:0.85rem;line-height:1.3';
+        const strong = document.createElement('strong');
+        strong.textContent = nb.name;
+        nameLine.appendChild(strong);
+        const subLine = document.createElement('div');
+        subLine.style.cssText = 'font-size:0.72rem;color:var(--rsn-muted);margin-top:0.15rem;display:flex;justify-content:space-between;gap:0.5rem;align-items:center';
+        const inst = (nb.institution || '').split(';')[0].trim() || '—';
+        const left = document.createElement('span'); left.textContent = inst;
+        const right = document.createElement('span');
+        right.style.color = 'var(--rsn-accent)';
+        right.textContent = tr('connexions_pair_score').replace('{N}', score);
+        subLine.appendChild(left); subLine.appendChild(right);
+        header.appendChild(nameLine); header.appendChild(subLine);
+        card.appendChild(header);
+
+        // Toggle "Voir les criteres communs"
+        const totalCriteria = (detail.sharedAxes.length + detail.sharedPrinc.length +
+                               detail.sharedChamps.length + detail.sharedTokens.length);
+        if (totalCriteria > 0) {
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.style.cssText = 'margin-top:0.4rem;background:none;border:none;color:var(--rsn-accent);cursor:pointer;font-size:0.72rem;padding:0;font-family:inherit';
+            toggle.textContent = '▸ ' + tr('similar_profiles_show_criteria');
+            const detailsBox = document.createElement('div');
+            detailsBox.style.cssText = 'display:none;margin-top:0.5rem;font-size:0.74rem;line-height:1.4;color:var(--rsn-text)';
+
+            // Helper to add a category line
+            function addCategory(label, values, badgeColor) {
+                if (!values.length) return;
+                const line = document.createElement('div');
+                line.style.cssText = 'margin-bottom:0.35rem';
+                const lbl = document.createElement('span');
+                lbl.style.cssText = 'font-weight:600;color:var(--rsn-muted);margin-right:0.3rem';
+                lbl.textContent = label + ' :';
+                line.appendChild(lbl);
+                values.forEach((v, i) => {
+                    const chip = document.createElement('span');
+                    chip.style.cssText = `display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:${badgeColor};margin:0.1rem 0.2rem 0.1rem 0;font-size:0.7rem`;
+                    chip.textContent = v.replace(/^Axe \d+ - /, '');
+                    line.appendChild(chip);
+                });
+                detailsBox.appendChild(line);
+            }
+            addCategory(tr('lbl_axis_short'), detail.sharedAxes, 'var(--rsn-light)');
+            addCategory(tr('lbl_principle_short'), detail.sharedPrinc, '#fefcbf');
+            addCategory(tr('lbl_action_short'), detail.sharedChamps, '#c6f6d5');
+            // Tokens : afficher max 12 pour ne pas saturer, le reste resume
+            if (detail.sharedTokens.length) {
+                const line = document.createElement('div');
+                const lbl = document.createElement('span');
+                lbl.style.cssText = 'font-weight:600;color:var(--rsn-muted);margin-right:0.3rem';
+                lbl.textContent = tr('lbl_keywords') + ' :';
+                line.appendChild(lbl);
+                const top = detail.sharedTokens.slice(0, 12);
+                top.forEach(t => {
+                    const chip = document.createElement('span');
+                    chip.style.cssText = 'display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(168,85,247,0.15);color:var(--rsn-text);margin:0.1rem 0.2rem 0.1rem 0;font-size:0.7rem';
+                    chip.textContent = t;
+                    line.appendChild(chip);
+                });
+                if (detail.sharedTokens.length > 12) {
+                    const more = document.createElement('span');
+                    more.style.cssText = 'font-size:0.7rem;color:var(--rsn-muted)';
+                    more.textContent = '+' + (detail.sharedTokens.length - 12);
+                    line.appendChild(more);
+                }
+                detailsBox.appendChild(line);
+            }
+
+            toggle.onclick = (e) => {
+                e.stopPropagation();
+                const visible = detailsBox.style.display !== 'none';
+                detailsBox.style.display = visible ? 'none' : 'block';
+                toggle.textContent = (visible ? '▸ ' : '▾ ') + tr('similar_profiles_show_criteria');
+            };
+            card.appendChild(toggle);
+            card.appendChild(detailsBox);
+        }
+
+        list.appendChild(card);
+    }
+    wrap.appendChild(list);
+    return wrap;
 }
 
 function showMemberPopup(name) {
@@ -1770,41 +1891,11 @@ function showMemberPopup(name) {
     ].join('');
     modal.appendChild(content);
 
-    // Phase 2j v2: bloc "Profils proches" en bas de la modal (Plan C).
+    // Phase 2j v3: bloc "Profils proches" avec details des criteres communs.
     if (m.consent === 'oui') {
         const neighbors = getTopNeighbors(m, 5);
         if (neighbors.length) {
-            const wrap = document.createElement('div');
-            wrap.style.cssText = 'margin-top:1.25rem;padding-top:0.9rem;border-top:1px solid var(--rsn-border)';
-            const title = document.createElement('div');
-            title.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.5rem';
-            title.textContent = tr('similar_profiles_title');
-            wrap.appendChild(title);
-            const list = document.createElement('div');
-            list.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem';
-            for (const { member: nb, score } of neighbors) {
-                const card = document.createElement('button');
-                card.type = 'button';
-                card.style.cssText = 'text-align:left;background:var(--rsn-light);border:1px solid var(--rsn-border);border-radius:6px;padding:0.5rem 0.7rem;cursor:pointer;font-family:inherit;color:var(--rsn-text);transition:background 0.15s';
-                card.onmouseenter = () => { card.style.background = 'rgba(168,85,247,0.12)'; };
-                card.onmouseleave = () => { card.style.background = 'var(--rsn-light)'; };
-                card.onclick = () => { showMemberPopup(nb.name); };
-                const nameLine = document.createElement('div');
-                const strong = document.createElement('strong');
-                strong.textContent = nb.name;
-                nameLine.appendChild(strong);
-                nameLine.style.cssText = 'font-size:0.85rem;line-height:1.3';
-                const subLine = document.createElement('div');
-                subLine.style.cssText = 'font-size:0.72rem;color:var(--rsn-muted);margin-top:0.15rem;display:flex;justify-content:space-between;gap:0.5rem';
-                const inst = (nb.institution || '').split(';')[0].trim() || '—';
-                const left = document.createElement('span'); left.textContent = inst;
-                const right = document.createElement('span'); right.style.color = 'var(--rsn-accent)'; right.textContent = tr('connexions_pair_score').replace('{N}', score);
-                subLine.appendChild(left); subLine.appendChild(right);
-                card.appendChild(nameLine); card.appendChild(subLine);
-                list.appendChild(card);
-            }
-            wrap.appendChild(list);
-            modal.appendChild(wrap);
+            modal.appendChild(buildNeighborsBlock(neighbors));
         }
     }
 
