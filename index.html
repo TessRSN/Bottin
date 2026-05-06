@@ -482,8 +482,8 @@
         </div>
     </div>
     <!-- Phase 2j: vue Connexions (graphe de proximite vis-network) -->
-    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:1fr 280px;gap:0;height:calc(100vh - 280px);min-height:500px">
-      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg)"></div>
+    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:1fr 280px;gap:0;height:calc(100vh - 280px);min-height:600px">
+      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);height:100%;min-height:600px;width:100%"></div>
       <aside id="connexionsSidebar" style="border-left:1.5px solid var(--rsn-border);padding:1rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem">
         <div>
           <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.4rem" data-i18n="connexions_search_label">Rechercher</div>
@@ -1262,9 +1262,11 @@ function renderConnexions() {
   container.classList.add('hidden');
   const schedule = window.requestIdleCallback || function(cb){ return setTimeout(cb, 50); };
   schedule(function(){
-    buildAndShowConnexionsGraph();
+    // Show container AVANT de creer la network (sinon canvas size = 0)
     loading.classList.add('hidden');
     container.classList.remove('hidden');
+    // Laisser le navigateur peindre, puis lancer le calcul + le rendu
+    requestAnimationFrame(function(){ requestAnimationFrame(buildAndShowConnexionsGraph); });
   });
 }
 
@@ -1356,6 +1358,16 @@ function buildAndShowConnexionsGraph() {
     interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragNodes: true },
   };
   _connexionsNetwork = new vis.Network(graphEl, data, options);
+  // Phase 2j fix: forcer setSize + redraw apres que le container soit visible.
+  // vis-network calcule mal sa taille si le parent etait hidden au moment du new.
+  setTimeout(function(){
+    if (_connexionsNetwork && graphEl) {
+      const r = graphEl.getBoundingClientRect();
+      _connexionsNetwork.setSize(r.width + 'px', r.height + 'px');
+      _connexionsNetwork.redraw();
+      _connexionsNetwork.fit({ animation: false });
+    }
+  }, 50);
   _connexionsNetwork.on('click', function(params) {
     if (!params.nodes || !params.nodes.length) return;
     const node = nodesDS.get(params.nodes[0]);
