@@ -1446,19 +1446,36 @@ function renderConnexions() {
   const container = document.getElementById('connexionsContainer');
   const loading = document.getElementById('connexionsLoading');
   if (!container || !loading) return;
+
+  // Phase 2j v5 fix: si vis-network n'est pas encore charge (premier acces
+  // direct via #v=connexions ou clic sur l'onglet avant que le script CDN
+  // ne soit pret), on attend qu'il soit dispo avant de rendre. Polling
+  // toutes les 100ms, max 5s.
   if (typeof vis === 'undefined' || !vis.Network) {
     loading.classList.remove('hidden');
-    loading.textContent = 'vis-network non chargé — vérifiez votre connexion.';
+    loading.textContent = tr('connexions_loading');
+    container.classList.add('hidden');
+    let attempts = 0;
+    const maxAttempts = 50;
+    const checkInterval = setInterval(function() {
+      attempts++;
+      if (typeof vis !== 'undefined' && vis.Network) {
+        clearInterval(checkInterval);
+        renderConnexions(); // retry maintenant que vis est dispo
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        loading.textContent = 'vis-network non chargé après 5s — vérifiez votre connexion.';
+      }
+    }, 100);
     return;
   }
+
   loading.classList.remove('hidden');
   container.classList.add('hidden');
   const schedule = window.requestIdleCallback || function(cb){ return setTimeout(cb, 50); };
   schedule(function(){
-    // Show container AVANT de creer la network (sinon canvas size = 0)
     loading.classList.add('hidden');
     container.classList.remove('hidden');
-    // Laisser le navigateur peindre, puis lancer le calcul + le rendu
     requestAnimationFrame(function(){ requestAnimationFrame(buildAndShowConnexionsGraph); });
   });
 }
