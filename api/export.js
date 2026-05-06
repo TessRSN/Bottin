@@ -383,7 +383,9 @@ module.exports = async function handler(req, res) {
       if (m.emailAccepteEnvoye) continue;
       if (!m.email || !m.prenom) continue;
       try {
-        await sendAcceptanceEmail(m.email, m.prenom);
+        // Phase 2h (2026-05-04): on passe le type d'adhesion pour personnaliser
+        // le bandeau "Vous etes actuellement inscrit·e comme..." en haut du courriel.
+        await sendAcceptanceEmail(m.email, m.prenom, m.type);
         await markAcceptanceEmailSent(m.id);
         emailsSent++;
         console.log(`[export] Acceptance email sent to ${m.email}`);
