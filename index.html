@@ -1233,11 +1233,134 @@ const CONNEXIONS_STOPWORDS = new Set([
   'such','any','some','more','most','very','can','not','no'
 ]);
 
+// Phase 2j v5 (2026-05-04) — pont linguistique FR↔EN.
+// Les profils FR et EN forment 2 clusters disjoints car 'sante' et 'health'
+// sont 2 tokens distincts. On canonicalise tous les tokens vers l'anglais
+// pour matcher les francophones et anglophones qui parlent du meme sujet.
+// Liste maintenue manuellement, focus sante numerique. A etendre au besoin.
+const FR_TO_EN_DICT = {
+  // Concepts generaux
+  'sante': 'health', 'recherche': 'research', 'recherches': 'research',
+  'donnees': 'data', 'donnee': 'data',
+  'soins': 'care', 'soin': 'care', 'soignant': 'caregiver', 'soignants': 'caregivers',
+  'numerique': 'digital', 'numeriques': 'digital', 'numerisation': 'digitalization',
+  'developpement': 'development', 'developpements': 'development',
+  'developper': 'develop', 'developpe': 'developed', 'developpees': 'developed',
+  'amelioration': 'improvement', 'ameliorer': 'improve', 'ameliore': 'improved',
+  'methode': 'method', 'methodes': 'methods',
+  'methodologie': 'methodology', 'methodologies': 'methodology',
+  'outils': 'tools', 'outil': 'tool',
+  'analyse': 'analysis', 'analyses': 'analysis', 'analyser': 'analyze',
+  'modele': 'model', 'modeles': 'models', 'modelisation': 'modeling',
+  'algorithme': 'algorithm', 'algorithmes': 'algorithms',
+  'apprentissage': 'learning',
+  'profond': 'deep', 'profonde': 'deep',
+  'artificielle': 'artificial',
+  'evaluation': 'evaluation', 'evaluations': 'evaluation', 'evaluer': 'evaluate',
+  'gestion': 'management', 'gerer': 'manage',
+  'qualite': 'quality',
+  'systeme': 'system', 'systemes': 'systems',
+  'service': 'service', 'services': 'services',
+  'reseau': 'network', 'reseaux': 'networks',
+  'plateforme': 'platform', 'plateformes': 'platforms',
+  'application': 'application', 'applications': 'applications',
+  'utilisation': 'use', 'utiliser': 'use', 'utilise': 'used',
+  'mise': 'implementation', 'oeuvre': 'implementation',
+  'projet': 'project', 'projets': 'projects',
+  'equipe': 'team', 'equipes': 'teams',
+  'collaboration': 'collaboration',
+  'communaute': 'community', 'communautes': 'communities',
+  // Domaines medicaux
+  'medecine': 'medicine', 'medical': 'medical', 'medicaux': 'medical', 'medicale': 'medical',
+  'clinique': 'clinical', 'cliniques': 'clinical', 'clinicien': 'clinician',
+  'epidemiologie': 'epidemiology', 'epidemiologique': 'epidemiologic',
+  'biostatistique': 'biostatistics', 'statistique': 'statistics', 'statistiques': 'statistics',
+  'cardiologie': 'cardiology', 'cardiaque': 'cardiac', 'cardiaques': 'cardiac',
+  'cardiovasculaire': 'cardiovascular',
+  'pediatrie': 'pediatrics', 'pediatrique': 'pediatric',
+  'neurologie': 'neurology', 'neurologique': 'neurologic',
+  'psychiatrie': 'psychiatry', 'psychiatrique': 'psychiatric',
+  'oncologie': 'oncology', 'oncologique': 'oncologic',
+  'gynecologie': 'gynecology', 'obstetrique': 'obstetrics',
+  'urgence': 'emergency', 'urgences': 'emergency',
+  'reanimation': 'icu', 'soins intensifs': 'intensive care',
+  'chirurgie': 'surgery', 'chirurgical': 'surgical',
+  'maladie': 'disease', 'maladies': 'diseases',
+  'chronique': 'chronic', 'chroniques': 'chronic',
+  'aigu': 'acute', 'aigue': 'acute', 'aigus': 'acute',
+  'cancer': 'cancer',
+  'diabete': 'diabetes',
+  'obesite': 'obesity',
+  'douleur': 'pain', 'douleurs': 'pain',
+  'mortalite': 'mortality', 'survie': 'survival',
+  'prevention': 'prevention', 'prevenir': 'prevent',
+  'depistage': 'screening',
+  'diagnostic': 'diagnosis', 'diagnostique': 'diagnostic',
+  'traitement': 'treatment', 'traitements': 'treatments',
+  'therapie': 'therapy', 'therapies': 'therapy', 'therapeutique': 'therapeutic',
+  'medicament': 'drug', 'medicaments': 'drugs',
+  'pharmacie': 'pharmacy', 'pharmaceutique': 'pharmaceutical',
+  'genetique': 'genetics', 'genomique': 'genomics',
+  'imagerie': 'imaging',
+  'reeducation': 'rehabilitation', 'readaptation': 'rehabilitation',
+  // Population
+  'patient': 'patient', 'patients': 'patients',
+  'enfant': 'child', 'enfants': 'children',
+  'adolescent': 'adolescent', 'adolescents': 'adolescents',
+  'adulte': 'adult', 'adultes': 'adults',
+  'femme': 'woman', 'femmes': 'women',
+  'homme': 'man', 'hommes': 'men',
+  'personne': 'person', 'personnes': 'persons', 'gens': 'people',
+  'populaires': 'population', 'populationnel': 'population',
+  // Mental health
+  'mentale': 'mental', 'mental': 'mental',
+  'depression': 'depression', 'depressif': 'depressive',
+  'anxiete': 'anxiety', 'anxieux': 'anxious',
+  'autisme': 'autism', 'autistique': 'autistic',
+  'demence': 'dementia',
+  'addiction': 'addiction', 'dependance': 'dependence',
+  // Public health / sociology
+  'inegalites': 'inequalities', 'inegalite': 'inequality',
+  'equite': 'equity',
+  'inclusion': 'inclusion',
+  'diversite': 'diversity',
+  'autochtone': 'indigenous', 'autochtones': 'indigenous',
+  'partenariat': 'partnership',
+  'engagement': 'engagement',
+  'participation': 'participation',
+  'mobilisation': 'mobilization',
+  'connaissances': 'knowledge', 'connaissance': 'knowledge',
+  'savoir': 'knowledge', 'savoirs': 'knowledge',
+  'transfert': 'transfer',
+  // Ethics / governance
+  'ethique': 'ethics', 'ethiques': 'ethical',
+  'bioethique': 'bioethics',
+  'gouvernance': 'governance',
+  'protection': 'protection',
+  'securite': 'security',
+  'confidentialite': 'privacy', 'privacy': 'privacy',
+  'consentement': 'consent',
+  'reglementation': 'regulation', 'reglementations': 'regulations',
+  'politique': 'policy', 'politiques': 'policies',
+  // Education / training
+  'formation': 'training', 'formations': 'training',
+  'enseignement': 'education',
+  'education': 'education',
+  'etudiant': 'student', 'etudiants': 'students',
+  'professeur': 'professor', 'professeurs': 'professors',
+  'chercheur': 'researcher', 'chercheurs': 'researchers',
+};
+
+function canonicalizeToken(t) {
+  return FR_TO_EN_DICT[t] || t;
+}
+
 function connexionsTokenize(text) {
   if (!text) return [];
   return fold(text)
     .split(/[^a-z0-9]+/)
-    .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t));
+    .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t))
+    .map(canonicalizeToken);
 }
 
 function connexionsSimilarity(a, b, tokensCache) {
