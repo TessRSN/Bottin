@@ -371,6 +371,27 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
+<!-- Phase 2j (2026-05-04): bandeau preview Vercel.
+     Auto-detecte si on est sur une URL de preview (pattern '-git-' dans
+     le hostname) et affiche un bandeau d'avertissement. En production
+     (bottin-gamma.vercel.app), la condition ne match pas → pas de bandeau.
+     Le code peut rester sur main sans effet visible cote utilisateurs. -->
+<script>
+(function(){
+  try {
+    var h = location.hostname;
+    var isPreview = h.indexOf('-git-') !== -1 || h.indexOf('vercel.app') !== -1 && h.indexOf('bottin-gamma.vercel.app') === -1;
+    if (!isPreview) return;
+    var branch = '';
+    var m = h.match(/-git-([^-.]+(?:-[^-.]+)*)-/);
+    if (m) branch = m[1];
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;z-index:9999;background:#fde68a;color:#78350f;padding:0.5rem 1rem;text-align:center;font-size:0.85rem;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;border-bottom:2px solid #f59e0b;box-shadow:0 1px 4px rgba(0,0,0,.1)';
+    bar.textContent = '⚠️ Version DEV (branche ' + (branch || 'preview') + ') — non publique. Modifications non visibles sur le bottin officiel tant que non fusionnées.';
+    document.body.insertBefore(bar, document.body.firstChild);
+  } catch (e) { /* fail silently */ }
+})();
+</script>
 
 <div class="header">
     <div class="header-controls">
