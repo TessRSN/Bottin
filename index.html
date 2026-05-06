@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bottin des membres — RSN</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Phase 2j (2026-05-04): vis-network pour la vue Connexions (graphe de proximite). -->
+    <link rel="stylesheet" href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
     <style>
@@ -456,6 +458,7 @@
             <button class="view-btn active" id="btnCards"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> <span data-i18n="view_cards">Profils</span></button>
             <button class="view-btn" id="btnTable"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> <span data-i18n="view_table">Tableau</span></button>
             <button class="view-btn" id="btnMap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg> <span data-i18n="view_map">Carte</span></button>
+            <button class="view-btn" id="btnConnexions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="8" y1="6" x2="16" y2="6"/></svg> <span data-i18n="view_connexions">Connexions</span></button>
         </div>
     </div>
 </div>
@@ -477,6 +480,36 @@
             <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-partenaire)"></div> <span data-i18n="partner">Partenaire</span></div>
             <span style="font-size:0.75rem;color:var(--rsn-muted);margin-left:auto;" id="mapCoverage">—</span>
         </div>
+    </div>
+    <!-- Phase 2j: vue Connexions (graphe de proximite vis-network) -->
+    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:1fr 280px;gap:0;height:calc(100vh - 280px);min-height:500px">
+      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg)"></div>
+      <aside id="connexionsSidebar" style="border-left:1.5px solid var(--rsn-border);padding:1rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.4rem" data-i18n="connexions_search_label">Rechercher</div>
+          <input type="text" id="connexionsSearch" data-i18n-placeholder="connexions_search_placeholder" placeholder="Rechercher un membre…" style="width:100%;padding:0.4rem 0.6rem;border:1.5px solid var(--rsn-border);border-radius:5px;font-size:0.85rem;background:var(--rsn-card-bg);color:var(--rsn-text)">
+        </div>
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.4rem" data-i18n="connexions_legend_label">Légende</div>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;font-size:0.8rem">
+            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-regulier);border:2px solid #2b6cb0"></span> <span data-i18n="regular">Régulier</span></div>
+            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
+            <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
+          </div>
+        </div>
+        <div id="connexionsCount" style="font-size:0.78rem;color:var(--rsn-muted);padding:0.5rem 0;border-top:1px solid var(--rsn-border)">—</div>
+        <div>
+          <button id="connexionsExportBtn" class="reset-btn" style="width:100%;cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
+        </div>
+        <details id="connexionsInsightsDetails" style="border-top:1px solid var(--rsn-border);padding-top:0.75rem">
+          <summary style="cursor:pointer;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted)" data-i18n="connexions_insights_title">Connexions inter-institutions</summary>
+          <div id="connexionsInsightsList" style="margin-top:0.6rem;font-size:0.78rem;display:flex;flex-direction:column;gap:0.4rem"></div>
+        </details>
+      </aside>
+    </div>
+    <div id="connexionsLoading" class="hidden" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
+      <div style="font-size:2rem;margin-bottom:1rem">⏳</div>
+      <p style="font-size:1rem;font-weight:600" data-i18n="connexions_loading">Calcul des connexions…</p>
     </div>
     <div id="emptyState" class="empty-state hidden">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -540,7 +573,15 @@ const I18N = {
         filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
-        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte',
+        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte', view_connexions: 'Connexions',
+        connexions_loading: 'Calcul des connexions…',
+        connexions_search_label: 'Rechercher',
+        connexions_search_placeholder: 'Rechercher un membre…',
+        connexions_legend_label: 'Légende',
+        connexions_count_legend: '{N} membres, {L} connexions affichées',
+        connexions_export_png: 'Exporter en image',
+        connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
+        connexions_pair_score: '{N} critères en commun',
         no_results: 'Aucun membre trouvé',
         no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
         upload_title: 'Mettre à jour les données :',
@@ -588,7 +629,15 @@ const I18N = {
         filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
-        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map',
+        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map', view_connexions: 'Connections',
+        connexions_loading: 'Computing connections…',
+        connexions_search_label: 'Search',
+        connexions_search_placeholder: 'Search a member…',
+        connexions_legend_label: 'Legend',
+        connexions_count_legend: '{N} members, {L} connections shown',
+        connexions_export_png: 'Export as image',
+        connexions_insights_title: 'High-potential cross-institution pairs',
+        connexions_pair_score: '{N} criteria in common',
         no_results: 'No members found',
         no_results_hint: 'Try adjusting your search criteria or filters.',
         upload_title: 'Update data:',
@@ -1159,19 +1208,251 @@ function applyFilters() {
     render();
 }
 
+// ─── Vue Connexions (Phase 2j, 2026-05-04) ───
+// Graphe de proximite entre membres (force-directed via vis-network).
+// Cf. spec : docs/superpowers/specs/2026-05-04-connexions-design.md
+
+const CONNEXIONS_STOPWORDS = new Set([
+  'le','la','les','de','des','du','et','ou','au','aux','pour','sur','dans','avec','par',
+  'un','une','en','est','sont','que','qui','ce','cette','ces','sa','son','ses','leur',
+  'leurs','notre','nos','votre','vos','plus','moins','tres','non','oui','tout','tous',
+  'aussi','meme','etre','avoir','faire','etc','ainsi','car','mais','donc','toutes',
+  'the','an','and','or','in','on','at','for','with','by','of','to','is','are','was',
+  'were','be','been','being','have','has','had','do','does','did','will','would',
+  'should','could','may','might','this','that','these','those','from','as','it','its',
+  'we','you','they','them','their','our','your','my','also','than','then','there',
+  'such','any','some','more','most','very','can','not','no'
+]);
+
+function connexionsTokenize(text) {
+  if (!text) return [];
+  return fold(text)
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t));
+}
+
+function connexionsSimilarity(a, b, tokensCache) {
+  if (!a || !b || a === b) return 0;
+  let score = 0;
+  const sharedAxes = (a.axes || []).filter(x => (b.axes || []).includes(x));
+  const sharedPrinc = (a.principes || []).filter(x => (b.principes || []).includes(x));
+  const sharedChamps = (a.champsAction || []).filter(x => (b.champsAction || []).includes(x));
+  score += sharedAxes.length + sharedPrinc.length + sharedChamps.length;
+  const tokensA = tokensCache.get(a);
+  const tokensB = tokensCache.get(b);
+  let common = 0;
+  for (const t of tokensA) if (tokensB.has(t)) common++;
+  score += common * 2;
+  return score;
+}
+
+let _connexionsCache = null;
+let _connexionsNetwork = null;
+
+function renderConnexions() {
+  const container = document.getElementById('connexionsContainer');
+  const loading = document.getElementById('connexionsLoading');
+  if (!container || !loading) return;
+  if (typeof vis === 'undefined' || !vis.Network) {
+    loading.classList.remove('hidden');
+    loading.textContent = 'vis-network non chargé — vérifiez votre connexion.';
+    return;
+  }
+  loading.classList.remove('hidden');
+  container.classList.add('hidden');
+  const schedule = window.requestIdleCallback || function(cb){ return setTimeout(cb, 50); };
+  schedule(function(){
+    buildAndShowConnexionsGraph();
+    loading.classList.add('hidden');
+    container.classList.remove('hidden');
+  });
+}
+
+function buildAndShowConnexionsGraph() {
+  if (_connexionsCache && _connexionsCache.members === allMembers && _connexionsNetwork) {
+    _connexionsNetwork.fit({ animation: false });
+    return;
+  }
+  const eligible = allMembers.filter(m => m.consent === 'oui');
+  const tokensCache = new Map();
+  for (const m of eligible) {
+    tokensCache.set(m, new Set([
+      ...connexionsTokenize(m.expertise),
+      ...connexionsTokenize(m.themes),
+      ...connexionsTokenize(m.projet),
+    ]));
+  }
+  const TOP_K = 5;
+  const MIN_SCORE = 3;
+  const N = eligible.length;
+  const neighborsByIdx = eligible.map(() => []);
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const score = connexionsSimilarity(eligible[i], eligible[j], tokensCache);
+      if (score < MIN_SCORE) continue;
+      neighborsByIdx[i].push({ j, score });
+      neighborsByIdx[j].push({ j: i, score });
+    }
+  }
+  const edgeSet = new Map();
+  for (let i = 0; i < N; i++) {
+    neighborsByIdx[i].sort((a, b) => b.score - a.score);
+    const top = neighborsByIdx[i].slice(0, TOP_K);
+    for (const { j, score } of top) {
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+      const existing = edgeSet.get(key);
+      if (!existing || score > existing.score) {
+        edgeSet.set(key, { from: i, to: j, score });
+      }
+    }
+  }
+  const degree = new Array(N).fill(0);
+  for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
+  const TYPE_COLORS = {
+    'Régulier':   { background: '#bee3f8', border: '#2b6cb0' },
+    'Étudiant':   { background: '#fefcbf', border: '#975a16' },
+    'Partenaire': { background: '#c6f6d5', border: '#276749' },
+  };
+  const DEFAULT_COLOR = { background: '#e2e8f0', border: '#718096' };
+  const nodes = eligible.map((m, i) => {
+    const t = (m.type || '').trim();
+    const c = TYPE_COLORS[t] || DEFAULT_COLOR;
+    const baseSize = 8 + Math.sqrt(degree[i]) * 3;
+    const stripped = `${m.prenom || ''} ${m.nom || ''}`.trim() || (m.email || '?');
+    return {
+      id: i,
+      label: stripped,
+      title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
+      color: { background: c.background, border: c.border, highlight: { background: c.background, border: c.border } },
+      borderWidth: 2,
+      size: Math.min(Math.max(baseSize, 6), 28),
+      shape: 'dot',
+      _ref: m,
+    };
+  });
+  const edges = Array.from(edgeSet.values()).map(e => ({
+    from: e.from, to: e.to, value: e.score,
+    color: { color: 'rgba(160,160,180,0.35)', highlight: '#a855f7', hover: '#a855f7' },
+    width: Math.min(0.5 + e.score / 6, 4),
+  }));
+  const countEl = document.getElementById('connexionsCount');
+  if (countEl) {
+    countEl.textContent = tr('connexions_count_legend')
+      .replace('{N}', nodes.length).replace('{L}', edges.length);
+  }
+  if (_connexionsNetwork) { try { _connexionsNetwork.destroy(); } catch (e) {} _connexionsNetwork = null; }
+  const graphEl = document.getElementById('connexionsGraph');
+  const nodesDS = new vis.DataSet(nodes);
+  const edgesDS = new vis.DataSet(edges);
+  const data = { nodes: nodesDS, edges: edgesDS };
+  const options = {
+    nodes: { shape: 'dot', borderWidth: 2, font: { size: 11 } },
+    edges: { smooth: { type: 'continuous', roundness: 0.2 }, scaling: { min: 0.5, max: 4 } },
+    physics: {
+      forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.005, springLength: 100, springConstant: 0.06, damping: 0.5 },
+      solver: 'forceAtlas2Based',
+      stabilization: { iterations: 200, fit: true },
+    },
+    interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragNodes: true },
+  };
+  _connexionsNetwork = new vis.Network(graphEl, data, options);
+  _connexionsNetwork.on('click', function(params) {
+    if (!params.nodes || !params.nodes.length) return;
+    const node = nodesDS.get(params.nodes[0]);
+    if (node && node._ref && typeof openMemberModal === 'function') openMemberModal(node._ref);
+  });
+  const searchEl = document.getElementById('connexionsSearch');
+  if (searchEl && !searchEl._wired) {
+    searchEl._wired = true;
+    searchEl.addEventListener('input', function() {
+      const q = fold(searchEl.value.trim());
+      if (!q) return;
+      const found = nodes.find(n => fold(n.label).includes(q) || fold(n._ref.institution || '').includes(q));
+      if (found && _connexionsNetwork) {
+        _connexionsNetwork.focus(found.id, { scale: 1.3, animation: { duration: 600, easingFunction: 'easeInOutCubic' } });
+        _connexionsNetwork.selectNodes([found.id]);
+      }
+    });
+  }
+  const exportBtn = document.getElementById('connexionsExportBtn');
+  if (exportBtn && !exportBtn._wired) {
+    exportBtn._wired = true;
+    exportBtn.addEventListener('click', function() {
+      try {
+        const canvas = graphEl.querySelector('canvas');
+        if (!canvas) return;
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rsn-connexions-' + new Date().toISOString().slice(0, 10) + '.png';
+        a.click();
+      } catch (e) { console.warn('Export PNG failed:', e); }
+    });
+  }
+  renderConnexionsInsights(eligible, edgeSet);
+  _connexionsCache = { members: allMembers };
+}
+
+function renderConnexionsInsights(eligible, edgeSet) {
+  const list = document.getElementById('connexionsInsightsList');
+  if (!list) return;
+  while (list.firstChild) list.removeChild(list.firstChild);
+  const pairs = [];
+  for (const e of edgeSet.values()) {
+    const a = eligible[e.from], b = eligible[e.to];
+    const instA = (a.institution || '').trim().toLowerCase();
+    const instB = (b.institution || '').trim().toLowerCase();
+    if (!instA || !instB || instA === instB) continue;
+    pairs.push({ a, b, score: e.score });
+  }
+  pairs.sort((x, y) => y.score - x.score);
+  for (const p of pairs.slice(0, 10)) {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:0.4rem 0.5rem;border-radius:4px;background:var(--rsn-light);font-size:0.78rem;line-height:1.35';
+    const nameA = `${p.a.prenom || ''} ${p.a.nom || ''}`.trim();
+    const nameB = `${p.b.prenom || ''} ${p.b.nom || ''}`.trim();
+    const instA = (p.a.institution || '').split(';')[0].trim();
+    const instB = (p.b.institution || '').split(';')[0].trim();
+    const lineA = document.createElement('div');
+    const strA = document.createElement('strong'); strA.textContent = nameA; lineA.appendChild(strA);
+    if (instA) {
+      const sA = document.createElement('span'); sA.style.color = 'var(--rsn-muted)'; sA.textContent = ' (' + instA + ')';
+      lineA.appendChild(sA);
+    }
+    const lineB = document.createElement('div');
+    lineB.appendChild(document.createTextNode('↔ '));
+    const strB = document.createElement('strong'); strB.textContent = nameB; lineB.appendChild(strB);
+    if (instB) {
+      const sB = document.createElement('span'); sB.style.color = 'var(--rsn-muted)'; sB.textContent = ' (' + instB + ')';
+      lineB.appendChild(sB);
+    }
+    const lineScore = document.createElement('div');
+    lineScore.style.color = 'var(--rsn-accent)';
+    lineScore.textContent = tr('connexions_pair_score').replace('{N}', p.score);
+    item.appendChild(lineA); item.appendChild(lineB); item.appendChild(lineScore);
+    list.appendChild(item);
+  }
+}
+
 function render() {
     const cv=document.getElementById('cardsView'), tv=document.getElementById('tableView'), mc=document.getElementById('mapContainer');
+    const co=document.getElementById('connexionsContainer'), col=document.getElementById('connexionsLoading');
     cv.classList.add('hidden'); tv.classList.add('hidden'); mc.classList.add('hidden');
+    if (co) co.classList.add('hidden'); if (col) col.classList.add('hidden');
     if(currentView==='map') {
         mc.classList.remove('hidden'); renderMap();
     } else if(currentView==='cards') {
         renderCards(); cv.classList.remove('hidden');
+    } else if(currentView==='connexions') {
+        // Phase 2j: vue Connexions (graphe vis-network)
+        if (typeof renderConnexions === 'function') renderConnexions();
     } else {
         renderTable(); tv.classList.remove('hidden');
     }
-    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || currentView==='map');
-    document.getElementById('pagination').classList.toggle('hidden', currentView==='map');
-    if(currentView!=='map') renderPag();
+    const isGraphView = (currentView==='map' || currentView==='connexions');
+    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || isGraphView);
+    document.getElementById('pagination').classList.toggle('hidden', isGraphView);
+    if (!isGraphView) renderPag();
 }
 function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1301,14 +1582,17 @@ document.getElementById('resetFilters').addEventListener('click',()=>{
 });
 function setView(v) {
     currentView = v;
-    ['btnCards','btnTable','btnMap'].forEach(id => document.getElementById(id).classList.remove('active'));
-    document.getElementById(v==='cards'?'btnCards':v==='table'?'btnTable':'btnMap').classList.add('active');
+    ['btnCards','btnTable','btnMap','btnConnexions'].forEach(id => { var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+    var btnId = v==='cards'?'btnCards':v==='table'?'btnTable':v==='connexions'?'btnConnexions':'btnMap';
+    var btn = document.getElementById(btnId); if (btn) btn.classList.add('active');
     render();
     saveHash();
 }
 document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
 document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
 document.getElementById('btnMap').addEventListener('click',()=>setView('map'));
+var btnConn = document.getElementById('btnConnexions');
+if (btnConn) btnConn.addEventListener('click',()=>setView('connexions'));
 
 // ─── FILE UPLOAD ───
 const ua=document.getElementById('uploadArea'),fi=document.getElementById('csvFileInput');
@@ -1834,6 +2118,8 @@ function restoreHash() {
     });
 })();
 </script>
+<!-- Phase 2j: vis-network pour la vue Connexions -->
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <!-- Phase 2g (2026-05-04): Fuse.js pour recherche fuzzy multilingue ponderee -->
