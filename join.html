@@ -42,9 +42,16 @@
   .chip { display:inline-flex; align-items:center; gap:.3rem; padding:.35rem .75rem; border-radius:2rem; font-size:.8rem; border:1.5px solid var(--border); cursor:pointer; transition:all .15s; user-select:none; }
   .chip input { display:none; }
   .chip.checked { background:var(--primary); color:#fff; border-color:var(--primary); }
-  .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
+  .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1.25rem; margin-top:1rem; }
   [data-theme="dark"] .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); }
   .consent-section label.field-label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
+  .consent-title { margin:0 0 .5rem 0; font-size:1rem; font-weight:700; color:var(--text); }
+  .consent-section p { font-size:.85rem; line-height:1.5; margin:.5rem 0; color:var(--text); }
+  .consent-section ul { font-size:.85rem; line-height:1.5; margin:.25rem 0 .75rem 1.25rem; padding:0; color:var(--text); }
+  .consent-section .consent-fields { font-style:italic; }
+  .consent-footer { font-size:.8rem !important; opacity:.85; margin-top:.75rem !important; padding-top:.75rem; border-top:1px solid rgba(0,0,0,.1); }
+  [data-theme="dark"] .consent-footer { border-top-color:rgba(255,255,255,.15); }
+  .consent-footer a { color:inherit; text-decoration:underline; }
   .actions { display:flex; gap:1rem; justify-content:center; margin-top:1.5rem; }
   .btn { padding:.7rem 2rem; border:none; border-radius:var(--radius); font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; }
   .btn-primary { background:var(--primary); color:#fff; }
@@ -230,7 +237,17 @@
 
     <div class="card">
       <div class="consent-section">
-        <div class="field" style="margin:0">
+        <h3 class="consent-title" id="l_consent_title">Consentement à la diffusion de vos informations</h3>
+        <p id="l_consent_intro">Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :</p>
+        <p class="consent-fields" id="l_consent_fields">prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel.</p>
+        <p id="l_consent_uses_intro">Ces informations seront utilisées pour :</p>
+        <ul>
+          <li id="l_consent_use1">apparaître sur le bottin public du RSN ;</li>
+          <li id="l_consent_use2">être associées à votre institution et à vos projets ;</li>
+          <li id="l_consent_use3">faciliter le réseautage et la collaboration entre membres.</li>
+        </ul>
+        <p><strong id="l_consent_newsletter_bold">En adhérant</strong><span id="l_consent_newsletter_rest">, vous acceptez également de recevoir nos communications par courriel (infolettre, activités, événements). Vous pourrez vous désabonner à tout moment.</span></p>
+        <div class="field" style="margin:1rem 0 0 0">
           <label class="field-label" id="l_consent">Autorisez-vous le RSN à créer un profil de membre public ?<span class="required-mark">*</span></label>
           <select id="f_consent" style="margin-top:.5rem">
             <option value="" id="opt_choose">-- Choisir --</option>
@@ -238,6 +255,7 @@
             <option value="Non" id="opt_no">Non, ne pas afficher mon profil</option>
           </select>
         </div>
+        <p class="consent-footer"><span id="l_consent_withdraw_pre">Vous pouvez retirer ou modifier votre consentement à tout moment depuis votre </span><a href="/magic-link.html" id="l_consent_withdraw_link1">page Mon profil</a><span id="l_consent_withdraw_mid"> ou en écrivant à </span><a href="mailto:rsn.gestion@rimuhc.ca" id="l_consent_withdraw_link2">rsn.gestion@rimuhc.ca</a><span id="l_consent_withdraw_post">.</span></p>
       </div>
     </div>
 
@@ -347,6 +365,20 @@ var I18N = {
     s_axes: "Vos thématiques d'intérêt",
     h_themes_pick: 'Choisissez au moins une option parmi les trois familles ci-dessous.',
     l_axes: 'Axes', l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
+    l_consent_title: 'Consentement à la diffusion de vos informations',
+    l_consent_intro: 'Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :',
+    l_consent_fields: "prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel.",
+    l_consent_uses_intro: 'Ces informations seront utilisées pour :',
+    l_consent_use1: 'apparaître sur le bottin public du RSN ;',
+    l_consent_use2: 'être associées à votre institution et à vos projets ;',
+    l_consent_use3: 'faciliter le réseautage et la collaboration entre membres.',
+    l_consent_newsletter_bold: 'En adhérant',
+    l_consent_newsletter_rest: ", vous acceptez également de recevoir nos communications par courriel (infolettre, activités, événements). Vous pourrez vous désabonner à tout moment.",
+    l_consent_withdraw_pre: 'Vous pouvez retirer ou modifier votre consentement à tout moment depuis votre ',
+    l_consent_withdraw_link1: 'page Mon profil',
+    l_consent_withdraw_mid: ' ou en écrivant à ',
+    l_consent_withdraw_link2: 'rsn.gestion@rimuhc.ca',
+    l_consent_withdraw_post: '.',
     l_consent: 'Autorisez-vous le RSN à créer un profil de membre public ?',
     opt_choose: '-- Choisir --',
     opt_yes: 'Oui, afficher mon profil publiquement',
@@ -403,6 +435,20 @@ var I18N = {
     s_axes: 'Your topics of interest',
     h_themes_pick: 'Choose at least one option from any of the three families below.',
     l_axes: 'Axes', l_principes: 'Founding principles', l_champs: 'Action fields',
+    l_consent_title: 'Consent to share your information',
+    l_consent_intro: 'The following information will be publicly displayed on the directory of the Digital Health Network:',
+    l_consent_fields: 'first name, last name, status, membership type, affiliated institution, research themes, project, axes / principles / action fields, and optionally your email.',
+    l_consent_uses_intro: 'This information will be used to:',
+    l_consent_use1: 'appear on the public RSN directory;',
+    l_consent_use2: 'be associated with your institution and your projects;',
+    l_consent_use3: 'facilitate networking and collaboration between members.',
+    l_consent_newsletter_bold: 'By joining',
+    l_consent_newsletter_rest: ', you also agree to receive our email communications (newsletter, activities, events). You may unsubscribe at any time.',
+    l_consent_withdraw_pre: 'You can withdraw or modify your consent at any time from your ',
+    l_consent_withdraw_link1: 'My profile page',
+    l_consent_withdraw_mid: ' or by writing to ',
+    l_consent_withdraw_link2: 'rsn.gestion@rimuhc.ca',
+    l_consent_withdraw_post: '.',
     l_consent: 'Do you authorize RSN to create a public member profile?',
     opt_choose: '-- Choose --',
     opt_yes: 'Yes, display my profile publicly',
@@ -473,6 +519,21 @@ function applyI18n() {
   setWithRequired('l_principes', t('l_principes'), false);
   setWithRequired('l_champs', t('l_champs'), false);
   setWithRequired('l_consent', t('l_consent'), true);
+
+  // Phase 2k (2026-05-11): bloc consentement enrichi (loi 25 / RGPD).
+  // Liste des donnees diffusees + usages + lien retrait/desinscription.
+  // Chaque fragment (texte/strong/lien) a son propre ID -> textContent only.
+  var consentTextIds = [
+    'l_consent_title', 'l_consent_intro', 'l_consent_fields',
+    'l_consent_uses_intro', 'l_consent_use1', 'l_consent_use2', 'l_consent_use3',
+    'l_consent_newsletter_bold', 'l_consent_newsletter_rest',
+    'l_consent_withdraw_pre', 'l_consent_withdraw_link1',
+    'l_consent_withdraw_mid', 'l_consent_withdraw_link2', 'l_consent_withdraw_post'
+  ];
+  consentTextIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = t(id);
+  });
 
   // Hints — build h_status with safe DOM methods
   var hStatus = document.getElementById('h_status');
