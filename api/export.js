@@ -320,6 +320,13 @@ module.exports = async function handler(req, res) {
       // Skip empty entries
       if (!m.prenom && !m.nom) continue;
 
+      // Phase 2k (2026-05-11) — bug fix : ne pas exposer publiquement les fiches
+      // qui n'ont pas encore ete approuvees par l'admin (workflow="Nouveau",
+      // "Refuse", etc.). Seules les fiches "Approuve" doivent apparaitre sur
+      // le bottin public. Sans ce filtre, les nouveaux candidats etaient
+      // affiches immediatement, avant validation manuelle.
+      if (m.workflow !== 'Approuvé') continue;
+
       const consent = (m.consent || '').toLowerCase();
       const typeNorm = (m.type || '').toLowerCase();
 
