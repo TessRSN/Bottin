@@ -53,8 +53,17 @@ module.exports = async function handler(req, res) {
     }
 
     // Create the member (returns the created Notion page so we can link
-    // the institution Relation afterwards)
+    // the institution Relation afterwards).
+    // Phase 2k (2026-05-11): on remplit aussi dateDebut (= aujourd'hui) et
+    // dateRenouvellement (= aujourd'hui + 2 ans), comme dans renew.js.
+    // Ainsi le cycle de renouvellement automatique fonctionne des l'approbation,
+    // et l'admin n'a plus a les renseigner manuellement.
     const cleanType = type.trim();
+    const todayDate = new Date();
+    const todayISO = todayDate.toISOString().slice(0, 10);
+    const renouvDate = new Date(todayDate);
+    renouvDate.setFullYear(renouvDate.getFullYear() + 2);
+    const dateRenouv = renouvDate.toISOString().slice(0, 10);
     const newMemberPage = await createMember({
       prenom: prenom.trim(),
       nom: nom.trim(),
@@ -63,6 +72,8 @@ module.exports = async function handler(req, res) {
       statut: statut.trim(),
       institution: institution.trim(),
       type: cleanType,
+      dateDebut: todayISO,
+      dateRenouvellement: dateRenouv,
       // Phase 2e (2026-05-04): regle metier — seuls les membres reguliers
       // ont automatiquement le droit de vote a la creation. L'admin peut
       // ensuite ajuster manuellement dans Notion en cas de besoin.
