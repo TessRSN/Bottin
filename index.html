@@ -1221,16 +1221,49 @@ function applyFilters() {
 // Graphe de proximite entre membres (force-directed via vis-network).
 // Cf. spec : docs/superpowers/specs/2026-05-04-connexions-design.md
 
+// Phase 2j v6 (2026-05-12) — extension stopwords pour evacuer les mots
+// peu informatifs qui passent encore (notamment, into, based, focuses, etc.)
 const CONNEXIONS_STOPWORDS = new Set([
+  // FR — articles, prepositions, conjonctions, pronoms, adverbes courants
   'le','la','les','de','des','du','et','ou','au','aux','pour','sur','dans','avec','par',
   'un','une','en','est','sont','que','qui','ce','cette','ces','sa','son','ses','leur',
   'leurs','notre','nos','votre','vos','plus','moins','tres','non','oui','tout','tous',
   'aussi','meme','etre','avoir','faire','etc','ainsi','car','mais','donc','toutes',
+  'notamment','parmi','entre','sous','vers','chez','sans','depuis','pendant','durant',
+  'contre','selon','malgre','puis','ensuite','alors','encore','toujours','jamais',
+  'comme','toutefois','cependant','neanmoins','autres','autre','propre','propres',
+  'premier','premiere','dernier','derniere','ans','fois','via','celui','celle','ceux',
+  'lui','elle','elles','ils','nous','vous','je','tu','moi','toi','soi','dont','quoi',
+  'celle','cela','beaucoup','peu','plusieurs','certains','certaines','divers','diverses',
+  'fait','faits','jour','jours','annee','annees','mois','semaine','heure','heures',
+  // EN — articles, prepositions, conjonctions, modaux
   'the','an','and','or','in','on','at','for','with','by','of','to','is','are','was',
   'were','be','been','being','have','has','had','do','does','did','will','would',
   'should','could','may','might','this','that','these','those','from','as','it','its',
   'we','you','they','them','their','our','your','my','also','than','then','there',
-  'such','any','some','more','most','very','can','not','no'
+  'such','any','some','more','most','very','can','not','no',
+  'into','onto','upon','through','throughout','between','among','within','without',
+  'against','around','across','after','before','during','beyond','despite','toward',
+  'towards','behind','above','below','over','under','except','until','since','while',
+  'although','though','however','therefore','thus','hence','whereas','moreover',
+  'furthermore','nevertheless','otherwise','instead','rather','perhaps',
+  // EN — verbes generiques qui ne portent pas de sens distinctif
+  'based','designed','focused','focuses','focus','using','used','uses',
+  'including','included','includes','involve','involves','involved',
+  'provide','provides','provided','become','becomes','became',
+  'make','makes','made','take','takes','took','give','gives','gave',
+  'show','shows','showed','find','finds','found','look','looks','looked',
+  'work','works','worked','help','helps','helped',
+  'want','wants','wanted','need','needs','needed','seek','seeks','sought',
+  'create','creates','created','build','builds','built','start','starts','started',
+  'addresses','addressed','address','aim','aims','aimed','allow','allows','allowed',
+  'continue','continues','continued','remain','remains','remained',
+  'consider','considers','considered','support','supports','supported',
+  'identify','identifies','identified','define','defines','defined',
+  'one','two','three','four','five','six','seven','eight','nine','ten',
+  'first','second','third','last','next','many','much','few','several',
+  'years','year','days','day','time','times','people','example','examples',
+  'way','ways','part','parts','case','cases','set','sets'
 ]);
 
 // Phase 2j v5 (2026-05-04) — pont linguistique FR↔EN.
@@ -1776,7 +1809,7 @@ function renderCards() {
         // Phase 2j v3: bouton "Voir profils proches" sur chaque card consentante
         // → ouvre la modal classique qui inclut deja le bloc Profils proches.
         const neighborsBtn = (m.consent === 'oui')
-          ? `<button class="card-link" style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);color:var(--rsn-accent);cursor:pointer;font-family:inherit;margin-top:0.4rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})">🔗 ${tr('similar_profiles_btn')}</button>`
+          ? `<button class="card-link" style="display:inline-flex;align-items:center;gap:0.35rem;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.35);color:var(--rsn-accent);cursor:pointer;font-family:inherit;margin-top:0.4rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>${tr('similar_profiles_btn')}</button>`
           : '';
         return `<div class="member-card ${cc}${pendingClass}">
             <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
@@ -2011,19 +2044,15 @@ function buildNeighborsBlock(neighbors) {
                 lbl.style.cssText = 'font-weight:600;color:var(--rsn-muted);margin-right:0.3rem';
                 lbl.textContent = tr('lbl_keywords') + ' :';
                 line.appendChild(lbl);
-                const top = detail.sharedTokens.slice(0, 12);
-                top.forEach(t => {
+                // Phase 2j v6 (2026-05-12): on affiche TOUS les mots-cles
+                // communs (avant on coupait a 12). Le bloc est de toute facon
+                // masque par defaut, l'utilisateur doit cliquer pour deplier.
+                detail.sharedTokens.forEach(t => {
                     const chip = document.createElement('span');
                     chip.style.cssText = 'display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(168,85,247,0.15);color:var(--rsn-text);margin:0.1rem 0.2rem 0.1rem 0;font-size:0.7rem';
                     chip.textContent = t;
                     line.appendChild(chip);
                 });
-                if (detail.sharedTokens.length > 12) {
-                    const more = document.createElement('span');
-                    more.style.cssText = 'font-size:0.7rem;color:var(--rsn-muted)';
-                    more.textContent = '+' + (detail.sharedTokens.length - 12);
-                    line.appendChild(more);
-                }
                 detailsBox.appendChild(line);
             }
 
