@@ -68,10 +68,15 @@ async function runRetentionCron(allMembers) {
   };
 
   // Only consider real members (with valid email + renewal date + not already archived).
+  // Phase 2k (2026-05-12) : exclure aussi "Nouveau" et "On Hold" — ces fiches
+  // sont en attente de validation et ne doivent pas declencher de cycle de
+  // renouvellement automatique tant qu'elles n'ont pas ete approuvees.
   const eligible = allMembers.filter(m =>
     m.email && m.email.includes('@') &&
     m.dateRenouvellement &&
-    m.workflow !== 'Refusé'
+    m.workflow !== 'Refusé' &&
+    m.workflow !== 'Nouveau' &&
+    m.workflow !== 'On Hold'
   );
 
   // Categorize each eligible member by what action is due TODAY.
