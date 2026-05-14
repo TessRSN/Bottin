@@ -681,8 +681,31 @@ function toggleLang() {
     currentLang = currentLang === 'fr' ? 'en' : 'fr';
     try { localStorage.setItem('rsn-lang', currentLang); } catch(e) {}
     applyI18n();
-    if (allMembers.length) render();
+    // Phase 2k : on met a jour les labels des filtres existants (sans rebuild
+    // pour preserver les selections actives), puis on re-render les cartes /
+    // tableau / popup pour traduire statut + axes + principes + champs.
+    if (allMembers.length) {
+        if (typeof refreshFilterLabels === 'function') refreshFilterLabels();
+        render();
+    }
     saveHash();
+}
+
+// Phase 2k : met a jour les labels des options de filtres (statut / type /
+// axes / principes / champs) selon currentLang, sans recreer les options
+// (donc sans toucher aux selections cochees).
+function refreshFilterLabels() {
+    ['filterType', 'filterRegion', 'filterStatut', 'filterFocus'].forEach(function(id) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.querySelectorAll('.ms-item').forEach(function(item) {
+            const cb = item.querySelector('input[type="checkbox"]');
+            const lbl = item.querySelector('label');
+            if (cb && lbl) lbl.textContent = translateFilterValue(id, cb.value);
+        });
+        const allLabel = id === 'filterRegion' ? tr('all_f') : tr('all_m');
+        if (typeof updateMS === 'function') updateMS(id, allLabel);
+    });
 }
 
 // ─── THEME ───
@@ -959,7 +982,11 @@ function buildMS(id, items, allLabel) {
         if (group) { const g = document.createElement('div'); g.className = 'ms-group-label'; g.textContent = group; panel.appendChild(g); const sep = document.createElement('div'); sep.className = 'ms-sep'; panel.appendChild(sep); return; }
         const item = document.createElement('div'); item.className = 'ms-item';
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value;
-        const lbl = document.createElement('label'); lbl.textContent = value;
+        // Phase 2k : on affiche le label traduit (selon currentLang) mais on
+        // garde la value FR comme valeur de comparaison interne (msState +
+        // filtres ci-dessous comparent sur m.statutGroup / m.axes[0] qui
+        // restent en FR cote donnees).
+        const lbl = document.createElement('label'); lbl.textContent = translateFilterValue(id, value);
         const cnt = document.createElement('span'); cnt.className = 'ms-item-count'; cnt.textContent = count;
         item.appendChild(cb); item.appendChild(lbl); item.appendChild(cnt);
         item.addEventListener('click', e => { if (e.target !== cb) cb.checked = !cb.checked; updateMS(id, allLabel); applyFilters(); saveHash(); });
@@ -978,9 +1005,11 @@ function updateMS(id, allLabel) {
     const btn = wrap.querySelector('.ms-btn');
     const oldCount = btn.querySelector('.ms-count');
     if (oldCount) oldCount.remove();
+    // Phase 2k : on affiche le label traduit aussi dans le bouton compact.
+    const trVal0 = vals[0] ? translateFilterValue(id, vals[0]) : '';
     if (vals.length === 0) { label.textContent = allLabel; }
-    else if (vals.length === 1) { label.textContent = vals[0].length > 28 ? vals[0].slice(0,26)+'…' : vals[0]; }
-    else { label.textContent = vals[0].length > 20 ? vals[0].slice(0,18)+'…' : vals[0]; const badge = document.createElement('span'); badge.className = 'ms-count'; badge.textContent = '+' + (vals.length-1); btn.insertBefore(badge, btn.querySelector('.ms-arrow')); }
+    else if (vals.length === 1) { label.textContent = trVal0.length > 28 ? trVal0.slice(0,26)+'…' : trVal0; }
+    else { label.textContent = trVal0.length > 20 ? trVal0.slice(0,18)+'…' : trVal0; const badge = document.createElement('span'); badge.className = 'ms-count'; badge.textContent = '+' + (vals.length-1); btn.insertBefore(badge, btn.querySelector('.ms-arrow')); }
 }
 
 function closeAllMS() {
@@ -1044,6 +1073,57 @@ const TYPE_FR_TO_EN = {
     'Étudiant': 'Student member',
     'Partenaire': 'Partner member',
 };
+
+// Phase 2k (2026-05-12) — traduction des valeurs metier affichees dans le
+// bottin (cartes / tableau / popup / filtres) selon la langue courante.
+const STATUT_GROUP_FR_TO_EN = {
+    'Chercheur·e': 'Researcher',
+    'Étudiant·e': 'Student',
+    'Personnel de recherche': 'Research staff',
+    'Personnel de la santé': 'Health professional',
+    'Direction ou coordination': 'Management or coordination',
+    'Partenaire ou autre': 'Partner or other',
+};
+
+const AXES_FR_TO_EN = {
+    'Axe 1 - Plateformes numériques et gouvernance informationnelle': 'Axis 1 - Digital platforms and information governance',
+    'Axe 2 - Modélisation et méthodes numériques': 'Axis 2 - Modeling and digital methods',
+    'Axe 3 - Intervention numérique': 'Axis 3 - Digital intervention',
+    'Axe 4 - Transformation numérique': 'Axis 4 - Digital transformation',
+};
+
+const PRINCIPES_FR_TO_EN = {
+    'Science ouverte': 'Open science',
+    'Numérique de confiance': 'Trusted digital',
+    'Santé durable': 'Sustainable health',
+    'Engagement citoyen': 'Citizen engagement',
+    'Équité diversité inclusion et accessibilité': 'Equity, diversity, inclusion and accessibility',
+    'Équité, diversité, inclusion et accessibilité': 'Equity, diversity, inclusion and accessibility',
+};
+
+const CHAMPS_FR_TO_EN = {
+    'Formation interdisciplinaire': 'Interdisciplinary training',
+    'Mobilisation des connaissances': 'Knowledge mobilization',
+    'Renforcement des capacités': 'Capacity building',
+};
+
+// Helpers : retournent la valeur traduite dans la langue courante.
+// Si on est en FR, ou si la traduction est absente du dico, on rend la valeur originale.
+function trStatut(v)      { if (!v || currentLang === 'fr') return v; return STATUT_FR_TO_EN[v] || v; }
+function trStatutGroup(v) { if (!v || currentLang === 'fr') return v; return STATUT_GROUP_FR_TO_EN[v] || v; }
+function trAxe(v)         { if (!v || currentLang === 'fr') return v; return AXES_FR_TO_EN[v] || v; }
+function trPrincipe(v)    { if (!v || currentLang === 'fr') return v; return PRINCIPES_FR_TO_EN[v] || v; }
+function trChamp(v)       { if (!v || currentLang === 'fr') return v; return CHAMPS_FR_TO_EN[v] || v; }
+
+// Retourne la traduction d'une option de filtre selon son id, ou la valeur
+// originale si pas de mapping. Utilise par buildMS / updateMS.
+function translateFilterValue(filterId, value) {
+    if (!value || currentLang === 'fr') return value;
+    if (filterId === 'filterStatut') return STATUT_GROUP_FR_TO_EN[value] || value;
+    if (filterId === 'filterType')   return TYPE_FR_TO_EN[value] || value;
+    if (filterId === 'filterFocus')  return AXES_FR_TO_EN[value] || PRINCIPES_FR_TO_EN[value] || CHAMPS_FR_TO_EN[value] || value;
+    return value; // filterRegion : pas de traduction
+}
 
 // Phase 2k (2026-05-12) — pont linguistique FR↔EN pour la barre de recherche.
 // Stopwords (FR + EN) et dictionnaire de canonicalisation FR→EN extraits de
@@ -1460,9 +1540,11 @@ function renderCards() {
     if(!items.length){el.innerHTML='';return;}
     el.innerHTML = items.map((m,i) => {
         const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
-        const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /,'') : '';
-        const pf1 = m.principes[0] || '';
-        const ca1 = m.champsAction[0] || '';
+        // Phase 2k : on traduit (sur la valeur complete), puis on enleve le
+        // prefixe "Axe X - " / "Axis X - " selon la langue.
+        const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,'') : '';
+        const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
+        const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
         const eid = `ex-${i}`;
         const expertiseText = m.themes || m.expertise || '';
         let links=[];
@@ -1497,7 +1579,7 @@ function renderCards() {
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
             <div class="card-details">
-                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
+                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`:''}
                 ${expertiseText?`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
                 ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
             </div>
@@ -1514,9 +1596,9 @@ function renderTable() {
     const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
     const bd=items.map(m=>{
         const tc=`tag-${m.typeNorm}`;
-        const ax1=m.axes[0]?m.axes[0].replace(/Axe \d+ - /,''):'';
-        const pf1=m.principes[0]||'';
-        const ca1=m.champsAction[0]||'';
+        const ax1=m.axes[0]?trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,''):'';
+        const pf1=m.principes[0]?trPrincipe(m.principes[0]):'';
+        const ca1=m.champsAction[0]?trChamp(m.champsAction[0]):'';
         const th=m.themes||m.expertise||'';
         const isPending = m.consent !== 'oui';
         let lk=[];
@@ -1525,7 +1607,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -1594,9 +1676,9 @@ function showMemberPopup(name) {
     const m = allMembers.find(x => x.name === name);
     if (!m) return;
     const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
-    const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /, '') : '';
-    const pf1 = m.principes[0] || '';
-    const ca1 = m.champsAction[0] || '';
+    const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /, '') : '';
+    const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
+    const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
     const expertiseText = m.themes || m.expertise || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
@@ -1608,7 +1690,7 @@ function showMemberPopup(name) {
     if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
     const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
     let details = [];
-    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
+    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`);
     if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
     if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
     if (m.projet) {
