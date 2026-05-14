@@ -97,7 +97,10 @@
             height: 60px;
             width: auto;
             filter: brightness(0) invert(1);
+            cursor: pointer;
+            transition: opacity 0.15s;
         }
+        .header-logo:hover { opacity: 0.85; }
         .header-title h1 {
             font-size: 1.6rem;
             font-weight: 700;
@@ -387,7 +390,7 @@
         </button>
     </div>
     <div class="header-top">
-        <img class="header-logo" src="logo-rsn.png" alt="Logo RSN" onerror="this.style.display='none'">
+        <img class="header-logo" src="logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
             <p>Réseau Santé Numérique</p>
@@ -1642,6 +1645,27 @@ function setView(v) {
     document.getElementById(v==='cards'?'btnCards':v==='table'?'btnTable':'btnMap').classList.add('active');
     render();
     saveHash();
+}
+
+// Phase 2k (2026-05-12) : clic sur le logo RSN = retour a la page principale.
+// On reset les filtres + la recherche, on remet la vue cartes, et on scroll
+// en haut. Pas de reload : on garde la donnee deja chargee et le cache.
+function goHome() {
+    document.getElementById('searchInput').value = '';
+    ['filterType','filterRegion','filterStatut','filterFocus'].forEach(function(id) {
+        msState[id] = [];
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+        updateMS(id, id === 'filterRegion' ? tr('all_f') : tr('all_m'));
+    });
+    sortCol = null;
+    sortDir = 'asc';
+    currentPage = 1;
+    setView('cards');
+    applyFilters();
+    saveHash();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
 document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
