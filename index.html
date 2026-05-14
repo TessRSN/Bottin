@@ -99,7 +99,10 @@
             height: 60px;
             width: auto;
             filter: brightness(0) invert(1);
+            cursor: pointer;
+            transition: opacity 0.15s;
         }
+        .header-logo:hover { opacity: 0.85; }
         .header-title h1 {
             font-size: 1.6rem;
             font-weight: 700;
@@ -410,7 +413,7 @@
         </button>
     </div>
     <div class="header-top">
-        <img class="header-logo" src="logo-rsn.png" alt="Logo RSN" onerror="this.style.display='none'">
+        <img class="header-logo" src="logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
             <p>Réseau Santé Numérique</p>
@@ -754,8 +757,31 @@ function toggleLang() {
     currentLang = currentLang === 'fr' ? 'en' : 'fr';
     try { localStorage.setItem('rsn-lang', currentLang); } catch(e) {}
     applyI18n();
-    if (allMembers.length) render();
+    // Phase 2k : on met a jour les labels des filtres existants (sans rebuild
+    // pour preserver les selections actives), puis on re-render les cartes /
+    // tableau / popup pour traduire statut + axes + principes + champs.
+    if (allMembers.length) {
+        if (typeof refreshFilterLabels === 'function') refreshFilterLabels();
+        render();
+    }
     saveHash();
+}
+
+// Phase 2k : met a jour les labels des options de filtres (statut / type /
+// axes / principes / champs) selon currentLang, sans recreer les options
+// (donc sans toucher aux selections cochees).
+function refreshFilterLabels() {
+    ['filterType', 'filterRegion', 'filterStatut', 'filterFocus'].forEach(function(id) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.querySelectorAll('.ms-item').forEach(function(item) {
+            const cb = item.querySelector('input[type="checkbox"]');
+            const lbl = item.querySelector('label');
+            if (cb && lbl) lbl.textContent = translateFilterValue(id, cb.value);
+        });
+        const allLabel = id === 'filterRegion' ? tr('all_f') : tr('all_m');
+        if (typeof updateMS === 'function') updateMS(id, allLabel);
+    });
 }
 
 // ─── THEME ───
@@ -1032,7 +1058,11 @@ function buildMS(id, items, allLabel) {
         if (group) { const g = document.createElement('div'); g.className = 'ms-group-label'; g.textContent = group; panel.appendChild(g); const sep = document.createElement('div'); sep.className = 'ms-sep'; panel.appendChild(sep); return; }
         const item = document.createElement('div'); item.className = 'ms-item';
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value;
-        const lbl = document.createElement('label'); lbl.textContent = value;
+        // Phase 2k : on affiche le label traduit (selon currentLang) mais on
+        // garde la value FR comme valeur de comparaison interne (msState +
+        // filtres ci-dessous comparent sur m.statutGroup / m.axes[0] qui
+        // restent en FR cote donnees).
+        const lbl = document.createElement('label'); lbl.textContent = translateFilterValue(id, value);
         const cnt = document.createElement('span'); cnt.className = 'ms-item-count'; cnt.textContent = count;
         item.appendChild(cb); item.appendChild(lbl); item.appendChild(cnt);
         item.addEventListener('click', e => { if (e.target !== cb) cb.checked = !cb.checked; updateMS(id, allLabel); applyFilters(); saveHash(); });
@@ -1051,9 +1081,11 @@ function updateMS(id, allLabel) {
     const btn = wrap.querySelector('.ms-btn');
     const oldCount = btn.querySelector('.ms-count');
     if (oldCount) oldCount.remove();
+    // Phase 2k : on affiche le label traduit aussi dans le bouton compact.
+    const trVal0 = vals[0] ? translateFilterValue(id, vals[0]) : '';
     if (vals.length === 0) { label.textContent = allLabel; }
-    else if (vals.length === 1) { label.textContent = vals[0].length > 28 ? vals[0].slice(0,26)+'…' : vals[0]; }
-    else { label.textContent = vals[0].length > 20 ? vals[0].slice(0,18)+'…' : vals[0]; const badge = document.createElement('span'); badge.className = 'ms-count'; badge.textContent = '+' + (vals.length-1); btn.insertBefore(badge, btn.querySelector('.ms-arrow')); }
+    else if (vals.length === 1) { label.textContent = trVal0.length > 28 ? trVal0.slice(0,26)+'…' : trVal0; }
+    else { label.textContent = trVal0.length > 20 ? trVal0.slice(0,18)+'…' : trVal0; const badge = document.createElement('span'); badge.className = 'ms-count'; badge.textContent = '+' + (vals.length-1); btn.insertBefore(badge, btn.querySelector('.ms-arrow')); }
 }
 
 function closeAllMS() {
@@ -1118,144 +1150,61 @@ const TYPE_FR_TO_EN = {
     'Partenaire': 'Partner member',
 };
 
-// Construit un document Fuse pour un membre (avec champs normalises FR + EN).
-function buildFuseDoc(m) {
-    // Phase 2j v7.2 (2026-05-12) : pont FR<->EN sur la barre de recherche.
-    // On concatene tous les champs textuels et on les passe par
-    // connexionsTokenize() qui applique fold + stopwords + FR_TO_EN_DICT.
-    // Resultat : un champ "tokensCanon" qui contient la version EN
-    // canonicalisee du contenu, permettant a "machine learning" de matcher
-    // un profil qui ecrit "apprentissage automatique" et inversement.
-    const allText = [
-        m.expertise, m.themes, m.projet, m.refere, m.reseau,
-        (m.axes || []).join(' '),
-        (m.principes || []).join(' '),
-        (m.champsAction || []).join(' ')
-    ].filter(Boolean).join(' ');
-    const tokensCanon = (typeof connexionsTokenize === 'function')
-        ? connexionsTokenize(allText).join(' ')
-        : '';
-    return {
-        _ref: m, // pour retrouver l'original apres search
-        name: fold([m.prenom, m.nom].filter(Boolean).join(' ')),
-        email: fold(m.email || ''),
-        institutions: fold((m.institutions || []).join(' ')),
-        statutFR: fold(m.statut || ''),
-        statutEN: fold(STATUT_FR_TO_EN[m.statut] || ''),
-        typeFR: fold(m.type || ''),
-        typeEN: fold(TYPE_FR_TO_EN[m.type] || ''),
-        expertise: fold(m.expertise || ''),
-        themes: fold(m.themes || ''),
-        projet: fold(m.projet || ''),
-        axes: fold((m.axes || []).join(' ')),
-        principes: fold((m.principes || []).join(' ')),
-        champsAction: fold((m.champsAction || []).join(' ')),
-        reseau: fold(m.reseau || ''),
-        tokensCanon: tokensCanon,
-    };
-}
-
-// Phase 2j v7.2 : canonicalise une query saisie par l'utilisateur en
-// remplaçant chaque mot present dans FR_TO_EN_DICT par sa version EN.
-// Les mots inconnus du dico sont laisses tels quels.
-function canonicalizeQuery(q) {
-    if (!q || typeof FR_TO_EN_DICT === 'undefined') return q;
-    return q.split(/\s+/).map(function(token) {
-        const folded = fold(token);
-        return FR_TO_EN_DICT[folded] || token;
-    }).join(' ');
-}
-
-const FUSE_OPTIONS = {
-    includeScore: true,
-    threshold: 0.3,
-    ignoreLocation: true,
-    useExtendedSearch: true,
-    minMatchCharLength: 2,
-    keys: [
-        { name: 'name',         weight: 4.0 },
-        { name: 'institutions', weight: 3.5 },
-        { name: 'expertise',    weight: 4.0 },
-        { name: 'themes',       weight: 4.0 },
-        { name: 'projet',       weight: 4.0 },
-        { name: 'statutFR',     weight: 2.0 },
-        { name: 'statutEN',     weight: 2.0 },
-        { name: 'typeFR',       weight: 1.0 },
-        { name: 'typeEN',       weight: 1.0 },
-        { name: 'axes',         weight: 1.5 },
-        { name: 'principes',    weight: 1.5 },
-        { name: 'champsAction', weight: 1.5 },
-        { name: 'tokensCanon',  weight: 2.5 }, // Phase 2j v7.2 : pont FR<->EN
-        { name: 'email',        weight: 0.5 },
-        { name: 'reseau',       weight: 0.5 },
-    ],
+// Phase 2k (2026-05-12) — traduction des valeurs metier affichees dans le
+// bottin (cartes / tableau / popup / filtres) selon la langue courante.
+const STATUT_GROUP_FR_TO_EN = {
+    'Chercheur·e': 'Researcher',
+    'Étudiant·e': 'Student',
+    'Personnel de recherche': 'Research staff',
+    'Personnel de la santé': 'Health professional',
+    'Direction ou coordination': 'Management or coordination',
+    'Partenaire ou autre': 'Partner or other',
 };
 
-function applyFilters() {
-    const rawSearch = document.getElementById('searchInput').value.trim();
-    const queryNorm = fold(rawSearch);
-    const ft = msState.filterType;
-    const fr = msState.filterRegion;
-    const fs = msState.filterStatut;
-    const fa = msState.filterFocus;
+const AXES_FR_TO_EN = {
+    'Axe 1 - Plateformes numériques et gouvernance informationnelle': 'Axis 1 - Digital platforms and information governance',
+    'Axe 2 - Modélisation et méthodes numériques': 'Axis 2 - Modeling and digital methods',
+    'Axe 3 - Intervention numérique': 'Axis 3 - Digital intervention',
+    'Axe 4 - Transformation numérique': 'Axis 4 - Digital transformation',
+};
 
-    // 1) Filtres exacts d'abord (rapide, reduit le pool indexe par Fuse)
-    let pool = allMembers.filter(m => {
-        if (m.consent === 'non') return false;
-        if (ft.length && !ft.includes(m.type)) return false;
-        if (fr.length) {
-            const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
-            if (!fr.some(f => memberRegions.includes(f))) return false;
-        }
-        if (fs.length && !fs.includes(m.statutGroup)) return false;
-        if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
-        return true;
-    });
+const PRINCIPES_FR_TO_EN = {
+    'Science ouverte': 'Open science',
+    'Numérique de confiance': 'Trusted digital',
+    'Santé durable': 'Sustainable health',
+    'Engagement citoyen': 'Citizen engagement',
+    'Équité diversité inclusion et accessibilité': 'Equity, diversity, inclusion and accessibility',
+    'Équité, diversité, inclusion et accessibilité': 'Equity, diversity, inclusion and accessibility',
+};
 
-    // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
-    if (queryNorm && typeof Fuse !== 'undefined') {
-        const docs = pool.map(buildFuseDoc);
-        const fuse = new Fuse(docs, FUSE_OPTIONS);
-        // Phase 2j v7.2 : on canonicalise la query (FR->EN) pour qu'elle matche
-        // le champ tokensCanon des profils dans l'autre langue. Le contenu brut
-        // (themes/projet/expertise) reste cherche directement aussi, donc les
-        // recherches dans la meme langue continuent de fonctionner.
-        const queryCanon = canonicalizeQuery(queryNorm);
-        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
-        const results = fuse.search(queryCanon);
-        filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
-    } else if (queryNorm) {
-        // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
-        filteredMembers = pool.filter(m => m._search && m._search.includes(rawSearch.toLowerCase()));
-    } else {
-        filteredMembers = pool;
-    }
+const CHAMPS_FR_TO_EN = {
+    'Formation interdisciplinaire': 'Interdisciplinary training',
+    'Mobilisation des connaissances': 'Knowledge mobilization',
+    'Renforcement des capacités': 'Capacity building',
+};
 
-    // Tri custom du tableau (uniquement si query vide, sinon on respecte l'ordre Fuse)
-    if (!queryNorm && sortCol) {
-        filteredMembers.sort((a, b) => {
-            const cmp = (a[sortCol] || '').toLowerCase().localeCompare((b[sortCol] || '').toLowerCase(), 'fr');
-            return sortDir === 'asc' ? cmp : -cmp;
-        });
-    }
+// Helpers : retournent la valeur traduite dans la langue courante.
+// Si on est en FR, ou si la traduction est absente du dico, on rend la valeur originale.
+function trStatut(v)      { if (!v || currentLang === 'fr') return v; return STATUT_FR_TO_EN[v] || v; }
+function trStatutGroup(v) { if (!v || currentLang === 'fr') return v; return STATUT_GROUP_FR_TO_EN[v] || v; }
+function trAxe(v)         { if (!v || currentLang === 'fr') return v; return AXES_FR_TO_EN[v] || v; }
+function trPrincipe(v)    { if (!v || currentLang === 'fr') return v; return PRINCIPES_FR_TO_EN[v] || v; }
+function trChamp(v)       { if (!v || currentLang === 'fr') return v; return CHAMPS_FR_TO_EN[v] || v; }
 
-    currentPage = 1;
-    document.getElementById('filteredCount').textContent = filteredMembers.length;
-    render();
-    // Phase 2j v2: si la vue Connexions est active, appliquer les filtres
-    // au graphe (estompage des non-matchants). On laisse la fonction safe
-    // si la vue n'est pas encore initialisee.
-    if (currentView === 'connexions' && typeof applyConnexionsFiltersToGraph === 'function') {
-        applyConnexionsFiltersToGraph();
-    }
+// Retourne la traduction d'une option de filtre selon son id, ou la valeur
+// originale si pas de mapping. Utilise par buildMS / updateMS.
+function translateFilterValue(filterId, value) {
+    if (!value || currentLang === 'fr') return value;
+    if (filterId === 'filterStatut') return STATUT_GROUP_FR_TO_EN[value] || value;
+    if (filterId === 'filterType')   return TYPE_FR_TO_EN[value] || value;
+    if (filterId === 'filterFocus')  return AXES_FR_TO_EN[value] || PRINCIPES_FR_TO_EN[value] || CHAMPS_FR_TO_EN[value] || value;
+    return value; // filterRegion : pas de traduction
 }
 
-// ─── Vue Connexions (Phase 2j, 2026-05-04) ───
-// Graphe de proximite entre membres (force-directed via vis-network).
-// Cf. spec : docs/superpowers/specs/2026-05-04-connexions-design.md
-
-// Phase 2j v6 (2026-05-12) — extension stopwords pour evacuer les mots
-// peu informatifs qui passent encore (notamment, into, based, focuses, etc.)
+// Phase 2k (2026-05-12) — pont linguistique FR↔EN pour la barre de recherche.
+// Stopwords (FR + EN) et dictionnaire de canonicalisation FR→EN extraits de
+// la branche connexions. Permet a "machine learning" de trouver les profils
+// francophones qui ecrivent "apprentissage automatique" et vice-versa.
 const CONNEXIONS_STOPWORDS = new Set([
   // FR — articles, prepositions, conjonctions, pronoms, adverbes courants
   'le','la','les','de','des','du','et','ou','au','aux','pour','sur','dans','avec','par',
@@ -1302,11 +1251,6 @@ const CONNEXIONS_STOPWORDS = new Set([
   'way','ways','part','parts','case','cases','set','sets'
 ]);
 
-// Phase 2j v5 (2026-05-04) — pont linguistique FR↔EN.
-// Les profils FR et EN forment 2 clusters disjoints car 'sante' et 'health'
-// sont 2 tokens distincts. On canonicalise tous les tokens vers l'anglais
-// pour matcher les francophones et anglophones qui parlent du meme sujet.
-// Liste maintenue manuellement, focus sante numerique. A etendre au besoin.
 const FR_TO_EN_DICT = {
   // Concepts generaux
   'sante': 'health', 'recherche': 'research', 'recherches': 'research',
@@ -1418,23 +1362,18 @@ const FR_TO_EN_DICT = {
   'etudiant': 'student', 'etudiants': 'students',
   'professeur': 'professor', 'professeurs': 'professors',
   'chercheur': 'researcher', 'chercheurs': 'researchers',
-  // Phase 2j v7 (2026-05-12) — enrichissement base sur l'analyse du corpus reel.
-  // Termes scientifiques / methodes
+  // Sciences / methodes
   'science': 'science', 'sciences': 'science',
   'scientifique': 'scientific', 'scientifiques': 'scientific',
   'centre': 'center', 'centres': 'center',
   'machine': 'machine', 'machines': 'machine',
-  'vision': 'vision',
-  'inference': 'inference',
-  'sommeil': 'sleep',
-  'computer': 'computer',
+  'vision': 'vision', 'inference': 'inference',
+  'sommeil': 'sleep', 'computer': 'computer',
   'cell': 'cell', 'cellule': 'cell', 'cellules': 'cell', 'cellulaire': 'cellular',
   'biology': 'biology', 'biologie': 'biology',
   'biologique': 'biological', 'biologiques': 'biological',
   'physics': 'physics', 'physique': 'physics',
-  'processing': 'processing',
-  'computational': 'computational',
-  'design': 'design',
+  'processing': 'processing', 'computational': 'computational', 'design': 'design',
   // Sante / clinique
   'intensifs': 'intensive', 'intensive': 'intensive', 'intensives': 'intensive',
   'respiratoire': 'respiratory', 'respiratoires': 'respiratory',
@@ -1446,8 +1385,7 @@ const FR_TO_EN_DICT = {
   'neuroscience': 'neuroscience', 'neurosciences': 'neuroscience',
   'neuroimaging': 'neuroimaging',
   'virtual': 'virtual', 'virtuel': 'virtual', 'virtuelle': 'virtual',
-  'automatique': 'automatic',
-  'realite': 'reality',
+  'automatique': 'automatic', 'realite': 'reality',
   // Concepts methode
   'precision': 'precision', 'precis': 'precise',
   'adaptation': 'adaptation', 'adaptations': 'adaptation',
@@ -1482,7 +1420,6 @@ const FR_TO_EN_DICT = {
   'durable': 'sustainable', 'durables': 'sustainable', 'durabilite': 'sustainability',
   'decision': 'decision', 'decisions': 'decision',
   'decideur': 'decision-maker', 'decideurs': 'decision-maker',
-  // Pratique / professionnels
   'pratique': 'practice', 'pratiques': 'practice',
   'informatique': 'computing', 'informatiques': 'computing',
   'informatisation': 'computerization',
@@ -1494,7 +1431,6 @@ const FR_TO_EN_DICT = {
   'information': 'information', 'informations': 'information',
   'renseignement': 'information', 'renseignements': 'information',
   'aide': 'help', 'aider': 'help',
-  // Acces general
   'primary': 'primary', 'primaire': 'primary',
   'intelligence': 'intelligence',
   // Population / famille
@@ -1507,6 +1443,149 @@ function canonicalizeToken(t) {
   return FR_TO_EN_DICT[t] || t;
 }
 
+function searchTokenize(text) {
+  if (!text) return [];
+  return fold(text)
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t))
+    .map(canonicalizeToken);
+}
+
+// Construit un document Fuse pour un membre (avec champs normalises FR + EN).
+function buildFuseDoc(m) {
+    // Pont FR<->EN sur la barre de recherche : on concatene tous les champs
+    // textuels et on les passe par connexionsTokenize() (alias searchTokenize)
+    // qui applique fold + stopwords + FR_TO_EN_DICT. Le champ tokensCanon
+    // contient la version EN canonicalisee, permettant a "machine learning"
+    // de matcher un profil qui ecrit "apprentissage automatique".
+    const allText = [
+        m.expertise, m.themes, m.projet, m.refere, m.reseau,
+        (m.axes || []).join(' '),
+        (m.principes || []).join(' '),
+        (m.champsAction || []).join(' ')
+    ].filter(Boolean).join(' ');
+    const tokensCanon = (typeof searchTokenize === 'function')
+        ? searchTokenize(allText).join(' ')
+        : (typeof connexionsTokenize === 'function' ? connexionsTokenize(allText).join(' ') : '');
+    return {
+        _ref: m, // pour retrouver l'original apres search
+        name: fold([m.prenom, m.nom].filter(Boolean).join(' ')),
+        email: fold(m.email || ''),
+        institutions: fold((m.institutions || []).join(' ')),
+        statutFR: fold(m.statut || ''),
+        statutEN: fold(STATUT_FR_TO_EN[m.statut] || ''),
+        typeFR: fold(m.type || ''),
+        typeEN: fold(TYPE_FR_TO_EN[m.type] || ''),
+        expertise: fold(m.expertise || ''),
+        themes: fold(m.themes || ''),
+        projet: fold(m.projet || ''),
+        axes: fold((m.axes || []).join(' ')),
+        principes: fold((m.principes || []).join(' ')),
+        champsAction: fold((m.champsAction || []).join(' ')),
+        reseau: fold(m.reseau || ''),
+        tokensCanon: tokensCanon,
+    };
+}
+
+// Phase 2j v7.2 : canonicalise une query saisie par l'utilisateur en
+// remplaçant chaque mot present dans FR_TO_EN_DICT par sa version EN.
+// Les mots inconnus du dico sont laisses tels quels.
+function canonicalizeQuery(q) {
+    if (!q || typeof FR_TO_EN_DICT === 'undefined') return q;
+    return q.split(/\s+/).map(function(token) {
+        const folded = fold(token);
+        return FR_TO_EN_DICT[folded] || token;
+    }).join(' ');
+}
+
+const FUSE_OPTIONS = {
+    includeScore: true,
+    threshold: 0.3,
+    ignoreLocation: true,
+    useExtendedSearch: true,
+    minMatchCharLength: 2,
+    keys: [
+        { name: 'name',         weight: 4.0 },
+        { name: 'institutions', weight: 3.5 },
+        { name: 'expertise',    weight: 4.0 },
+        { name: 'themes',       weight: 4.0 },
+        { name: 'projet',       weight: 4.0 },
+        { name: 'statutFR',     weight: 2.0 },
+        { name: 'statutEN',     weight: 2.0 },
+        { name: 'typeFR',       weight: 1.0 },
+        { name: 'typeEN',       weight: 1.0 },
+        { name: 'axes',         weight: 1.5 },
+        { name: 'principes',    weight: 1.5 },
+        { name: 'champsAction', weight: 1.5 },
+        { name: 'tokensCanon',  weight: 2.5 }, // Phase 2k : pont FR↔EN
+        { name: 'email',        weight: 0.5 },
+        { name: 'reseau',       weight: 0.5 },
+    ],
+};
+
+function applyFilters() {
+    const rawSearch = document.getElementById('searchInput').value.trim();
+    const queryNorm = fold(rawSearch);
+    const ft = msState.filterType;
+    const fr = msState.filterRegion;
+    const fs = msState.filterStatut;
+    const fa = msState.filterFocus;
+
+    // 1) Filtres exacts d'abord (rapide, reduit le pool indexe par Fuse)
+    let pool = allMembers.filter(m => {
+        if (m.consent === 'non') return false;
+        if (ft.length && !ft.includes(m.type)) return false;
+        if (fr.length) {
+            const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
+            if (!fr.some(f => memberRegions.includes(f))) return false;
+        }
+        if (fs.length && !fs.includes(m.statutGroup)) return false;
+        if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
+        return true;
+    });
+
+    // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
+    if (queryNorm && typeof Fuse !== 'undefined') {
+        const docs = pool.map(buildFuseDoc);
+        const fuse = new Fuse(docs, FUSE_OPTIONS);
+        // Phase 2k : query canonicalisee FR↔EN pour matcher le champ
+        // tokensCanon des profils dans l'autre langue. Les recherches dans la
+        // meme langue continuent de fonctionner via les champs bruts.
+        const queryCanon = canonicalizeQuery(queryNorm);
+        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
+        const results = fuse.search(queryCanon);
+        filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
+    } else if (queryNorm) {
+        // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
+        filteredMembers = pool.filter(m => m._search && m._search.includes(rawSearch.toLowerCase()));
+    } else {
+        filteredMembers = pool;
+    }
+
+    // Tri custom du tableau (uniquement si query vide, sinon on respecte l'ordre Fuse)
+    if (!queryNorm && sortCol) {
+        filteredMembers.sort((a, b) => {
+            const cmp = (a[sortCol] || '').toLowerCase().localeCompare((b[sortCol] || '').toLowerCase(), 'fr');
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
+    }
+
+    currentPage = 1;
+    document.getElementById('filteredCount').textContent = filteredMembers.length;
+    render();
+    // Phase 2j v2: si la vue Connexions est active, appliquer les filtres
+    // au graphe (estompage des non-matchants). On laisse la fonction safe
+    // si la vue n'est pas encore initialisee.
+    if (currentView === 'connexions' && typeof applyConnexionsFiltersToGraph === 'function') {
+        applyConnexionsFiltersToGraph();
+    }
+}
+
+// ─── Vue Connexions (Phase 2j, 2026-05-04) ───
+// Graphe de proximite entre membres (force-directed via vis-network).
+// Cf. spec : docs/superpowers/specs/2026-05-04-connexions-design.md
+
+
 function connexionsTokenize(text) {
   if (!text) return [];
   return fold(text)
@@ -1514,6 +1593,9 @@ function connexionsTokenize(text) {
     .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t))
     .map(canonicalizeToken);
 }
+
+// Note : searchTokenize est defini plus haut (section recherche FR<->EN).
+// Il fait fonctionnellement la meme chose que connexionsTokenize.
 
 function connexionsSimilarity(a, b, tokensCache) {
   return connexionsSimilarityDetail(a, b, tokensCache).score;
@@ -1894,9 +1976,11 @@ function renderCards() {
     if(!items.length){el.innerHTML='';return;}
     el.innerHTML = items.map((m,i) => {
         const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
-        const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /,'') : '';
-        const pf1 = m.principes[0] || '';
-        const ca1 = m.champsAction[0] || '';
+        // Phase 2k : on traduit (sur la valeur complete), puis on enleve le
+        // prefixe "Axe X - " / "Axis X - " selon la langue.
+        const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,'') : '';
+        const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
+        const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
         const eid = `ex-${i}`;
         const expertiseText = m.themes || m.expertise || '';
         let links=[];
@@ -1936,7 +2020,7 @@ function renderCards() {
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
             <div class="card-details">
-                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`:''}
+                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`:''}
                 ${expertiseText?`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
                 ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
             </div>
@@ -1953,9 +2037,9 @@ function renderTable() {
     const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
     const bd=items.map(m=>{
         const tc=`tag-${m.typeNorm}`;
-        const ax1=m.axes[0]?m.axes[0].replace(/Axe \d+ - /,''):'';
-        const pf1=m.principes[0]||'';
-        const ca1=m.champsAction[0]||'';
+        const ax1=m.axes[0]?trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,''):'';
+        const pf1=m.principes[0]?trPrincipe(m.principes[0]):'';
+        const ca1=m.champsAction[0]?trChamp(m.champsAction[0]):'';
         const th=m.themes||m.expertise||'';
         const isPending = m.consent !== 'oui';
         let lk=[];
@@ -1964,7 +2048,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(m.statut)}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -2000,6 +2084,27 @@ function setView(v) {
     var btn = document.getElementById(btnId); if (btn) btn.classList.add('active');
     render();
     saveHash();
+}
+
+// Phase 2k (2026-05-12) : clic sur le logo RSN = retour a la page principale.
+// On reset les filtres + la recherche, on remet la vue cartes, et on scroll
+// en haut. Pas de reload : on garde la donnee deja chargee et le cache.
+function goHome() {
+    document.getElementById('searchInput').value = '';
+    ['filterType','filterRegion','filterStatut','filterFocus'].forEach(function(id) {
+        msState[id] = [];
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+        updateMS(id, id === 'filterRegion' ? tr('all_f') : tr('all_m'));
+    });
+    sortCol = null;
+    sortDir = 'asc';
+    currentPage = 1;
+    setView('cards');
+    applyFilters();
+    saveHash();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
 document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
@@ -2195,9 +2300,9 @@ function showMemberPopup(name) {
     const m = allMembers.find(x => x.name === name);
     if (!m) return;
     const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
-    const ax1 = m.axes[0] ? m.axes[0].replace(/Axe \d+ - /, '') : '';
-    const pf1 = m.principes[0] || '';
-    const ca1 = m.champsAction[0] || '';
+    const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /, '') : '';
+    const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
+    const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
     const expertiseText = m.themes || m.expertise || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
@@ -2209,7 +2314,7 @@ function showMemberPopup(name) {
     if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
     const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
     let details = [];
-    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(m.statut)}</span></div>`);
+    if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`);
     if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
     if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
     if (m.projet) {
