@@ -1120,6 +1120,21 @@ const TYPE_FR_TO_EN = {
 
 // Construit un document Fuse pour un membre (avec champs normalises FR + EN).
 function buildFuseDoc(m) {
+    // Phase 2j v7.2 (2026-05-12) : pont FR<->EN sur la barre de recherche.
+    // On concatene tous les champs textuels et on les passe par
+    // connexionsTokenize() qui applique fold + stopwords + FR_TO_EN_DICT.
+    // Resultat : un champ "tokensCanon" qui contient la version EN
+    // canonicalisee du contenu, permettant a "machine learning" de matcher
+    // un profil qui ecrit "apprentissage automatique" et inversement.
+    const allText = [
+        m.expertise, m.themes, m.projet, m.refere, m.reseau,
+        (m.axes || []).join(' '),
+        (m.principes || []).join(' '),
+        (m.champsAction || []).join(' ')
+    ].filter(Boolean).join(' ');
+    const tokensCanon = (typeof connexionsTokenize === 'function')
+        ? connexionsTokenize(allText).join(' ')
+        : '';
     return {
         _ref: m, // pour retrouver l'original apres search
         name: fold([m.prenom, m.nom].filter(Boolean).join(' ')),
@@ -1136,7 +1151,19 @@ function buildFuseDoc(m) {
         principes: fold((m.principes || []).join(' ')),
         champsAction: fold((m.champsAction || []).join(' ')),
         reseau: fold(m.reseau || ''),
+        tokensCanon: tokensCanon,
     };
+}
+
+// Phase 2j v7.2 : canonicalise une query saisie par l'utilisateur en
+// remplaçant chaque mot present dans FR_TO_EN_DICT par sa version EN.
+// Les mots inconnus du dico sont laisses tels quels.
+function canonicalizeQuery(q) {
+    if (!q || typeof FR_TO_EN_DICT === 'undefined') return q;
+    return q.split(/\s+/).map(function(token) {
+        const folded = fold(token);
+        return FR_TO_EN_DICT[folded] || token;
+    }).join(' ');
 }
 
 const FUSE_OPTIONS = {
@@ -1158,6 +1185,7 @@ const FUSE_OPTIONS = {
         { name: 'axes',         weight: 1.5 },
         { name: 'principes',    weight: 1.5 },
         { name: 'champsAction', weight: 1.5 },
+        { name: 'tokensCanon',  weight: 2.5 }, // Phase 2j v7.2 : pont FR<->EN
         { name: 'email',        weight: 0.5 },
         { name: 'reseau',       weight: 0.5 },
     ],
@@ -1188,8 +1216,13 @@ function applyFilters() {
     if (queryNorm && typeof Fuse !== 'undefined') {
         const docs = pool.map(buildFuseDoc);
         const fuse = new Fuse(docs, FUSE_OPTIONS);
+        // Phase 2j v7.2 : on canonicalise la query (FR->EN) pour qu'elle matche
+        // le champ tokensCanon des profils dans l'autre langue. Le contenu brut
+        // (themes/projet/expertise) reste cherche directement aussi, donc les
+        // recherches dans la meme langue continuent de fonctionner.
+        const queryCanon = canonicalizeQuery(queryNorm);
         // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
-        const results = fuse.search(queryNorm);
+        const results = fuse.search(queryCanon);
         filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
     } else if (queryNorm) {
         // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
