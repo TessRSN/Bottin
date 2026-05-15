@@ -1441,10 +1441,14 @@ function buildFuseDoc(m) {
 
 const FUSE_OPTIONS = {
     includeScore: true,
-    threshold: 0.3,
+    // Phase 2k (2026-05-15) : seuil resserre de 0.3 a 0.2 pour limiter les
+    // faux positifs sur les requetes courtes (ex: "martin" matchait aussi
+    // "marketing", "matin", etc.). minMatchCharLength passe de 2 a 3 pour
+    // la meme raison. Les vraies fautes de frappe sont toujours tolerees.
+    threshold: 0.2,
     ignoreLocation: true,
     useExtendedSearch: true,
-    minMatchCharLength: 2,
+    minMatchCharLength: 3,
     keys: [
         { name: 'name',         weight: 4.0 },
         { name: 'institutions', weight: 3.5 },
