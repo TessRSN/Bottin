@@ -1441,11 +1441,13 @@ function buildFuseDoc(m) {
 
 const FUSE_OPTIONS = {
     includeScore: true,
-    // Phase 2k (2026-05-15) : seuil resserre de 0.3 a 0.2 pour limiter les
-    // faux positifs sur les requetes courtes (ex: "martin" matchait aussi
-    // "marketing", "matin", etc.). minMatchCharLength passe de 2 a 3 pour
-    // la meme raison. Les vraies fautes de frappe sont toujours tolerees.
-    threshold: 0.2,
+    // Phase 2k (2026-05-15) : threshold 0.15 (~15% mismatch) pour limiter
+    // les faux positifs. Avant a 0.2 ce n'etait pas suffisant : "martin"
+    // dans le champ tokensCanon (qui contient tous les tokens canonicalises
+    // de tous les champs textuels) sortait des matches fuzzy faibles sur des
+    // mots comme "marketing", "matin", etc. Les vraies fautes de frappe a
+    // une lettre sont toujours tolerees.
+    threshold: 0.15,
     ignoreLocation: true,
     useExtendedSearch: true,
     minMatchCharLength: 3,
@@ -1462,7 +1464,11 @@ const FUSE_OPTIONS = {
         { name: 'axes',         weight: 1.5 },
         { name: 'principes',    weight: 1.5 },
         { name: 'champsAction', weight: 1.5 },
-        { name: 'tokensCanon',  weight: 2.5 }, // Phase 2k : pont FR↔EN
+        // Phase 2k v2 : poids tokensCanon reduit de 2.5 a 1.5. Ce champ
+        // contient TOUS les tokens canonicalises (donc beaucoup de surface
+        // pour matcher fuzzy) ; on garde son utilite pour le pont FR<->EN
+        // mais on lui donne moins de poids que les champs principaux.
+        { name: 'tokensCanon',  weight: 1.5 },
         { name: 'email',        weight: 0.5 },
         { name: 'reseau',       weight: 0.5 },
     ],
