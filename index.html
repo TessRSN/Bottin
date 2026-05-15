@@ -1487,6 +1487,7 @@ function applyFilters() {
 
     // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
     if (queryNorm && typeof Fuse !== 'undefined') {
+        applyFilters._lastRanWithoutFuse = false;
         const docs = pool.map(buildFuseDoc);
         const fuse = new Fuse(docs, FUSE_OPTIONS);
         // Phase 2k : query canonicalisee FR→EN pour matcher le champ
@@ -1497,9 +1498,14 @@ function applyFilters() {
         const results = fuse.search(queryCanon);
         filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
     } else if (queryNorm) {
-        // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
+        // Fallback (Fuse non charge — CDN down OU script en bas de page pas
+        // encore execute lors d'un reload avec ?q= dans le hash) : recherche
+        // legacy via includes(). On retry des que Fuse devient disponible
+        // grace au listener window.load plus bas.
+        applyFilters._lastRanWithoutFuse = true;
         filteredMembers = pool.filter(m => m._search && m._search.includes(rawSearch.toLowerCase()));
     } else {
+        applyFilters._lastRanWithoutFuse = false;
         filteredMembers = pool;
     }
 
@@ -2111,6 +2117,18 @@ function restoreHash() {
     if (v === 'table' || v === 'map') setView(v);
     else render();
 }
+
+// Phase 2k (2026-05-15) : si applyFilters() a tourne avant que Fuse soit
+// charge (cas typique : reload avec ?q=... dans le hash + CSV depuis le
+// cache localStorage qui resout immediatement), on a utilise le fallback
+// includes() moins precis. Une fois tous les assets charges (window.load),
+// on retente une fois pour avoir les vrais resultats Fuse.
+window.addEventListener('load', function() {
+    if (typeof applyFilters === 'function' && applyFilters._lastRanWithoutFuse && typeof Fuse !== 'undefined') {
+        applyFilters();
+        if (typeof render === 'function') render();
+    }
+});
 
 // ─── AUTO-LOAD (with client-side cache) ───
 // Strategy: display cached CSV immediately (instant, no spinner),
