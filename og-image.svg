@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Background gradient bleu RSN -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a365d"/>
+      <stop offset="50%" stop-color="#2b6cb0"/>
+      <stop offset="100%" stop-color="#3182ce"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4299e1"/>
+      <stop offset="100%" stop-color="#90cdf4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Cercles décoratifs -->
+  <circle cx="1050" cy="100" r="180" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="1150" cy="540" r="120" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="80" cy="540" r="100" fill="rgba(255,255,255,0.04)"/>
+
+  <!-- Barre accent gauche -->
+  <rect x="100" y="200" width="6" height="230" fill="url(#accent)"/>
+
+  <!-- Étiquette du haut -->
+  <text x="130" y="220" font-family="-apple-system, system-ui, sans-serif" font-size="22" font-weight="600" fill="#90cdf4" letter-spacing="3">RÉSEAU DE SANTÉ NUMÉRIQUE</text>
+
+  <!-- Titre principal -->
+  <text x="130" y="320" font-family="-apple-system, system-ui, sans-serif" font-size="96" font-weight="800" fill="#ffffff">Bottin</text>
+  <text x="130" y="420" font-family="-apple-system, system-ui, sans-serif" font-size="64" font-weight="500" fill="rgba(255,255,255,0.92)">des membres</text>
+
+  <!-- Description -->
+  <text x="130" y="510" font-family="-apple-system, system-ui, sans-serif" font-size="26" fill="rgba(255,255,255,0.75)">Cartographie et répertoire de la recherche</text>
+  <text x="130" y="545" font-family="-apple-system, system-ui, sans-serif" font-size="26" fill="rgba(255,255,255,0.75)">en santé numérique au Québec</text>
+
+  <!-- URL en bas -->
+  <text x="130" y="600" font-family="-apple-system, system-ui, sans-serif" font-size="22" font-weight="600" fill="#90cdf4" letter-spacing="1">bottin.rsn.quebec</text>
+</svg>
