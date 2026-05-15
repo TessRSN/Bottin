@@ -1991,7 +1991,29 @@ function renderMap() {
     const byInst = {};
     let mapped = 0;
     // Only show consented members on the map (consent === 'oui')
-    const mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+    let mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+
+    // Phase 2k v3 (2026-05-15) : la carte n'a pas de hierarchie visuelle de
+    // score Fuse (contrairement aux vues cartes/tableau ou le vrai match
+    // ressort en premier en haut). Pour eviter d'afficher des marqueurs sur
+    // des faux positifs fuzzy, on applique ici un filtre STRICT en plus :
+    // chaque token de la query doit etre une sous-chaine du nom complet OU
+    // d'une institution du membre. C'est plus strict que Fuse mais c'est
+    // exactement ce qu'on veut sur la carte : "martin valli" doit retrouver
+    // les seuls profils dont le nom contient "martin" ET "valli".
+    const rawSearch = document.getElementById('searchInput').value.trim();
+    if (rawSearch) {
+        const tokens = fold(rawSearch).split(/\s+/).filter(t => t.length >= 2);
+        if (tokens.length) {
+            mapMembers = mapMembers.filter(m => {
+                const haystack = fold([
+                    m.prenom, m.nom,
+                    ...(m.institutions || [])
+                ].filter(Boolean).join(' '));
+                return tokens.every(t => haystack.includes(t));
+            });
+        }
+    }
     const norm = s => s.replace(/[‘’′]/g, "'").replace(/[“”]/g, '"');
     // Resolve a member-typed institution string to the canonical name from
     // the catalog (GEOCODE). Collapses orthographic variations onto a single
