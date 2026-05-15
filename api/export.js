@@ -47,7 +47,7 @@ async function runRetentionCron(allMembers) {
   const testRecipients = testRecipientsEnv ? testRecipientsEnv.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
   const adminRecipients = (process.env.ADMIN_NOTIFICATION_RECIPIENTS || '').split(',').map(s => s.trim()).filter(Boolean);
   const today = todayISO();
-  const baseUrl = process.env.BASE_URL || 'https://bottin-gamma.vercel.app';
+  const baseUrl = process.env.BASE_URL || 'https://bottin.rsn.quebec';
 
   const stats = {
     enabled,

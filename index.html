@@ -4,6 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bottin des membres — RSN</title>
+    <meta name="description" content="Cartographie et répertoire de la recherche en santé numérique au Québec. Réseau de santé numérique (RSN), financé par le Fonds de recherche du Québec — Santé.">
+    <link rel="canonical" href="https://bottin.rsn.quebec/">
+    <!-- Open Graph / Facebook / LinkedIn / Slack -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bottin.rsn.quebec/">
+    <meta property="og:site_name" content="RSN — Bottin">
+    <meta property="og:locale" content="fr_CA">
+    <meta property="og:locale:alternate" content="en_CA">
+    <meta property="og:title" content="Bottin du Réseau de santé numérique">
+    <meta property="og:description" content="Cartographie et répertoire de la recherche en santé numérique au Québec.">
+    <meta property="og:image" content="https://bottin.rsn.quebec/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Bottin du Réseau de santé numérique du Québec">
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bottin du Réseau de santé numérique">
+    <meta name="twitter:description" content="Cartographie et répertoire de la recherche en santé numérique au Québec.">
+    <meta name="twitter:image" content="https://bottin.rsn.quebec/og-image.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <!-- Phase 2j (2026-05-04): vis-network pour la vue Connexions (graphe de proximite). -->
     <link rel="stylesheet" href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css"/>
@@ -547,8 +566,8 @@
 <script>
 const UPDATE_FORM_URL = '/magic-link.html';
 const JOIN_FORM_URL = '/join.html';
-const JOIN_SHORT_URL = 'https://bottin-gamma.vercel.app/join.html';
-const UPDATE_SHORT_URL = 'https://bottin-gamma.vercel.app/magic-link.html';
+const JOIN_SHORT_URL = 'https://bottin.rsn.quebec/join.html';
+const UPDATE_SHORT_URL = 'https://bottin.rsn.quebec/magic-link.html';
 
 // ─── I18N ───
 const I18N = {
@@ -1500,9 +1519,17 @@ function canonicalizeQuery(q) {
 
 const FUSE_OPTIONS = {
     includeScore: true,
-    threshold: 0.3,
+    // Phase 2k (2026-05-15) : threshold 0.15 (~15% mismatch) pour limiter
+    // les faux positifs. Avant a 0.2 ce n'etait pas suffisant : "martin"
+    // dans le champ tokensCanon (qui contient tous les tokens canonicalises
+    // de tous les champs textuels) sortait des matches fuzzy faibles sur des
+    // mots comme "marketing", "matin", etc. Les vraies fautes de frappe a
+    // une lettre sont toujours tolerees.
+    threshold: 0.15,
     ignoreLocation: true,
     useExtendedSearch: true,
+    // minMatchCharLength reste a 2 : un seuil plus eleve casse les recherches
+    // multi-mots ou un token a 2 chars ("emilie di" -> "di" ignore -> echec).
     minMatchCharLength: 2,
     keys: [
         { name: 'name',         weight: 4.0 },
@@ -1517,7 +1544,11 @@ const FUSE_OPTIONS = {
         { name: 'axes',         weight: 1.5 },
         { name: 'principes',    weight: 1.5 },
         { name: 'champsAction', weight: 1.5 },
-        { name: 'tokensCanon',  weight: 2.5 }, // Phase 2k : pont FR↔EN
+        // Phase 2k v2 : poids tokensCanon reduit de 2.5 a 1.5. Ce champ
+        // contient TOUS les tokens canonicalises (donc beaucoup de surface
+        // pour matcher fuzzy) ; on garde son utilite pour le pont FR<->EN
+        // mais on lui donne moins de poids que les champs principaux.
+        { name: 'tokensCanon',  weight: 1.5 },
         { name: 'email',        weight: 0.5 },
         { name: 'reseau',       weight: 0.5 },
     ],
@@ -1546,6 +1577,7 @@ function applyFilters() {
 
     // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
     if (queryNorm && typeof Fuse !== 'undefined') {
+        applyFilters._lastRanWithoutFuse = false;
         const docs = pool.map(buildFuseDoc);
         const fuse = new Fuse(docs, FUSE_OPTIONS);
         // Phase 2k : query canonicalisee FR↔EN pour matcher le champ
@@ -1556,9 +1588,14 @@ function applyFilters() {
         const results = fuse.search(queryCanon);
         filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
     } else if (queryNorm) {
-        // Fallback (Fuse non charge — CDN down) : recherche legacy includes()
+        // Fallback (Fuse non charge — CDN down OU script en bas de page pas
+        // encore execute lors d'un reload avec ?q= dans le hash) : recherche
+        // legacy via includes(). On retry des que Fuse devient disponible
+        // grace au listener window.load plus bas.
+        applyFilters._lastRanWithoutFuse = true;
         filteredMembers = pool.filter(m => m._search && m._search.includes(rawSearch.toLowerCase()));
     } else {
+        applyFilters._lastRanWithoutFuse = false;
         filteredMembers = pool;
     }
 
@@ -2520,7 +2557,25 @@ let GEOCODE = {
 };
 
 function renderMap() {
-    if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${tr('map_loading')}</p>`; return; }
+    // Phase 2k (2026-05-15) : retry avec polling si Leaflet n'est pas encore
+    // charge. Sans ce mecanisme, recharger la page avec #v=map dans l'URL
+    // entrainait l'affichage indefini de "Chargement de la carte..." car
+    // renderMap() etait appelee AVANT que le script Leaflet (en fin de body)
+    // ne soit telecharge. Max 5s d'attente puis on abandonne.
+    if (!window.L) {
+        const mv = document.getElementById('mapView');
+        if (mv) mv.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${tr('map_loading')}</p>`;
+        if (!renderMap._retries) renderMap._retries = 0;
+        if (renderMap._retries < 50) {
+            renderMap._retries++;
+            setTimeout(renderMap, 100);
+        } else {
+            // Apres 5s sans Leaflet -> message d'erreur plus explicite
+            if (mv) mv.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">Impossible de charger la carte. Verifiez votre connexion internet et rechargez la page.</p>`;
+        }
+        return;
+    }
+    renderMap._retries = 0;
     if (!map) {
         map = L.map('mapView').setView([47.0, -71.5], 6);
         // Phase 2d (2026-05-04): tiles CARTO Voyager (style pastel/leger,
@@ -2547,7 +2602,48 @@ function renderMap() {
     const byInst = {};
     let mapped = 0;
     // Only show consented members on the map (consent === 'oui')
-    const mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+    let mapMembers = filteredMembers.filter(m => m.consent === 'oui');
+
+    // Phase 2k v3 (2026-05-15) : filtre strict specifique a la carte (pas
+    // de hierarchie visuelle de score Fuse, donc tout faux positif pollue).
+    //
+    // Logique a 2 niveaux :
+    // 1. Si la query (foldee) matche EXACTEMENT le nom d'une institution
+    //    du catalogue, on filtre uniquement sur cette institution precise.
+    //    Ex: "Université Laval" -> seuls les profils dont l'une de leurs
+    //    institutions = "Université Laval" exactement (PAS "CHU de Québec
+    //    - Université Laval", PAS "CRCHU... - Université Laval", etc.).
+    // 2. Sinon, fallback : tokens substring match sur nom + institutions.
+    //    Ex: "martin valli" -> profils dont nom/inst contient les 2 tokens.
+    let exactInstMatched = null;     // Phase 2k v4 : match exact d'inst → 1 seul marqueur sur cette inst
+    let searchTokens = [];           // Phase 2k v5 : tokens de la query pour filtrage fin des marqueurs
+    const rawSearch = document.getElementById('searchInput').value.trim();
+    if (rawSearch) {
+        const queryFolded = fold(rawSearch);
+        searchTokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
+        // 1. Tente un match exact contre une institution du catalogue
+        const geocodeKeys = (typeof GEOCODE === 'object' && GEOCODE) ? Object.keys(GEOCODE) : [];
+        const exactInst = geocodeKeys.find(name => fold(name) === queryFolded);
+        if (exactInst) {
+            const exactFolded = fold(exactInst);
+            mapMembers = mapMembers.filter(m =>
+                (m.institutions || []).some(inst => fold(inst) === exactFolded)
+            );
+            exactInstMatched = exactInst; // garde le nom canonique pour le forEach plus bas
+        } else {
+            // 2. Fallback : tokens substring
+            const tokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
+            if (tokens.length) {
+                mapMembers = mapMembers.filter(m => {
+                    const haystack = fold([
+                        m.prenom, m.nom,
+                        ...(m.institutions || [])
+                    ].filter(Boolean).join(' '));
+                    return tokens.every(t => haystack.includes(t));
+                });
+            }
+        }
+    }
     const norm = s => s.replace(/[‘’′]/g, "'").replace(/[“”]/g, '"');
     // Resolve a member-typed institution string to the canonical name from
     // the catalog (GEOCODE). Collapses orthographic variations onto a single
@@ -2575,9 +2671,27 @@ function renderMap() {
     const activeRegions = (msState && msState.filterRegion && msState.filterRegion.length) ? msState.filterRegion : null;
     mapMembers.forEach(m => {
         const list = (m.institutions && m.institutions.length) ? m.institutions : (m.institution ? [m.institution] : []);
+        // Phase 2k v5 : le NOM du membre matche-t-il toute la query ? Si oui,
+        // on affiche le membre sur TOUTES ses institutions (cas "Martin Valli"
+        // -> on veut le voir partout ou il bosse). Si non, on garde seulement
+        // les institutions qui matchent la query (cas "McGill" -> on filtre
+        // sur McGill, pas sur CHU Sainte-Justine ou il est aussi affilie).
+        const memberNameMatchesQuery = searchTokens.length === 0 || (function() {
+            const nameStr = fold([m.prenom, m.nom].filter(Boolean).join(' '));
+            return searchTokens.every(t => nameStr.includes(t));
+        })();
         list.forEach(inst => {
             const canonical = resolveCanonical(inst);
             if (!canonical) return;
+            // Phase 2k v4 : match exact d'institution → ne garder QUE cette inst
+            if (exactInstMatched && canonical !== exactInstMatched) return;
+            // Phase 2k v5 : recherche en mode tokens substring (pas de match
+            // exact) — si le nom du membre ne matche pas la query, on ne garde
+            // que les institutions dont le nom canonique matche les tokens.
+            if (searchTokens.length > 0 && !exactInstMatched && !memberNameMatchesQuery) {
+                const instStr = fold(canonical);
+                if (!searchTokens.every(t => instStr.includes(t))) return;
+            }
             // Si filtre region actif → ne garder que les institutions de cette region
             if (activeRegions) {
                 const c = GEOCODE[canonical];
@@ -2683,6 +2797,18 @@ function restoreHash() {
     if (v === 'table' || v === 'map' || v === 'connexions') setView(v);
     else render();
 }
+
+// Phase 2k (2026-05-15) : si applyFilters() a tourne avant que Fuse soit
+// charge (cas typique : reload avec ?q=... dans le hash + CSV depuis le
+// cache localStorage qui resout immediatement), on a utilise le fallback
+// includes() moins precis. Une fois tous les assets charges (window.load),
+// on retente une fois pour avoir les vrais resultats Fuse.
+window.addEventListener('load', function() {
+    if (typeof applyFilters === 'function' && applyFilters._lastRanWithoutFuse && typeof Fuse !== 'undefined') {
+        applyFilters();
+        if (typeof render === 'function') render();
+    }
+});
 
 // ─── AUTO-LOAD (with client-side cache) ───
 // Strategy: display cached CSV immediately (instant, no spinner),
