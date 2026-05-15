@@ -2006,19 +2006,20 @@ function renderMap() {
     //    - Université Laval", PAS "CRCHU... - Université Laval", etc.).
     // 2. Sinon, fallback : tokens substring match sur nom + institutions.
     //    Ex: "martin valli" -> profils dont nom/inst contient les 2 tokens.
+    let exactInstMatched = null; // Phase 2k v4 : si non-null, on ne placera
+                                 // les marqueurs QUE sur cette institution.
     const rawSearch = document.getElementById('searchInput').value.trim();
     if (rawSearch) {
         const queryFolded = fold(rawSearch);
         // 1. Tente un match exact contre une institution du catalogue
         const geocodeKeys = (typeof GEOCODE === 'object' && GEOCODE) ? Object.keys(GEOCODE) : [];
         const exactInst = geocodeKeys.find(name => fold(name) === queryFolded);
-        console.log('[map filter]', { query: rawSearch, queryFolded, geocodeCount: geocodeKeys.length, exactInst, beforeFilter: mapMembers.length });
         if (exactInst) {
             const exactFolded = fold(exactInst);
             mapMembers = mapMembers.filter(m =>
                 (m.institutions || []).some(inst => fold(inst) === exactFolded)
             );
-            console.log('[map filter] EXACT match applied:', exactInst, '->', mapMembers.length, 'membres');
+            exactInstMatched = exactInst; // garde le nom canonique pour le forEach plus bas
         } else {
             // 2. Fallback : tokens substring
             const tokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
@@ -2063,6 +2064,11 @@ function renderMap() {
         list.forEach(inst => {
             const canonical = resolveCanonical(inst);
             if (!canonical) return;
+            // Phase 2k v4 : si la query est un match exact d'institution, on
+            // ne place les marqueurs QUE sur cette institution-la (sinon un
+            // membre bi-affilie Universite Laval + UdeM verrait son marqueur
+            // apparaitre aussi a UdeM Montreal alors qu'on cherche UL).
+            if (exactInstMatched && canonical !== exactInstMatched) return;
             // Si filtre region actif → ne garder que les institutions de cette region
             if (activeRegions) {
                 const c = GEOCODE[canonical];
