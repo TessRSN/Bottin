@@ -388,12 +388,23 @@ module.exports = async function handler(req, res) {
     // Send acceptance emails to newly-approved members (idempotent via checkbox)
     // Triggered when admin moves a card to "Approuvé" in the Notion Kanban.
     // Failures don't block the CSV response — they'll be retried tomorrow.
+    //
+    // Phase 2k (2026-05-15) : cap sur le batch quotidien pour rester sous la
+    // limite de 100 mails/jour du plan gratuit Resend (et laisser ~30 pour le
+    // cron de rétention + magic links temps réel). Si Tess approuve 100
+    // nouveaux d'un coup, le cron envoie 50 aujourd'hui et 50 demain.
+    const acceptanceBatchLimit = parseInt(process.env.ACCEPTANCE_BATCH_LIMIT || '50', 10);
     let emailsSent = 0;
     let emailsFailed = 0;
+    let emailsSkippedBudget = 0;
     for (const m of members) {
       if (m.workflow !== 'Approuvé') continue;
       if (m.emailAccepteEnvoye) continue;
       if (!m.email || !m.prenom) continue;
+      if (emailsSent >= acceptanceBatchLimit) {
+        emailsSkippedBudget++;
+        continue;
+      }
       try {
         // Phase 2h (2026-05-04): on passe le type d'adhesion pour personnaliser
         // le bandeau "Vous etes actuellement inscrit·e comme..." en haut du courriel.
@@ -406,8 +417,8 @@ module.exports = async function handler(req, res) {
         console.error(`[export] Failed to send acceptance email to ${m.email}:`, err.message);
       }
     }
-    if (emailsSent > 0 || emailsFailed > 0) {
-      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed`);
+    if (emailsSent > 0 || emailsFailed > 0 || emailsSkippedBudget > 0) {
+      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed, ${emailsSkippedBudget} reportés (batch limit ${acceptanceBatchLimit})`);
     }
 
     // Run the membership retention cron (Phase 3, Loi 25).
