@@ -1930,7 +1930,25 @@ let GEOCODE = {
 };
 
 function renderMap() {
-    if (!window.L) { document.getElementById('mapView').innerHTML=`<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${tr('map_loading')}</p>`; return; }
+    // Phase 2k (2026-05-15) : retry avec polling si Leaflet n'est pas encore
+    // charge. Sans ce mecanisme, recharger la page avec #v=map dans l'URL
+    // entrainait l'affichage indefini de "Chargement de la carte..." car
+    // renderMap() etait appelee AVANT que le script Leaflet (en fin de body)
+    // ne soit telecharge. Max 5s d'attente puis on abandonne.
+    if (!window.L) {
+        const mv = document.getElementById('mapView');
+        if (mv) mv.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">${tr('map_loading')}</p>`;
+        if (!renderMap._retries) renderMap._retries = 0;
+        if (renderMap._retries < 50) {
+            renderMap._retries++;
+            setTimeout(renderMap, 100);
+        } else {
+            // Apres 5s sans Leaflet -> message d'erreur plus explicite
+            if (mv) mv.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--rsn-muted)">Impossible de charger la carte. Verifiez votre connexion internet et rechargez la page.</p>`;
+        }
+        return;
+    }
+    renderMap._retries = 0;
     if (!map) {
         map = L.map('mapView').setView([47.0, -71.5], 6);
         // Phase 2d (2026-05-04): tiles CARTO Voyager (style pastel/leger,
