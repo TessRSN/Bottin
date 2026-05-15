@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
 
       const name = `${profile.prenom || ''} ${profile.nom || ''}`.trim() || 'Membre';
       const changeToken = signEmailChangeToken(payload.pageId, oldEmail, newEmail);
-      const baseUrl = process.env.BASE_URL || 'https://bottin-gamma.vercel.app';
+      const baseUrl = process.env.BASE_URL || 'https://bottin.rsn.quebec';
       const confirmUrl = `${baseUrl}/api/email-change?token=${changeToken}&lang=${encodeURIComponent(lang)}`;
 
       try {

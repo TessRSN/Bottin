@@ -26,7 +26,7 @@
 const path = require('path');
 
 const SECRET = process.env.BACKUP_SECRET || process.argv[2];
-const BASE_URL = process.env.BASE_URL || 'https://bottin-gamma.vercel.app';
+const BASE_URL = process.env.BASE_URL || 'https://bottin.rsn.quebec';
 const BATCH_SIZE = 100;
 
 if (!SECRET) {
