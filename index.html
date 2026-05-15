@@ -2006,11 +2006,12 @@ function renderMap() {
     //    - Université Laval", PAS "CRCHU... - Université Laval", etc.).
     // 2. Sinon, fallback : tokens substring match sur nom + institutions.
     //    Ex: "martin valli" -> profils dont nom/inst contient les 2 tokens.
-    let exactInstMatched = null; // Phase 2k v4 : si non-null, on ne placera
-                                 // les marqueurs QUE sur cette institution.
+    let exactInstMatched = null;     // Phase 2k v4 : match exact d'inst → 1 seul marqueur sur cette inst
+    let searchTokens = [];           // Phase 2k v5 : tokens de la query pour filtrage fin des marqueurs
     const rawSearch = document.getElementById('searchInput').value.trim();
     if (rawSearch) {
         const queryFolded = fold(rawSearch);
+        searchTokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
         // 1. Tente un match exact contre une institution du catalogue
         const geocodeKeys = (typeof GEOCODE === 'object' && GEOCODE) ? Object.keys(GEOCODE) : [];
         const exactInst = geocodeKeys.find(name => fold(name) === queryFolded);
@@ -2061,14 +2062,27 @@ function renderMap() {
     const activeRegions = (msState && msState.filterRegion && msState.filterRegion.length) ? msState.filterRegion : null;
     mapMembers.forEach(m => {
         const list = (m.institutions && m.institutions.length) ? m.institutions : (m.institution ? [m.institution] : []);
+        // Phase 2k v5 : le NOM du membre matche-t-il toute la query ? Si oui,
+        // on affiche le membre sur TOUTES ses institutions (cas "Martin Valli"
+        // -> on veut le voir partout ou il bosse). Si non, on garde seulement
+        // les institutions qui matchent la query (cas "McGill" -> on filtre
+        // sur McGill, pas sur CHU Sainte-Justine ou il est aussi affilie).
+        const memberNameMatchesQuery = searchTokens.length === 0 || (function() {
+            const nameStr = fold([m.prenom, m.nom].filter(Boolean).join(' '));
+            return searchTokens.every(t => nameStr.includes(t));
+        })();
         list.forEach(inst => {
             const canonical = resolveCanonical(inst);
             if (!canonical) return;
-            // Phase 2k v4 : si la query est un match exact d'institution, on
-            // ne place les marqueurs QUE sur cette institution-la (sinon un
-            // membre bi-affilie Universite Laval + UdeM verrait son marqueur
-            // apparaitre aussi a UdeM Montreal alors qu'on cherche UL).
+            // Phase 2k v4 : match exact d'institution → ne garder QUE cette inst
             if (exactInstMatched && canonical !== exactInstMatched) return;
+            // Phase 2k v5 : recherche en mode tokens substring (pas de match
+            // exact) — si le nom du membre ne matche pas la query, on ne garde
+            // que les institutions dont le nom canonique matche les tokens.
+            if (searchTokens.length > 0 && !exactInstMatched && !memberNameMatchesQuery) {
+                const instStr = fold(canonical);
+                if (!searchTokens.every(t => instStr.includes(t))) return;
+            }
             // Si filtre region actif → ne garder que les institutions de cette region
             if (activeRegions) {
                 const c = GEOCODE[canonical];
