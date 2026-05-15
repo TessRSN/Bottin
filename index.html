@@ -1450,7 +1450,9 @@ const FUSE_OPTIONS = {
     threshold: 0.15,
     ignoreLocation: true,
     useExtendedSearch: true,
-    minMatchCharLength: 3,
+    // minMatchCharLength reste a 2 : un seuil plus eleve casse les recherches
+    // multi-mots ou un token a 2 chars ("emilie di" -> "di" ignore -> echec).
+    minMatchCharLength: 2,
     keys: [
         { name: 'name',         weight: 4.0 },
         { name: 'institutions', weight: 3.5 },
@@ -2008,14 +2010,15 @@ function renderMap() {
     if (rawSearch) {
         const queryFolded = fold(rawSearch);
         // 1. Tente un match exact contre une institution du catalogue
-        const exactInst = (typeof GEOCODE === 'object' && GEOCODE)
-            ? Object.keys(GEOCODE).find(name => fold(name) === queryFolded)
-            : null;
+        const geocodeKeys = (typeof GEOCODE === 'object' && GEOCODE) ? Object.keys(GEOCODE) : [];
+        const exactInst = geocodeKeys.find(name => fold(name) === queryFolded);
+        console.log('[map filter]', { query: rawSearch, queryFolded, geocodeCount: geocodeKeys.length, exactInst, beforeFilter: mapMembers.length });
         if (exactInst) {
             const exactFolded = fold(exactInst);
             mapMembers = mapMembers.filter(m =>
                 (m.institutions || []).some(inst => fold(inst) === exactFolded)
             );
+            console.log('[map filter] EXACT match applied:', exactInst, '->', mapMembers.length, 'membres');
         } else {
             // 2. Fallback : tokens substring
             const tokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
