@@ -1993,25 +1993,41 @@ function renderMap() {
     // Only show consented members on the map (consent === 'oui')
     let mapMembers = filteredMembers.filter(m => m.consent === 'oui');
 
-    // Phase 2k v3 (2026-05-15) : la carte n'a pas de hierarchie visuelle de
-    // score Fuse (contrairement aux vues cartes/tableau ou le vrai match
-    // ressort en premier en haut). Pour eviter d'afficher des marqueurs sur
-    // des faux positifs fuzzy, on applique ici un filtre STRICT en plus :
-    // chaque token de la query doit etre une sous-chaine du nom complet OU
-    // d'une institution du membre. C'est plus strict que Fuse mais c'est
-    // exactement ce qu'on veut sur la carte : "martin valli" doit retrouver
-    // les seuls profils dont le nom contient "martin" ET "valli".
+    // Phase 2k v3 (2026-05-15) : filtre strict specifique a la carte (pas
+    // de hierarchie visuelle de score Fuse, donc tout faux positif pollue).
+    //
+    // Logique a 2 niveaux :
+    // 1. Si la query (foldee) matche EXACTEMENT le nom d'une institution
+    //    du catalogue, on filtre uniquement sur cette institution precise.
+    //    Ex: "Université Laval" -> seuls les profils dont l'une de leurs
+    //    institutions = "Université Laval" exactement (PAS "CHU de Québec
+    //    - Université Laval", PAS "CRCHU... - Université Laval", etc.).
+    // 2. Sinon, fallback : tokens substring match sur nom + institutions.
+    //    Ex: "martin valli" -> profils dont nom/inst contient les 2 tokens.
     const rawSearch = document.getElementById('searchInput').value.trim();
     if (rawSearch) {
-        const tokens = fold(rawSearch).split(/\s+/).filter(t => t.length >= 2);
-        if (tokens.length) {
-            mapMembers = mapMembers.filter(m => {
-                const haystack = fold([
-                    m.prenom, m.nom,
-                    ...(m.institutions || [])
-                ].filter(Boolean).join(' '));
-                return tokens.every(t => haystack.includes(t));
-            });
+        const queryFolded = fold(rawSearch);
+        // 1. Tente un match exact contre une institution du catalogue
+        const exactInst = (typeof GEOCODE === 'object' && GEOCODE)
+            ? Object.keys(GEOCODE).find(name => fold(name) === queryFolded)
+            : null;
+        if (exactInst) {
+            const exactFolded = fold(exactInst);
+            mapMembers = mapMembers.filter(m =>
+                (m.institutions || []).some(inst => fold(inst) === exactFolded)
+            );
+        } else {
+            // 2. Fallback : tokens substring
+            const tokens = queryFolded.split(/\s+/).filter(t => t.length >= 2);
+            if (tokens.length) {
+                mapMembers = mapMembers.filter(m => {
+                    const haystack = fold([
+                        m.prenom, m.nom,
+                        ...(m.institutions || [])
+                    ].filter(Boolean).join(' '));
+                    return tokens.every(t => haystack.includes(t));
+                });
+            }
         }
     }
     const norm = s => s.replace(/[‘’′]/g, "'").replace(/[“”]/g, '"');
