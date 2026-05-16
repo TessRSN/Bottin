@@ -40,9 +40,14 @@ function fullName(m) {
   return `${(m.prenom || '').trim()} ${(m.nom || '').trim()}`.trim() || 'Membre';
 }
 
-async function runRetentionCron(allMembers) {
+async function runRetentionCron(allMembers, availableBudget) {
   const enabled = process.env.RETENTION_EMAILS_ENABLED === 'true';
-  const dailyLimit = parseInt(process.env.RETENTION_EMAILS_DAILY_LIMIT || '30', 10);
+  // Phase 2k (2026-05-16) : si un budget partagé est fourni par l'appelant
+  // (cron principal), on l'utilise comme plafond. Sinon (appel autonome ou
+  // test), on retombe sur RETENTION_EMAILS_DAILY_LIMIT (défaut 30).
+  const dailyLimit = (typeof availableBudget === 'number' && availableBudget >= 0)
+    ? availableBudget
+    : parseInt(process.env.RETENTION_EMAILS_DAILY_LIMIT || '30', 10);
   const testRecipientsEnv = (process.env.RETENTION_EMAILS_TEST_RECIPIENTS || '').trim();
   const testRecipients = testRecipientsEnv ? testRecipientsEnv.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
   const adminRecipients = (process.env.ADMIN_NOTIFICATION_RECIPIENTS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -389,11 +394,14 @@ module.exports = async function handler(req, res) {
     // Triggered when admin moves a card to "Approuvé" in the Notion Kanban.
     // Failures don't block the CSV response — they'll be retried tomorrow.
     //
-    // Phase 2k (2026-05-15) : cap sur le batch quotidien pour rester sous la
-    // limite de 100 mails/jour du plan gratuit Resend (et laisser ~30 pour le
-    // cron de rétention + magic links temps réel). Si Tess approuve 100
-    // nouveaux d'un coup, le cron envoie 50 aujourd'hui et 50 demain.
-    const acceptanceBatchLimit = parseInt(process.env.ACCEPTANCE_BATCH_LIMIT || '50', 10);
+    // Phase 2k (2026-05-16) : budget global EMAIL_DAILY_BUDGET (défaut 95)
+    // partagé entre acceptance + rétention. Sous la limite Resend free 100/j,
+    // avec ~5 marge pour les magic links temps réel. Si Tess approuve un gros
+    // batch + nombreuses échéances le même jour, le cron envoie en priorité
+    // les acceptances (les plus attendues côté UX), puis la rétention avec
+    // le budget restant. Le reste est reporté au cron du lendemain.
+    const dailyBudget = parseInt(process.env.EMAIL_DAILY_BUDGET || '95', 10);
+    let remainingBudget = dailyBudget;
     let emailsSent = 0;
     let emailsFailed = 0;
     let emailsSkippedBudget = 0;
@@ -401,7 +409,7 @@ module.exports = async function handler(req, res) {
       if (m.workflow !== 'Approuvé') continue;
       if (m.emailAccepteEnvoye) continue;
       if (!m.email || !m.prenom) continue;
-      if (emailsSent >= acceptanceBatchLimit) {
+      if (remainingBudget <= 0) {
         emailsSkippedBudget++;
         continue;
       }
@@ -411,6 +419,7 @@ module.exports = async function handler(req, res) {
         await sendAcceptanceEmail(m.email, m.prenom, m.type);
         await markAcceptanceEmailSent(m.id);
         emailsSent++;
+        remainingBudget--;
         console.log(`[export] Acceptance email sent to ${m.email}`);
       } catch (err) {
         emailsFailed++;
@@ -418,14 +427,14 @@ module.exports = async function handler(req, res) {
       }
     }
     if (emailsSent > 0 || emailsFailed > 0 || emailsSkippedBudget > 0) {
-      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed, ${emailsSkippedBudget} reportés (batch limit ${acceptanceBatchLimit})`);
+      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed, ${emailsSkippedBudget} reportés. Budget restant: ${remainingBudget}/${dailyBudget}`);
     }
 
     // Run the membership retention cron (Phase 3, Loi 25).
-    // Reuses the `members` list already fetched above. Wrapped in try/catch so
-    // any failure here doesn't break the CSV response.
+    // Phase 2k (2026-05-16) : on lui passe le budget restant pour qu'elle
+    // s'arrête au lieu de pousser jusqu'à RETENTION_EMAILS_DAILY_LIMIT.
     try {
-      await runRetentionCron(members);
+      await runRetentionCron(members, remainingBudget);
     } catch (retErr) {
       console.error('[retention] Top-level error:', retErr.message, retErr.stack);
     }
