@@ -230,9 +230,10 @@
         .member-card.type-partenaire { border-left-color: var(--rsn-tag-partenaire); }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem; gap: 0.5rem; }
         .card-name { font-size: 1.1rem; font-weight: 600; color: var(--rsn-accent); flex: 1; min-width: 0; }
-        /* Phase 3a: photo de profil ronde (carte 44 px, fiche 72 px) ; rien si le membre n'en a pas */
-        .card-photo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--rsn-border); }
-        .card-photo-lg { width: 72px; height: 72px; }
+        /* Phase 3a: photo de profil ronde, nom en dessous (carte 64 px, fiche 112 px) ; rien si le membre n'en a pas */
+        .card-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; flex: 1; min-width: 0; }
+        .card-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--rsn-border); }
+        .card-photo-lg { width: 112px; height: 112px; }
         .card-tag { font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 50px; color: white; white-space: nowrap; flex-shrink: 0; }
         .tag-regulier { background: var(--rsn-tag-regulier); }
         .tag-etudiant { background: var(--rsn-tag-etudiant); }
@@ -2501,6 +2502,15 @@ function photoHtml(m, cls) {
     return `<img class="${cls}" src="${esc(m.photo)}" alt="" loading="lazy" onerror="this.remove()">`;
 }
 
+// En-tete de carte / fiche : avec photo, la photo est au-dessus du nom et
+// l'etiquette de type reste en haut a droite ; sans photo, mise en page inchangee.
+function cardHeaderHtml(m, tc, photoCls) {
+    const tag = `<span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span>`;
+    const name = `<div class="card-name">${displayName(m)}</div>`;
+    if (!m.photo) return `<div class="card-header">${name}${tag}</div>`;
+    return `<div class="card-header"><div class="card-identity">${photoHtml(m, photoCls)}${name}</div>${tag}</div>`;
+}
+
 function renderCards() {
     const el=document.getElementById('cardsView'), items=pgItems();
     if(!items.length){el.innerHTML='';return;}
@@ -2545,7 +2555,7 @@ function renderCards() {
           ? `<div style="margin-top:0.3rem"><button class="card-expand-btn" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.2rem 0;font-size:0.78rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>${tr('similar_profiles_btn')}</button></div>`
           : '';
         return `<div class="member-card ${cc}${pendingClass}">
-            <div class="card-header">${photoHtml(m, 'card-photo')}<div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
+            ${cardHeaderHtml(m, tc, 'card-photo')}
             ${badgesHtml}
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
@@ -2844,7 +2854,7 @@ function showMemberPopup(name) {
     modal.appendChild(closeBtn);
     const content = document.createElement('div');
     content.innerHTML = [
-        `<div class="card-header">${photoHtml(m, 'card-photo card-photo-lg')}<div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span></div>`,
+        cardHeaderHtml(m, tc, 'card-photo card-photo-lg'),
         `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || tr('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
