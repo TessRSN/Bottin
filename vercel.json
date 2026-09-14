@@ -9,6 +9,11 @@
       "schedule": "0 3 * * 0"
     }
   ],
+  "rewrites": [
+    { "source": "/api/backup-manual", "destination": "/api/backups?action=manual" },
+    { "source": "/api/list-backups", "destination": "/api/backups?action=list" },
+    { "source": "/api/download-backup", "destination": "/api/backups?action=download" }
+  ],
   "headers": [
     {
       "source": "/(.*).html",
