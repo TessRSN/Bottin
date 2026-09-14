@@ -512,7 +512,10 @@
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-regulier);border:2px solid #2b6cb0"></span> <span data-i18n="regular">Régulier</span></div>
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
-        <span id="connexionsCount" style="color:var(--rsn-muted);margin-left:auto">—</span>
+        <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
+        <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="5" max="15" step="1" value="5" style="width:110px;margin:0;cursor:pointer"></label>
+        <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
+        <span id="connexionsCount" style="color:var(--rsn-muted)">—</span>
         <button id="connexionsExportBtn" class="reset-btn" style="cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
       </div>
     </div>
@@ -592,6 +595,8 @@ const I18N = {
         connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
         connexions_pair_score: '{N} mots-clés en commun',
         connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
+        connexions_density_label: 'Liens : tous ↔ les plus forts',
+        connexions_hide_isolated: 'Masquer les membres sans lien',
         similar_profiles_title: 'Profils proches',
         similar_profiles_show_criteria: 'Voir les mots-clés communs',
         similar_profiles_btn: 'Voir les profils proches',
@@ -656,6 +661,8 @@ const I18N = {
         connexions_insights_title: 'High-potential cross-institution pairs',
         connexions_pair_score: '{N} keywords in common',
         connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
+        connexions_density_label: 'Links: all ↔ strongest',
+        connexions_hide_isolated: 'Hide members without links',
         similar_profiles_title: 'Similar profiles',
         similar_profiles_show_criteria: 'View shared keywords',
         similar_profiles_btn: 'View similar profiles',
@@ -1634,26 +1641,257 @@ function connexionsTokenize(text) {
 // Note : searchTokenize est defini plus haut (section recherche FR<->EN).
 // Il fait fonctionnellement la meme chose que connexionsTokenize.
 
-function connexionsSimilarity(a, b, tokensCache) {
-  return connexionsSimilarityDetail(a, b, tokensCache).score;
+// Phase 2j v7 (2026-09-14): mots vides supplementaires, utilises UNIQUEMENT
+// par les connexions (graphe + "Profils proches"), jamais par la recherche
+// (qui a besoin de "sante", "health"... pour le pont FR<->EN).
+// Quatre familles, formes sans accents (fold) :
+//  1. mots de liaison / generiques FR oublies ("afin", "vise", "cadre"...)
+//  2. vocabulaire generique de la recherche, FR et EN ("projet", "approach",
+//     "tools", "improve"...) — le dictionnaire FR->EN renvoie vers ces formes EN
+//  3. vocabulaire commun a tout le reseau, qui ne distingue personne
+//     ("sante", "numerique", "donnees", "clinique", "patient"...)
+//  4. noms d'institutions et de lieux : l'affinite doit venir de
+//     l'expertise, pas de l'employeur (deja visible ailleurs).
+const CONNEXIONS_EXTRA_STOPWORDS = new Set([
+  // 1. liaison / generiques FR
+  'afin','vise','visent','viser','visant','lors','cadre','ete','etant','permet',
+  'permettre','permettant','permettent','mettre','mise','place','but','buts',
+  'objectif','objectifs','actuellement','egalement','maniere','facon','niveau',
+  'partie','grace','travers','tant','bien','ceci','cela','comment','pourquoi','quand',
+  'domaine','domaines','interet','interets','travail','travaux','etude','etudes',
+  'etudier','projet','projets','demarche','demarches','matiere','meilleur','meilleure',
+  'meilleurs','meilleures','futur','future','futurs','futures','strategique',
+  'strategiques','principal','principale','principaux','principalement','particulier',
+  'particuliere','general','generale','generaux','nouveau','nouvelle','nouveaux',
+  'nouvelles','different','differente','differents','differentes','grand','grande',
+  'grands','grandes','partir','integrant','integrer','integre','integree','generees',
+  'regrouper','suis','axe','axes','compte','cherche','cherchons','chercher','milieu',
+  'milieux','vie','reel','reelle','reels','reelles','multi','comprendre','mieux',
+  'portent','porte','porter','soutenir','doctoral','doctorat','etudiant','etudiante',
+  'etudiants','etudiantes','perspective','perspectives','source','sources','membre',
+  'membres','equipe','equipes','laboratoire','chaire','professeur','professeure',
+  'titulaire','adjoint','adjointe','agrege','agregee','candidat','candidate',
+  'postdoctoral','postdoctorale','maitrise','these','personne','personnes',
+  'inscrivent','inscrit','inscrite','temps','charge','optimiser','innovant',
+  'innovante','innovants','innovantes','publie','publiee','publies','publication',
+  'publications','revue','revues','article','articles','contexte','contextes',
+  // 2. generiques de la recherche, EN (cibles du dictionnaire FR->EN)
+  'context','contexts',
+  'high','low','understanding','understand','condition','conditions','planning',
+  'precise','optimize','optimization','nature','communications','journal',
+  'published','profile','profiles',
+  'project','projects','approach','approaches','method','methods','tool','tools',
+  'use','uses','user','users','improve','improving','improvement','improvements',
+  'improved','develop','developing','developed','development','help','helping',
+  'science','sciences','scientific','knowledge','information','practice','practices',
+  'access','quality','management','system','systems','platform','platforms',
+  'integration','innovation','innovations','technology','technologies','solution',
+  'solutions','process','processes','application','applications','field','fields',
+  'current','currently','main','new','novel','different','various','specific',
+  'general','related','role','roles','level','levels','order','well','particular',
+  'particularly','area','areas','research','researcher','researchers','study',
+  'studies','analysis','analyses','evaluation','evaluate','evaluating','large',
+  'complex','better','best','working','student','students','professor','associate',
+  'assistant','candidate','phd','postdoc','postdoctoral','lab','laboratory','team',
+  'chair','member','members','person','persons',
+  // 3. commun a tout le reseau (FR + EN)
+  'sante','health','numerique','numeriques','digital','donnees','donnee','data',
+  'soins','soin','care','clinique','cliniques','clinical','medical','medicale',
+  'medicaux','medicales','patient','patiente','patients','patientes','rsn','reseau',
+  'reseaux','network','networks',
+  // 4. institutions et lieux
+  'universite','university','montreal','quebec','canada','canadian','canadien',
+  'canadienne','quebecois','quebecoise','sainte','justine','chu','chum','crchum',
+  'mcgill','laval','sherbrooke','udem','uqam','concordia','ciusss','cisss','ssss',
+  'institut','institute','centre','center','hospital','hopital','hospitalier',
+  'faculte','faculty','departement','department','ecole','school','polytechnique',
+  'hec','ets','inrs','mila','ivado','fonds','frq','frqs','cihr','irsc'
+]);
+
+// Parametres du calcul de proximite. Calibres le 2026-09-14 sur les 277
+// profils consentants (cf. scratch connexions_analysis3.py) : 1158 liens
+// avant (hub a 55 liens) -> ~510 liens au seuil par defaut, max 8 par membre.
+const CONNEXIONS_PARAMS = {
+  DF_MIN: 2,             // un item present dans 1 seul profil ne peut relier personne
+  DF_MAX_RATIO: 0.20,    // un item present dans > 20 % des profils n'est pas distinctif
+  WEIGHT_CAP: 4.0,       // plafond du poids idf (un item ultra-rare ne domine pas)
+  BIGRAM_BOOST: 1.25,    // une expression de 2 mots partagee vaut un peu plus qu'un mot
+  MIN_SCORE_DEFAULT: 5,  // seuil par defaut du curseur "Liens"
+  TOP_K: 3,              // voisins les plus proches conserves par membre
+  DEGREE_CAP: 8,         // nombre max de liens par membre (anti-hub)
+};
+
+// Tokens en position (null = mot vide ou trop court), pour ne former des
+// bigrammes qu'entre mots reellement adjacents dans le texte.
+// Le filtre s'applique a la forme brute ET a la forme canonique EN
+// ("recherche" -> "research" doit etre exclu comme "research").
+function connexionsTokenizePos(text) {
+  if (!text) return [];
+  return fold(text).split(/[^a-z0-9]+/).map(t => {
+    if (t.length < 3 || CONNEXIONS_STOPWORDS.has(t) || CONNEXIONS_EXTRA_STOPWORDS.has(t)) return null;
+    const c = canonicalizeToken(t);
+    return CONNEXIONS_EXTRA_STOPWORDS.has(c) ? null : c;
+  });
 }
 
-// Phase 2j v4: la similarite est basee UNIQUEMENT sur les mots-cles
-// distinctifs (apres filtrage TF-IDF / DF). Les axes/principes/champs
-// ne sont plus utilises (sur-renseignes par tout le monde dans l'ancien
-// formulaire). On retourne quand meme la liste des shared categories
-// pour info eventuelle, mais elle n'entre plus dans le score.
-function connexionsSimilarityDetail(a, b, tokensCache) {
-  if (!a || !b || a === b) return { score: 0, sharedAxes: [], sharedPrinc: [], sharedChamps: [], sharedTokens: [] };
-  const tokensA = tokensCache.get(a);
-  const tokensB = tokensCache.get(b);
-  const sharedTokens = [];
-  for (const t of tokensA) if (tokensB.has(t)) sharedTokens.push(t);
+// Items d'un membre : unigrammes + bigrammes adjacents. La cle du bigramme
+// est triee, donc "intelligence artificielle" (-> intelligence, artificial)
+// et "artificial intelligence" donnent la meme cle "artificial+intelligence".
+function connexionsItemsOf(m) {
+  const items = new Set();
+  for (const text of [m.expertise, m.themes, m.projet]) {
+    const pos = connexionsTokenizePos(text);
+    for (let i = 0; i < pos.length; i++) {
+      const a = pos[i];
+      if (!a) continue;
+      items.add(a);
+      const b = pos[i + 1];
+      if (b && b !== a) items.add(a < b ? a + '+' + b : b + '+' + a);
+    }
+  }
+  return items;
+}
+
+// Index partage par le graphe et par le bloc "Profils proches" de la modal :
+// membres consentants, items distinctifs par membre (fenetre DF), poids idf.
+// Invalide automatiquement quand allMembers change de reference.
+let _connexionsIndex = null;
+function ensureConnexionsIndex() {
+  if (_connexionsIndex && _connexionsIndex.signature === allMembers) return _connexionsIndex;
+  const P = CONNEXIONS_PARAMS;
+  const eligible = allMembers.filter(m => m.consent === 'oui');
+  const N = eligible.length;
+  const DF_MAX = Math.max(P.DF_MIN + 1, Math.floor(N * P.DF_MAX_RATIO));
+  const raw = new Map();
+  const docFreq = new Map();
+  for (const m of eligible) {
+    const set = connexionsItemsOf(m);
+    raw.set(m, set);
+    for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
+  }
+  const itemsByMember = new Map();
+  const weights = new Map();
+  for (const m of eligible) {
+    const kept = new Set();
+    for (const t of raw.get(m)) {
+      const df = docFreq.get(t);
+      if (df < P.DF_MIN || df > DF_MAX) continue;
+      kept.add(t);
+      if (!weights.has(t)) {
+        const w = Math.min(Math.log(N / df), P.WEIGHT_CAP);
+        weights.set(t, t.includes('+') ? w * P.BIGRAM_BOOST : w);
+      }
+    }
+    itemsByMember.set(m, kept);
+  }
+  console.log(`[Connexions] index: ${N} membres, DF in [${P.DF_MIN}, ${DF_MAX}], ${weights.size} items distinctifs`);
+  _connexionsIndex = { eligible, itemsByMember, weights, signature: allMembers };
+  return _connexionsIndex;
+}
+
+function connexionsSimilarity(a, b, index) {
+  return connexionsSimilarityDetail(a, b, index).score;
+}
+
+// Score = somme des poids idf des items partages. Un bigramme partage
+// absorbe ses deux mots (pas de triple compte "intelligence" + "artificial"
+// + "artificial intelligence"). Il faut au moins 2 items partages, ou
+// 1 bigramme, pour qu'un lien existe : un seul mot commun n'est pas un signal.
+// sharedTokens est pret a l'affichage (bigramme rendu "mot1 mot2").
+function connexionsSimilarityDetail(a, b, index) {
+  const empty = { score: 0, sharedTokens: [], sharedAxes: [], sharedPrinc: [], sharedChamps: [] };
+  if (!a || !b || a === b) return empty;
+  const ia = index.itemsByMember.get(a), ib = index.itemsByMember.get(b);
+  if (!ia || !ib) return empty;
+  const small = ia.size <= ib.size ? ia : ib;
+  const large = small === ia ? ib : ia;
+  const bigrams = [], unigrams = [];
+  for (const t of small) if (large.has(t)) (t.includes('+') ? bigrams : unigrams).push(t);
+  const covered = new Set();
+  for (const bg of bigrams) for (const w of bg.split('+')) covered.add(w);
+  const items = bigrams.concat(unigrams.filter(t => !covered.has(t)));
+  if (items.length < 2 && bigrams.length === 0) return empty;
+  let score = 0;
+  for (const t of items) score += index.weights.get(t) || 0;
   return {
-    score: sharedTokens.length,
-    sharedAxes: [], sharedPrinc: [], sharedChamps: [], // non utilises
-    sharedTokens,
+    score,
+    sharedTokens: items.map(t => t.replace('+', ' ')),
+    sharedAxes: [], sharedPrinc: [], sharedChamps: [],
   };
+}
+
+// Selection des liens a afficher : seuil de score (curseur), puis top-K
+// voisins par membre (union), puis plafond de degre en traitant les liens
+// du plus fort au plus faible (plus de hub a 50 liens).
+function selectConnexionsEdges(pairScores, N, minScore) {
+  const P = CONNEXIONS_PARAMS;
+  const neighbors = Array.from({ length: N }, () => []);
+  for (const p of pairScores) {
+    if (p.score < minScore) continue;
+    neighbors[p.from].push(p);
+    neighbors[p.to].push(p);
+  }
+  const candidates = new Map();
+  for (let i = 0; i < N; i++) {
+    neighbors[i].sort((a, b) => b.score - a.score);
+    for (const p of neighbors[i].slice(0, P.TOP_K)) candidates.set(p.key, p);
+  }
+  const degree = new Array(N).fill(0);
+  const edgeSet = new Map();
+  const ordered = Array.from(candidates.values()).sort((a, b) => b.score - a.score);
+  for (const p of ordered) {
+    if (degree[p.from] >= P.DEGREE_CAP || degree[p.to] >= P.DEGREE_CAP) continue;
+    edgeSet.set(p.key, p);
+    degree[p.from]++; degree[p.to]++;
+  }
+  return edgeSet;
+}
+
+function getConnexionsMinScore() {
+  const el = document.getElementById('connexionsMinScore');
+  const v = el ? parseFloat(el.value) : NaN;
+  return isNaN(v) ? CONNEXIONS_PARAMS.MIN_SCORE_DEFAULT : v;
+}
+
+function connexionsNodeSize(degree) {
+  return Math.min(Math.max(8 + Math.sqrt(degree) * 3, 6), 28);
+}
+
+function connexionsMakeEdge(e, edgeColor) {
+  return {
+    id: e.key,
+    from: e.from, to: e.to, value: e.score,
+    title: e.shared.join(' · '),
+    color: { color: edgeColor, highlight: '#a855f7', hover: '#a855f7' },
+    width: Math.min(0.5 + e.score / 6, 4),
+  };
+}
+
+// Curseur "Liens" + case "masquer les membres sans lien" : on rejoue la
+// selection sur les scores deja calcules, sans reconstruire le graphe.
+function applyConnexionsDensity() {
+  const st = _connexionsState;
+  if (!st || !_connexionsNetwork || !st.pairScores) return;
+  const edgeSet = selectConnexionsEdges(st.pairScores, st.N, getConnexionsMinScore());
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const edgeColor = isDark ? 'rgba(200,200,220,0.3)' : 'rgba(120,120,140,0.35)';
+  const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
+  st.edgesDS.clear();
+  st.edgesDS.add(edges);
+  st.edges = edges; st.edgeSet = edgeSet;
+  const degree = new Array(st.N).fill(0);
+  for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
+  const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
+  st.nodesDS.update(st.nodes.map((n, i) => ({
+    id: n.id,
+    hidden: hideIsolated && degree[i] === 0,
+    size: connexionsNodeSize(degree[i]),
+  })));
+  const shown = hideIsolated ? degree.filter(d => d > 0).length : st.nodes.length;
+  const countEl = document.getElementById('connexionsCount');
+  if (countEl) {
+    countEl.textContent = tr('connexions_count_legend').replace('{N}', shown).replace('{L}', edges.length);
+  }
 }
 
 let _connexionsCache = null;
@@ -1757,69 +1995,20 @@ function buildAndShowConnexionsGraph() {
     applyConnexionsFiltersToGraph(); // reapplique les filtres au cas ou ils ont change
     return;
   }
-  const eligible = allMembers.filter(m => m.consent === 'oui');
-
-  // Phase 2j v4: tokenisation + filtrage TF-IDF par document frequency.
-  // Tokens trop frequents ('projet', 'recherche', 'via'...) ne sont pas
-  // distinctifs. Tokens trop rares (1 seul profil) ne peuvent pas matcher.
-  // On garde les tokens dont DF est entre 2 et 35% du corpus.
-  const N_eligible = eligible.length;
-  const DF_MIN = 2;
-  const DF_MAX_RATIO = 0.35; // ignore tokens presents dans > 35% des profils
-  const DF_MAX = Math.max(DF_MIN + 1, Math.floor(N_eligible * DF_MAX_RATIO));
-
-  // 1ere passe: collecte tous les tokens bruts par membre + DF
-  const rawTokensByMember = new Map();
-  const docFreq = new Map();
-  for (const m of eligible) {
-    const set = new Set([
-      ...connexionsTokenize(m.expertise),
-      ...connexionsTokenize(m.themes),
-      ...connexionsTokenize(m.projet),
-    ]);
-    rawTokensByMember.set(m, set);
-    for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
-  }
-
-  // 2e passe: ne garder que les tokens distinctifs (DF dans la fenetre)
-  const tokensCache = new Map();
-  for (const m of eligible) {
-    const filtered = new Set();
-    for (const t of rawTokensByMember.get(m)) {
-      const df = docFreq.get(t);
-      if (df >= DF_MIN && df <= DF_MAX) filtered.add(t);
-    }
-    tokensCache.set(m, filtered);
-  }
-  console.log(`[Connexions] DF filter: kept tokens with DF in [${DF_MIN}, ${DF_MAX}] (${N_eligible} members)`);
-
-  const TOP_K = 5;
-  // Phase 2j v4: nouveau calibrage. Le score est maintenant le nombre de
-  // tokens distinctifs partages (sans contribution des categories).
-  // 2 mots distinctifs partages = signal correct.
-  const MIN_SCORE = 2;
+  // Phase 2j v7: index partage (items distinctifs + poids idf), toutes les
+  // paires candidates calculees une fois, puis selection des liens
+  // (seuil du curseur, top-K, plafond de degre) rejouable a la volee.
+  const index = ensureConnexionsIndex();
+  const eligible = index.eligible;
   const N = eligible.length;
-  const neighborsByIdx = eligible.map(() => []);
+  const pairScores = [];
   for (let i = 0; i < N; i++) {
     for (let j = i + 1; j < N; j++) {
-      const score = connexionsSimilarity(eligible[i], eligible[j], tokensCache);
-      if (score < MIN_SCORE) continue;
-      neighborsByIdx[i].push({ j, score });
-      neighborsByIdx[j].push({ j: i, score });
+      const d = connexionsSimilarityDetail(eligible[i], eligible[j], index);
+      if (d.score > 0) pairScores.push({ key: `${i}-${j}`, from: i, to: j, score: d.score, shared: d.sharedTokens });
     }
   }
-  const edgeSet = new Map();
-  for (let i = 0; i < N; i++) {
-    neighborsByIdx[i].sort((a, b) => b.score - a.score);
-    const top = neighborsByIdx[i].slice(0, TOP_K);
-    for (const { j, score } of top) {
-      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
-      const existing = edgeSet.get(key);
-      if (!existing || score > existing.score) {
-        edgeSet.set(key, { from: i, to: j, score });
-      }
-    }
-  }
+  const edgeSet = selectConnexionsEdges(pairScores, N, getConnexionsMinScore());
   const degree = new Array(N).fill(0);
   for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
   const TYPE_COLORS = {
@@ -1835,7 +2024,6 @@ function buildAndShowConnexionsGraph() {
   const nodes = eligible.map((m, i) => {
     const t = (m.type || '').trim();
     const c = TYPE_COLORS[t] || DEFAULT_COLOR;
-    const baseSize = 8 + Math.sqrt(degree[i]) * 3;
     const stripped = `${m.prenom || ''} ${m.nom || ''}`.trim() || (m.email || '?');
     return {
       id: i,
@@ -1843,7 +2031,7 @@ function buildAndShowConnexionsGraph() {
       title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
       color: { background: c.background, border: c.border, highlight: { background: c.background, border: c.border } },
       borderWidth: 2,
-      size: Math.min(Math.max(baseSize, 6), 28),
+      size: connexionsNodeSize(degree[i]),
       shape: 'dot',
       font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
       _ref: m,
@@ -1851,11 +2039,7 @@ function buildAndShowConnexionsGraph() {
   });
   // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
   const edgeColor = isDark ? 'rgba(200,200,220,0.3)' : 'rgba(120,120,140,0.35)';
-  const edges = Array.from(edgeSet.values()).map(e => ({
-    from: e.from, to: e.to, value: e.score,
-    color: { color: edgeColor, highlight: '#a855f7', hover: '#a855f7' },
-    width: Math.min(0.5 + e.score / 6, 4),
-  }));
+  const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
   const countEl = document.getElementById('connexionsCount');
   if (countEl) {
     countEl.textContent = tr('connexions_count_legend')
@@ -1891,7 +2075,19 @@ function buildAndShowConnexionsGraph() {
     }
   }, 50);
   // Stockons les datasets pour pouvoir reagir aux filtres et a la recherche
-  _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible };
+  _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible, pairScores: pairScores, N: N };
+  // Phase 2j v7: curseur de seuil + case "masquer les isoles" (legende).
+  const minScoreEl = document.getElementById('connexionsMinScore');
+  if (minScoreEl && !minScoreEl._wired) {
+    minScoreEl._wired = true;
+    minScoreEl.addEventListener('change', applyConnexionsDensity);
+  }
+  const hideIsoEl = document.getElementById('connexionsHideIsolated');
+  if (hideIsoEl && !hideIsoEl._wired) {
+    hideIsoEl._wired = true;
+    hideIsoEl.addEventListener('change', applyConnexionsDensity);
+  }
+  if (hideIsoEl && hideIsoEl.checked) applyConnexionsDensity();
   _connexionsNetwork.on('click', function(params) {
     if (!params.nodes || !params.nodes.length) return;
     const node = nodesDS.get(params.nodes[0]);
@@ -2179,57 +2375,22 @@ function readF(file){
 // Cache global du DF (calcule une fois sur l'ensemble des consentants)
 // Reutilise par la modal pour les "Profils proches" — pas besoin de
 // recalculer le DF a chaque ouverture de modal.
-let _dfCache = null;
-function ensureDfCache() {
-    if (_dfCache) return _dfCache;
-    const eligible = allMembers.filter(m => m.consent === 'oui');
-    const N = eligible.length;
-    const DF_MIN = 2;
-    const DF_MAX_RATIO = 0.35;
-    const DF_MAX = Math.max(DF_MIN + 1, Math.floor(N * DF_MAX_RATIO));
-    const rawByMember = new Map();
-    const docFreq = new Map();
-    for (const m of eligible) {
-        const set = new Set([
-            ...connexionsTokenize(m.expertise),
-            ...connexionsTokenize(m.themes),
-            ...connexionsTokenize(m.projet),
-        ]);
-        rawByMember.set(m, set);
-        for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
-    }
-    const filteredByMember = new Map();
-    for (const m of eligible) {
-        const filtered = new Set();
-        for (const t of rawByMember.get(m)) {
-            const df = docFreq.get(t);
-            if (df >= DF_MIN && df <= DF_MAX) filtered.add(t);
-        }
-        filteredByMember.set(m, filtered);
-    }
-    _dfCache = { eligible, tokensByMember: filteredByMember, signature: allMembers };
-    return _dfCache;
-}
-
+// Phase 2j v7: meme index et meme score que le graphe (ensureConnexionsIndex
+// + connexionsSimilarityDetail). `score` affiche = nombre d'items partages
+// ("{N} mots-cles en commun"), tri par score pondere.
 function getTopNeighbors(member, k) {
     if (!member || member.consent !== 'oui') return [];
     k = k || 5;
-    // Invalider le cache DF si allMembers change de reference
-    if (_dfCache && _dfCache.signature !== allMembers) _dfCache = null;
-    const cache = ensureDfCache();
-    const memberTokens = cache.tokensByMember.get(member) || new Set();
+    const index = ensureConnexionsIndex();
     const scored = [];
-    for (const other of cache.eligible) {
+    for (const other of index.eligible) {
         if (other === member) continue;
-        const otherTokens = cache.tokensByMember.get(other) || new Set();
-        const sharedTokens = [];
-        for (const t of memberTokens) if (otherTokens.has(t)) sharedTokens.push(t);
-        const score = sharedTokens.length;
-        if (score >= 2) {
-            scored.push({ member: other, score, detail: { score, sharedAxes: [], sharedPrinc: [], sharedChamps: [], sharedTokens } });
+        const detail = connexionsSimilarityDetail(member, other, index);
+        if (detail.score >= CONNEXIONS_PARAMS.MIN_SCORE_DEFAULT) {
+            scored.push({ member: other, score: detail.sharedTokens.length, detail });
         }
     }
-    scored.sort((a, b) => b.score - a.score);
+    scored.sort((a, b) => b.detail.score - a.detail.score);
     return scored.slice(0, k);
 }
 

@@ -314,3 +314,35 @@ sur la branche, on merge `connexions` → `main` pour déployer en prod.
 - **Export** : bouton génère un PNG téléchargé.
 - **Mobile** : panneau latéral se replie, graphe utilisable au touch.
 - **Regression** : Profils / Tableau / Carte / filtres existants intacts.
+
+## Révision v7 (2026-09-14) : qualité des mots communs et densité
+
+Constat sur les 277 profils consentants : le filtre DF à 35 % n'écartait que 4 mots
+(health, digital, research, data). Des mots comme « afin », « vise », « project »,
+« clinical » portaient l'essentiel des 1 158 liens ; « intelligence » + « artificial »
+comptaient pour 2 mots communs alors que c'est un seul concept ; un membre cumulait
+55 liens. Calibrage : `scratchpad/connexions_analysis3.py` (hors dépôt).
+
+Décisions :
+
+- **Mots vides supplémentaires** (`CONNEXIONS_EXTRA_STOPWORDS`), réservés aux
+  connexions, jamais à la recherche (qui a besoin de « santé »/« health » pour le pont
+  FR↔EN). Quatre familles : liaison FR oubliés, génériques de la recherche FR+EN
+  (cibles du dictionnaire incluses), vocabulaire commun à tout le réseau, noms
+  d'institutions et de lieux (l'affinité doit venir de l'expertise, pas de l'employeur).
+- **Bigrammes adjacents** : « intelligence artificielle » et « artificial intelligence »
+  donnent la même clé triée `artificial+intelligence`. Un bigramme partagé absorbe ses
+  deux mots (pas de triple compte).
+- **Score pondéré par la rareté** : somme des poids idf `min(log(N/df), 4)` des items
+  partagés, bigramme × 1,25. Fenêtre DF `[2, 20 %]`. Un lien exige au moins 2 items
+  partagés ou 1 bigramme : un seul mot commun n'est pas un signal.
+- **Sélection des liens** : seuil (curseur, défaut 5), top-3 voisins par membre (union),
+  puis plafond de 8 liens par membre en traitant les liens du plus fort au plus faible.
+- **UI** : curseur « Liens : tous ↔ les plus forts » (5 → 15) et case « Masquer les
+  membres sans lien » dans la légende ; sélection rejouée sans reconstruire le graphe.
+  Le survol d'un lien affiche les items partagés.
+- **Un seul index** (`ensureConnexionsIndex`) pour le graphe et le bloc « Profils
+  proches » de la modal ; le nombre affiché est le nombre d'items partagés.
+
+Résultat (277 membres) : 485 liens au seuil 5 (306 à 10), degré max 8, 31 isolés.
+Paramètres dans `CONNEXIONS_PARAMS`.
