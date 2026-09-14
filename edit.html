@@ -135,7 +135,7 @@
       <div class="field"><label id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
     </div>
     <div class="field">
-      <label id="l_email">Courriel principal<span class="required-mark">*</span></label>
+      <label id="l_email">Courriel<span class="required-mark">*</span></label>
       <input id="f_email" type="email" required>
       <div class="field-hint" id="h_email"></div>
       <label class="checkbox-inline" style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.5rem;font-size:.85rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)">
@@ -160,6 +160,7 @@
 
   <div class="card">
     <div class="section-title" id="s_status">Statut actuel<span class="required-mark">*</span></div>
+    <div class="field-hint" id="h_status"></div>
     <div class="radio-group" id="status_group"></div>
   </div>
 
@@ -181,23 +182,34 @@
     <!-- Phase 3c (2026-09-14): meme ordre que le formulaire d'inscription :
          themes -> ORCID (suggestions juste sous leur cible) -> projet.
          L'ancien champ Expertise a ete fusionne dans les themes (Notion) le 2026-09-14. -->
+    <!-- Libelles et aides identiques au formulaire d'inscription (2026-09-14) -->
     <div class="field">
       <label id="l_themes">Thèmes de recherche ou d'intérêt</label>
       <div class="field-hint" id="h_themes"></div>
       <textarea id="f_themes"></textarea>
     </div>
     <div class="field">
-      <label>ORCID</label>
-      <input id="f_orcid" placeholder="https://orcid.org/0000-...">
+      <label id="l_orcid">Identifiant ORCID</label>
+      <div class="field-hint" id="h_orcid">Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)</div>
+      <input id="f_orcid" placeholder="0000-0000-0000-0000">
       <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "themes" -->
       <div id="orcidSuggestRoot"></div>
     </div>
     <div class="field">
-      <label id="l_projet">Projet de recherche</label>
+      <label id="l_projet">Présentation</label>
       <div class="field-hint" id="h_projet"></div>
       <textarea id="f_projet"></textarea>
     </div>
-    <div class="field"><label id="l_reseau">Réseau</label><input id="f_reseau"></div>
+    <div class="field">
+      <label id="l_cv">Site web</label>
+      <div class="field-hint" id="h_cv">Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.</div>
+      <input id="f_cv" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label id="l_reseau">Autres réseaux de recherche financés par les FRQ</label>
+      <div class="field-hint" id="h_reseau">Excluant le RSN</div>
+      <input id="f_reseau">
+    </div>
     <div class="field"><label id="l_etudiants">Personnes ou étudiant·es à référer pour rejoindre le RSN</label><div class="field-hint" id="h_etudiants"></div><textarea id="f_etudiants"></textarea></div>
   </div>
 
@@ -210,20 +222,13 @@
   </div>
 
   <div class="card">
-    <div class="section-title" id="s_axes">Axes, principes &amp; champs d'action</div>
-    <div class="field"><label id="l_axes">Axes d'intérêt<span class="required-mark">*</span></label><div class="checkbox-group" id="axes_group"></div></div>
+    <div class="section-title" id="s_axes">Vos thématiques d'intérêt<span class="required-mark">*</span></div>
+    <div class="field-hint" id="h_themes_pick">Choisissez au moins une option parmi les trois familles ci-dessous.</div>
+    <div class="field"><label id="l_axes">Axes</label><div class="checkbox-group" id="axes_group"></div></div>
     <div class="field"><label id="l_principes">Principes fondateurs</label><div class="checkbox-group" id="principes_group"></div></div>
     <div class="field"><label id="l_champs">Champs d'action</label><div class="checkbox-group" id="champs_group"></div></div>
   </div>
 
-  <div class="card">
-    <div class="section-title" id="s_links">Liens</div>
-    <div class="field">
-      <label id="l_cv">Site web</label>
-      <div class="field-hint" id="h_cv">Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.</div>
-      <input id="f_cv" placeholder="https://...">
-    </div>
-  </div>
 
   <div class="card">
     <div class="consent-section">
@@ -288,7 +293,7 @@ var STATUS_OPTIONS = [
   { fr: 'Personne en stage postdoctoral', en: 'Postdoctoral fellow' },
   { fr: 'Personnel de recherche', en: 'Research staff' },
   { fr: 'Personnel de la santé', en: 'Health professional' },
-  { fr: "Coordination ou gestion d'équipe", en: 'Team coordination or management' },
+  { fr: 'Personne en coordination ou gestion de la recherche', en: 'Research coordinator or manager' }, // ex-"Coordination ou gestion d'équipe" (2026-09-14)
   { fr: 'Personne en milieu industriel ou gouvernemental', en: 'Industry or government professional' },
   { fr: 'Personne partenaire citoyenne', en: 'Citizen partner' },
   { fr: 'Autre', en: 'Other' },
@@ -329,14 +334,18 @@ let lang = (function(){
 function t(key) {
   const map = {
     fr: { title:'Modifier mon profil', subtitle:'Modifiez uniquement les champs que vous souhaitez mettre à jour.',
-      s_identity:'Identité', s_research:'Recherche et intérêts', s_axes:"Axes, principes & champs d'action", s_links:'Liens',
+      s_identity:'Identité', s_research:'Recherche et intérêts', s_axes:"Vos thématiques d'intérêt", s_links:'Liens',
+      h_themes_pick:'Choisissez au moins une option parmi les trois familles ci-dessous.',
+      h_status_text:'Voir les définitions du FRQ', h_status_link:'PDF',
+      l_orcid:'Identifiant ORCID', h_orcid:'Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)',
+      h_reseau:'Excluant le RSN',
       s_status:'Statut actuel', s_institution:"Institution(s) d'affiliation", s_membership:"Type d'adhésion",
-      l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel principal', l_email2:'Courriel secondaire',
-      l_themes:"Thèmes de recherche ou d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Personnes ou étudiant·es à référer pour rejoindre le RSN',
-      h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Cela peut inclure vos étudiant·es sous supervision ou des collègues qui auraient leur place dans le réseau. L'équipe du RSN les contactera et leur proposera de rejoindre le réseau.",
+      l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel', l_email2:'Courriel secondaire',
+      l_themes:"Thèmes de recherche ou d'intérêt", l_reseau:'Autres réseaux de recherche financés par les FRQ', l_projet:'Présentation', l_etudiants:'Personnes ou étudiant·es à référer pour rejoindre le RSN',
+      h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Cela peut inclure vos étudiant·es sous supervision ou des collègues qui auraient leur place dans le réseau. Nous les contacterons et leur proposerons de remplir le formulaire d'inscription.",
       s_evaluateur:'Évaluation',
       l_evaluateur:'Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?',
-      l_axes:"Axes d'intérêt", l_principes:'Principes fondateurs', l_champs:"Champs d'action",
+      l_axes:'Axes', l_principes:'Principes fondateurs', l_champs:"Champs d'action",
       l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
       opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
@@ -347,7 +356,7 @@ function t(key) {
       nl_done:"Merci ! La confirmation s'ouvre dans un nouvel onglet.",
       nl_footer:'Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.',
       l_cv:'Site web',
-      h_cv:'Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
+      h_cv:'Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
       l_photo:'Photo de profil',
       h_photo:'Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.',
       photo_choose:'Choisir une photo', photo_change:'Changer de photo', photo_remove:'Retirer',
@@ -367,7 +376,7 @@ function t(key) {
       os_mesh:'MeSH (PubMed)',
       os_bio_src:'Biographie',
       h_themes:'Séparés par une virgule. Votre identifiant ORCID, ci-dessous, peut vous en proposer.',
-      h_projet:'Facultatif. Quelques phrases sur vos travaux actuels ; ce texte apparaît sur votre fiche et sert aux connexions entre membres.',
+      h_projet:'Facultatif. Vos travaux et intérêts en quelques phrases ; ce texte apparaît sur votre fiche et sert aux connexions entre membres.',
       os_bio:'Biographie de votre profil ORCID, utilisable telle quelle comme point de départ :',
       os_bio_use:'Utiliser comme {field}',
       os_bio_filled:'Ce champ contient déjà du texte ; videz-le d’abord si vous voulez le remplacer.',
@@ -378,7 +387,7 @@ function t(key) {
       h_email:"Si vous modifiez ce courriel, vous recevrez un lien de confirmation à la nouvelle adresse pour valider le changement.",
       l_afficher_courriel:'Afficher mon courriel dans le bottin public',
       h_afficher_courriel:'Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.',
-      h_email2:"Optionnel. Jamais affiché publiquement, sert uniquement aux administrateurs du RSN pour vous joindre.",
+      h_email2:"Optionnel. Ex. courriel personnel ou d'une autre institution. Jamais affiché publiquement.",
       msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.\n\nVos autres modifications seront examinées par notre équipe et publiées sous 1 à 2 semaines. Sans nouvelles, contactez-nous à rsn.gestion@rimuhc.ca.',
       msg_email_taken:"Ce courriel est déjà utilisé par un autre membre. Le changement n'a pas été effectué.",
       msg_email_error:"Profil sauvegardé, mais l'envoi du courriel de confirmation a échoué. Vous pouvez réessayer.",
@@ -389,14 +398,18 @@ function t(key) {
       l_inst_address:"Adresse complète de l'institution",
       h_inst_address:'Ex. 845 rue Sherbrooke O., Montréal, QC, Canada' },
     en: { title:'Update my profile', subtitle:'Only modify the fields you want to update.',
-      s_identity:'Identity', s_research:'Research and interests', s_axes:'Axes, principles & action fields', s_links:'Links',
+      s_identity:'Identity', s_research:'Research and interests', s_axes:'Your topics of interest', s_links:'Links',
+      h_themes_pick:'Choose at least one option from any of the three families below.',
+      h_status_text:'Refer to the FRQ definitions', h_status_link:'PDF',
+      l_orcid:'ORCID Identifier', h_orcid:'Format: XXXX-XXXX-XXXX-XXXX (last 16 digits)',
+      h_reseau:'Excluding the RSN',
       s_status:'Present status', s_institution:'Institution(s) of affiliation', s_membership:'Membership type',
-      l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
-      l_themes:'Research or interest themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'People or students to refer to join the RSN',
-      h_etudiants:'Optional. List the name and email of each person, one per line. This can include students under your supervision or colleagues who would fit in the network. The RSN team will reach out and invite them to join.',
+      l_prenom:'First name', l_nom:'Last name', l_email:'Email', l_email2:'Secondary email',
+      l_themes:'Research or interest themes', l_reseau:'Other FRQ-funded research networks', l_projet:'About your work', l_etudiants:'People or students to refer to join the RSN',
+      h_etudiants:'Optional. List the name and email of each person, one per line. This can include students under your supervision or colleagues who would fit in the network. We will reach out and invite them to complete the registration form.',
       s_evaluateur:'Evaluation',
       l_evaluateur:'Would you like to act as an evaluator for RSN funding programs?',
-      l_axes:'Research axes', l_principes:'Founding principles', l_champs:'Action fields',
+      l_axes:'Axes', l_principes:'Founding principles', l_champs:'Action fields',
       l_consent:'Do you authorize RSN to create a public member profile?',
       opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
@@ -407,7 +420,7 @@ function t(key) {
       nl_done:'Thank you! The confirmation opens in a new tab.',
       nl_footer:'If you are already subscribed, Mailchimp will simply let you know.',
       l_cv:'Website',
-      h_cv:"One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
+      h_cv:"Optional. One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
       l_photo:'Profile photo',
       h_photo:'Optional. Shown as a circle on your profile and your card in the directory. Drag the photo and zoom to frame your face. JPG, PNG or WebP.',
       photo_choose:'Choose a photo', photo_change:'Change photo', photo_remove:'Remove',
@@ -427,7 +440,7 @@ function t(key) {
       os_mesh:'MeSH (PubMed)',
       os_bio_src:'Biography',
       h_themes:'Separated by commas. Your ORCID identifier, below, can suggest some.',
-      h_projet:'Optional. A few sentences about your current work; this text appears on your profile and feeds the connections between members.',
+      h_projet:'Optional. Your work and interests in a few sentences; this text appears on your profile and feeds the connections between members.',
       os_bio:'Biography from your ORCID profile, usable as a starting point:',
       os_bio_use:'Use as {field}',
       os_bio_filled:'This field already contains text; clear it first if you want to replace it.',
@@ -438,7 +451,7 @@ function t(key) {
       h_email:'If you change this email, you will receive a confirmation link at the new address to validate the change.',
       l_afficher_courriel:'Display my email in the public directory',
       h_afficher_courriel:'Uncheck to limit sharing of your address to RSN administrators only.',
-      h_email2:'Optional. Never publicly displayed, used only by RSN administrators to reach you.',
+      h_email2:'Optional. E.g. personal email or another institution. Never publicly displayed.',
       msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.\n\nYour other changes will be reviewed by our team and published within 1 to 2 weeks. If you don\'t hear back, please contact us at rsn.gestion@rimuhc.ca.',
       msg_email_taken:'This email is already used by another member. The change was not applied.',
       msg_email_error:'Profile saved, but sending the confirmation email failed. You can try again.',
@@ -460,8 +473,21 @@ function applyI18n() {
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
    'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo',
-   'h_themes','h_projet'
+   'h_themes','h_projet','l_orcid','h_orcid','h_reseau','h_themes_pick'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+  // Aide statut avec lien vers les definitions du FRQ (identique au formulaire d'inscription)
+  const hStatus = document.getElementById('h_status');
+  if (hStatus) {
+    while (hStatus.firstChild) hStatus.removeChild(hStatus.firstChild);
+    hStatus.appendChild(document.createTextNode(t('h_status_text') + ' ('));
+    const statusLink = document.createElement('a');
+    statusLink.href = 'https://frqnet.frq.gouv.qc.ca/Documents/RGC_FRQ_EN.pdf';
+    statusLink.target = '_blank';
+    statusLink.rel = 'noopener';
+    statusLink.textContent = t('h_status_link');
+    hStatus.appendChild(statusLink);
+    hStatus.appendChild(document.createTextNode(')'));
+  }
   // Phase 3a: photo de profil — montage du cadreur au 1er passage, puis
   // retraduction des boutons aux changements de langue.
   const photoLabels = { choose: t('photo_choose'), change: t('photo_change'), remove: t('photo_remove'),
@@ -783,7 +809,9 @@ async function init() {
     document.getElementById('f_consent').value = profile.consent || '';
 
     // Phase 2a: pre-remplir les radios statut + type d'adhesion
-    radioState.status = profile.statut || '';
+    // Ancien libelle encore present dans Notion jusqu'a la migration (cf. BACKLOG) : on preselectionne le nouveau
+    radioState.status = (profile.statut === "Coordination ou gestion d'équipe")
+      ? 'Personne en coordination ou gestion de la recherche' : (profile.statut || '');
     radioState.membership = profile.type || '';
     radioState.evaluateur = profile.evaluateur || '';
     rebuildRadios();

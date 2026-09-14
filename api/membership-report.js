@@ -69,7 +69,8 @@ const STATUT_OPTIONS = [
   'Personne en stage postdoctoral',
   'Personnel de recherche',
   'Personnel de la santé',
-  "Coordination ou gestion d'équipe", // sans virgule pour eviter le split Notion select
+  'Personne en coordination ou gestion de la recherche', // libelle 2026-09-14
+  "Coordination ou gestion d'équipe", // ancien libelle, tolere jusqu'a la migration des fiches (cf. BACKLOG)
   'Personne en milieu industriel ou gouvernemental',
   'Personne partenaire citoyenne',
   'Autre',

@@ -26,7 +26,8 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 - **Fait dans Notion le 2026-09-14** : l'ancien champ « Expertise » (47 fiches) a été fusionné dans « Thèmes d'intérêt » (sauvegarde hors dépôt), et les 10 « Incertain·e pour le moment » normalisés en « Incertain ». La branche `connexions` ne lit ni n'écrit plus « Expertise ».
 - **À faire au moment de fusionner `connexions` dans `main`** (pas avant, sinon la prod lit une propriété inexistante) : renommer la propriété Notion « Thèmes d'intérêt » → « Thèmes de recherche ou d'intérêt » et mettre à jour `PROP.themes` (lib/notion.js), `CSV_COL.themes` et `CONFIG.COL.themes` (index.html) dans le même déploiement.
 - Supprimer la propriété Notion « Expertise » (vide) et l'option « Incertain·e pour le moment » du select « Évaluateur » (sans fiche) — à la main dans Notion, quand `main` ne les lit plus.
-- Statut : 34 fiches « Coordination ou gestion d'équipe » hors taxonomie, 293 fiches sans statut — décision en cours (ajouter une option ou reclasser).
+- **Au moment de la fusion dans `main`, aussi** : (a) renommer la propriété Notion « Projet de recherche » → « Présentation » et mettre à jour `PROP.projet`, `CSV_COL.projet`, `CONFIG.COL.projet` ; (b) migrer les 34 fiches « Coordination ou gestion d'équipe » vers « Personne en coordination ou gestion de la recherche » (nouveau libellé du 2026-09-14) puis retirer l'ancien libellé de `STATUT_OPTIONS` (api/membership-report.js) et du select Notion. D'ici là, la page de modification présélectionne le nouveau libellé pour l'ancien.
+- 293 fiches approuvées sans statut, 430 sans consentement, ~300 sans axes : à combler par la campagne de renouvellement et de re-consentement.
 
 ## Édition profil
 
