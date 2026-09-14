@@ -86,7 +86,9 @@
         [data-theme="dark"] .upload-area { background: var(--rsn-card-bg); }
         [data-theme="dark"] .leaflet-popup-content-wrapper { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .leaflet-popup-tip { background: var(--rsn-card-bg); }
-        [data-theme="dark"] .card-link { color: var(--rsn-accent); }
+        /* Mode sombre : l'accent est clair, donc texte fonce sur fond plein, et inverse au survol */
+        [data-theme="dark"] .card-link { color: #0f172a; }
+        [data-theme="dark"] .card-link:hover { color: var(--rsn-accent); background: transparent; }
         [data-theme="dark"] .card-email a { color: var(--rsn-accent); }
         [data-theme="dark"] .ct { opacity: 0.9; }
 
@@ -247,9 +249,10 @@
         .action-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #c6f6d5; color: #276749; white-space: nowrap; }
         .card-links { display: flex; gap: 0.75rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--rsn-border); flex-wrap: wrap; }
         /* Liens externes (ORCID, site web) : vrais boutons, cliquables au premier coup d'oeil */
-        .card-link { font-size: 0.78rem; font-weight: 600; color: var(--rsn-accent); text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--rsn-accent); border-radius: 999px; background: transparent; line-height: 1.2; transition: background 0.15s, color 0.15s; }
+        .card-link { font-size: 0.78rem; font-weight: 600; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--rsn-accent); border-radius: 999px; background: var(--rsn-accent); line-height: 1.2; transition: background 0.15s, color 0.15s; }
         .card-link::after { content: '\2197'; font-size: 0.8em; opacity: 0.85; }
-        .card-link:hover { background: var(--rsn-accent); color: #fff; text-decoration: none; }
+        /* Survol : le bouton s'inverse, fond transparent et texte de la couleur d'accent */
+        .card-link:hover { background: transparent; color: var(--rsn-accent); text-decoration: none; }
         .card-expand-btn { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0; margin-top: 0.3rem; }
         .card-expand-btn:hover { text-decoration: underline; }
         .card-extra { display: none; }
@@ -516,10 +519,10 @@
         <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
-        <!-- Pastilles : meme rendu que les noeuds du graphe et les marqueurs de la carte (remplissage 40 %, bord 70 %) -->
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(43,108,176,0.4);border:1.5px solid rgba(43,108,176,0.7)"></span> <span data-i18n="regular">Régulier</span></div>
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(214,158,46,0.4);border:1.5px solid rgba(214,158,46,0.7)"></span> <span data-i18n="student">Étudiant</span></div>
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(56,161,105,0.4);border:1.5px solid rgba(56,161,105,0.7)"></span> <span data-i18n="partner">Partenaire</span></div>
+        <!-- Pastilles : meme rendu que les noeuds du graphe (disque plein semi-transparent, sans bord) -->
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(43,108,176,0.6)"></span> <span data-i18n="regular">Régulier</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(214,158,46,0.6)"></span> <span data-i18n="student">Étudiant</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(56,161,105,0.6)"></span> <span data-i18n="partner">Partenaire</span></div>
         <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
         <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="4" max="15" step="1" value="4" style="width:110px;margin:0;cursor:pointer"></label>
         <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
@@ -2285,14 +2288,14 @@ function buildAndShowConnexionsGraph() {
   for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
   // Phase 2j v3: detection theme pour la couleur des labels (lisible en dark mode).
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  // Phase 2j v7: meme rendu que les marqueurs de la carte (bord fin
-  // semi-transparent, remplissage a 40 %), avec la couleur du type de membre
-  // (--rsn-tag-*). Un peu plus opaque en mode sombre pour rester lisible.
-  const FILL_A = isDark ? 0.5 : 0.4, BORDER_A = isDark ? 0.9 : 0.7;
+  // Phase 2j v7: disques pleins semi-transparents, sans bord, dans la couleur
+  // du type de membre (--rsn-tag-*). Un peu plus opaques en mode sombre.
+  // Survol / selection : le disque devient (presque) opaque.
+  const FILL_A = isDark ? 0.65 : 0.55;
   const typeColor = (hex) => ({
-    background: connexionsRgba(hex, FILL_A), border: connexionsRgba(hex, BORDER_A),
-    highlight: { background: connexionsRgba(hex, 0.75), border: hex },
-    hover: { background: connexionsRgba(hex, 0.6), border: hex },
+    background: connexionsRgba(hex, FILL_A), border: connexionsRgba(hex, FILL_A),
+    highlight: { background: hex, border: hex },
+    hover: { background: connexionsRgba(hex, 0.85), border: connexionsRgba(hex, 0.85) },
   });
   const TYPE_COLORS = {
     'Régulier':   typeColor('#2b6cb0'),
@@ -2311,7 +2314,7 @@ function buildAndShowConnexionsGraph() {
       label: stripped,
       title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
       color: c,
-      borderWidth: 1.5,
+      borderWidth: 0,
       size: connexionsNodeSize(degree[i]),
       shape: 'dot',
       font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
@@ -2332,7 +2335,7 @@ function buildAndShowConnexionsGraph() {
   const edgesDS = new vis.DataSet(edges);
   const data = { nodes: nodesDS, edges: edgesDS };
   const options = {
-    nodes: { shape: 'dot', borderWidth: 1.5, borderWidthSelected: 2.5 },
+    nodes: { shape: 'dot', borderWidth: 0, borderWidthSelected: 0 },
     edges: { smooth: { type: 'continuous', roundness: 0.2 }, scaling: { min: 0.5, max: 4 } },
     physics: {
       // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
