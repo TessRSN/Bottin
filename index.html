@@ -594,6 +594,9 @@ const I18N = {
         connexions_export_png: 'Exporter en image',
         connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
         connexions_pair_score: '{N} mots-clés en commun',
+        connexions_strength_strong: 'Proximité forte : plusieurs mots-clés rares en commun',
+        connexions_strength_medium: 'Proximité moyenne',
+        connexions_strength_weak: 'Proximité faible : mots-clés courants',
         connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
         connexions_density_label: 'Liens : tous ↔ les plus forts',
         connexions_hide_isolated: 'Masquer les membres sans lien',
@@ -660,6 +663,9 @@ const I18N = {
         connexions_export_png: 'Export as image',
         connexions_insights_title: 'High-potential cross-institution pairs',
         connexions_pair_score: '{N} keywords in common',
+        connexions_strength_strong: 'Strong match: several rare keywords in common',
+        connexions_strength_medium: 'Medium match',
+        connexions_strength_weak: 'Weak match: common keywords only',
         connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
         connexions_density_label: 'Links: all ↔ strongest',
         connexions_hide_isolated: 'Hide members without links',
@@ -2011,7 +2017,10 @@ function connexionsSimilarityDetail(a, b, index) {
   for (const t of items) score += index.weights.get(t) || 0;
   return {
     score,
-    sharedTokens: items.map(t => t.replace('+', ' ')),
+    // Du plus rare au plus courant : le premier mot affiche explique le classement.
+    sharedTokens: items
+      .slice().sort((a, b) => (index.weights.get(b) || 0) - (index.weights.get(a) || 0))
+      .map(t => t.replace('+', ' ')),
     sharedAxes: [], sharedPrinc: [], sharedChamps: [],
   };
 }
@@ -2592,6 +2601,15 @@ function getTopNeighbors(member, k) {
 
 // Phase 2j v3: construit un bloc "Profils proches" avec details
 // des criteres communs (axes/principes/champs/tokens) et toggle expand.
+// Force d'un lien pour l'affichage : trois paliers sur le score pondere
+// (somme des poids de rarete des mots partages). Sur les 277 profils, les
+// liens vont de 4 a ~50, mediane ~13.
+function connexionsStrength(score) {
+  if (score >= 16) return { dots: '●●●', key: 'connexions_strength_strong' };
+  if (score >= 9) return { dots: '●●○', key: 'connexions_strength_medium' };
+  return { dots: '●○○', key: 'connexions_strength_weak' };
+}
+
 function buildNeighborsBlock(neighbors) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-top:1.25rem;padding-top:0.9rem;border-top:1px solid var(--rsn-border)';
@@ -2622,7 +2640,13 @@ function buildNeighborsBlock(neighbors) {
         const left = document.createElement('span'); left.textContent = inst;
         const right = document.createElement('span');
         right.style.color = 'var(--rsn-accent)';
-        right.textContent = tr('connexions_pair_score').replace('{N}', score);
+        // Phase 2j v7: force du lien (score pondere) + nombre de mots communs.
+        // Le tri des profils proches suit le score, pas le nombre : les points
+        // rendent ce classement lisible.
+        const strength = connexionsStrength(detail.score);
+        right.title = tr(strength.key);
+        right.setAttribute('aria-label', tr(strength.key));
+        right.textContent = strength.dots + ' ' + tr('connexions_pair_score').replace('{N}', score);
         subLine.appendChild(left); subLine.appendChild(right);
         header.appendChild(nameLine); header.appendChild(subLine);
         card.appendChild(header);
