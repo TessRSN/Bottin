@@ -31,7 +31,7 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 
 ## Édition profil
 
-- Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html` (pour la cohérence légale).
+- ~~Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html`~~ — fait le 2026-09-14 (branche `connexions`).
 
 ## Institutions
 
