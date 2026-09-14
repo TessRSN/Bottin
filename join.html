@@ -164,6 +164,13 @@
         <div class="field-hint" id="h_afficher_courriel" style="margin-top:.25rem">Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.</div>
       </div>
       <div class="field"><label class="field-label" id="l_email2">Courriel secondaire</label><div class="field-hint" id="h_email2">Optionnel. Ex. courriel personnel ou d'une autre institution. Jamais affiché publiquement.</div><input id="f_email2" type="email"></div>
+      <!-- Phase 3a (2026-09-14): photo de profil facultative, recadree en carre dans le navigateur -->
+      <div class="field">
+        <label class="field-label" id="l_photo">Photo de profil</label>
+        <div class="field-hint" id="h_photo">Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.</div>
+        <input type="file" id="f_photo" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <div id="photoCropperRoot"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -264,7 +271,7 @@
       <div class="consent-section">
         <h3 class="consent-title" id="l_consent_title">Consentement à la diffusion de vos informations</h3>
         <p id="l_consent_intro">Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :</p>
-        <p class="consent-fields" id="l_consent_fields">prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel.</p>
+        <p class="consent-fields" id="l_consent_fields">prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel, votre site web et votre photo.</p>
         <p id="l_consent_uses_intro">Ces informations seront utilisées pour :</p>
         <ul>
           <li id="l_consent_use1">apparaître sur le bottin public du RSN ;</li>
@@ -320,6 +327,8 @@
   </div>
 </div>
 
+<!-- Phase 3a: cadrage de la photo de profil (partage avec edit.html) -->
+<script src="/photo-cropper.js"></script>
 <script>
 // ─── OPTIONS ───
 // Taxonomie validee 2026-05-04 : 14 options epicene neutre.
@@ -392,6 +401,13 @@ var I18N = {
     s_research: 'Recherche et expertise',
     l_themes: "Principaux thèmes de recherche ou d'intérêt",
     h_themes: 'Maximum trois, séparés par une virgule',
+    l_photo: 'Photo de profil',
+    h_photo: 'Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.',
+    photo_choose: 'Choisir une photo', photo_change: 'Changer de photo', photo_remove: 'Retirer',
+    photo_zoom: 'Zoom', photo_drag: 'Glissez la photo pour la recadrer.',
+    photo_err_type: 'Format non pris en charge : utilisez une image JPG, PNG ou WebP.',
+    photo_err_size: 'Photo trop lourde (maximum 15 Mo).',
+    err_photo: "La photo n'a pas pu être traitée. Retirez-la ou choisissez-en une autre, puis réessayez.",
     l_cv: 'Site web',
     h_cv: 'Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
     l_orcid: 'Identifiant ORCID',
@@ -409,7 +425,7 @@ var I18N = {
     l_axes: 'Axes', l_principes: 'Principes fondateurs', l_champs: "Champs d'action",
     l_consent_title: 'Consentement à la diffusion de vos informations',
     l_consent_intro: 'Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :',
-    l_consent_fields: "prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel.",
+    l_consent_fields: "prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, projet, axes / principes / champs d'action, et facultativement votre courriel, votre site web et votre photo.",
     l_consent_uses_intro: 'Ces informations seront utilisées pour :',
     l_consent_use1: 'apparaître sur le bottin public du RSN ;',
     l_consent_use2: 'être associées à votre institution et à vos projets ;',
@@ -468,6 +484,13 @@ var I18N = {
     s_research: 'Research and expertise',
     l_themes: 'Main research or interest topics',
     h_themes: 'Maximum three, separated by a comma',
+    l_photo: 'Profile photo',
+    h_photo: 'Optional. Shown as a circle on your profile and your card in the directory. Drag the photo and zoom to frame your face. JPG, PNG or WebP.',
+    photo_choose: 'Choose a photo', photo_change: 'Change photo', photo_remove: 'Remove',
+    photo_zoom: 'Zoom', photo_drag: 'Drag the photo to reframe it.',
+    photo_err_type: 'Unsupported format: please use a JPG, PNG or WebP image.',
+    photo_err_size: 'Photo too large (maximum 15 MB).',
+    err_photo: 'The photo could not be processed. Remove it or choose another one, then try again.',
     l_cv: 'Website',
     h_cv: "Optional. One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
     l_orcid: 'ORCID Identifier',
@@ -485,7 +508,7 @@ var I18N = {
     l_axes: 'Axes', l_principes: 'Founding principles', l_champs: 'Action fields',
     l_consent_title: 'Consent to share your information',
     l_consent_intro: 'The following information will be publicly displayed on the directory of the Digital Health Network:',
-    l_consent_fields: 'first name, last name, status, membership type, affiliated institution, research themes, project, axes / principles / action fields, and optionally your email.',
+    l_consent_fields: 'first name, last name, status, membership type, affiliated institution, research themes, project, axes / principles / action fields, and optionally your email, your website and your photo.',
     l_consent_uses_intro: 'This information will be used to:',
     l_consent_use1: 'appear on the public RSN directory;',
     l_consent_use2: 'be associated with your institution and your projects;',
@@ -568,6 +591,16 @@ function applyI18n() {
   if (hAff) hAff.textContent = t('h_afficher_courriel');
   setWithRequired('l_themes', t('l_themes'), true);
   setWithRequired('l_cv', t('l_cv'), false);
+  // Phase 3a: photo de profil — montage du cadreur au 1er passage, puis
+  // simple retraduction des boutons aux changements de langue.
+  setWithRequired('l_photo', t('l_photo'), false);
+  var photoLabels = { choose: t('photo_choose'), change: t('photo_change'), remove: t('photo_remove'),
+    zoom: t('photo_zoom'), drag: t('photo_drag'), errType: t('photo_err_type'), errSize: t('photo_err_size') };
+  if (!window.photoCropper && window.PhotoCropper && document.getElementById('photoCropperRoot')) {
+    window.photoCropper = PhotoCropper.mount({ root: document.getElementById('photoCropperRoot'), input: document.getElementById('f_photo'), labels: photoLabels });
+  } else if (window.photoCropper) {
+    window.photoCropper.setLabels(photoLabels);
+  }
   setWithRequired('l_orcid', t('l_orcid'), false);
   setWithRequired('l_refere', t('l_refere'), false);
   setWithRequired('l_reseau', t('l_reseau'), false);
@@ -604,7 +637,7 @@ function applyI18n() {
     hStatus.appendChild(link);
     hStatus.appendChild(document.createTextNode(')'));
   }
-  var hintKeys = ['h_email2','h_institution','h_themes_pick','h_themes','h_cv','h_orcid','h_refere','h_reseau'];
+  var hintKeys = ['h_email2','h_institution','h_themes_pick','h_themes','h_cv','h_orcid','h_refere','h_reseau','h_photo'];
   hintKeys.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = t(id);
@@ -861,6 +894,8 @@ function submit() {
     type: radioState.membership,
     themes: document.getElementById('f_themes').value.trim(),
     cv: document.getElementById('f_cv').value.trim() || null,
+    // Phase 3a: photo de profil recadree (data URL JPEG 512 px) ou null
+    photo: (window.photoCropper && window.photoCropper.getDataUrl()) || null,
     orcid: document.getElementById('f_orcid').value.trim() || null,
     refere: document.getElementById('f_refere').value.trim(),
     reseau: document.getElementById('f_reseau').value.trim(),
@@ -892,6 +927,8 @@ function submit() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (result.code === 'DUPLICATE') {
         showMsg(t('err_duplicate'), 'error');
+      } else if (result.code === 'PHOTO_INVALID' || result.code === 'PHOTO_TOO_LARGE') {
+        showMsg(t('err_photo'), 'error');
       } else if (resp.status === 429) {
         showMsg(t('err_ratelimit'), 'error');
       } else {

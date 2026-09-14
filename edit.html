@@ -149,6 +149,13 @@
       <input id="f_email2" type="email">
       <div class="field-hint" id="h_email2"></div>
     </div>
+    <!-- Phase 3a (2026-09-14): photo de profil facultative, recadree en carre dans le navigateur -->
+    <div class="field">
+      <label id="l_photo">Photo de profil</label>
+      <div class="field-hint" id="h_photo">Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.</div>
+      <input type="file" id="f_photo" accept="image/jpeg,image/png,image/webp" style="display:none">
+      <div id="photoCropperRoot"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -238,6 +245,8 @@
   </div>
 </div>
 
+<!-- Phase 3a: cadrage de la photo de profil (partage avec join.html) -->
+<script src="/photo-cropper.js"></script>
 <script>
 const OPTIONS = {
   axes: [
@@ -323,6 +332,13 @@ function t(key) {
       nl_footer:'Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.',
       l_cv:'Site web',
       h_cv:'Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
+      l_photo:'Photo de profil',
+      h_photo:'Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.',
+      photo_choose:'Choisir une photo', photo_change:'Changer de photo', photo_remove:'Retirer',
+      photo_zoom:'Zoom', photo_drag:'Glissez la photo pour la recadrer.',
+      photo_err_type:'Format non pris en charge : utilisez une image JPG, PNG ou WebP.',
+      photo_err_size:'Photo trop lourde (maximum 15 Mo).',
+      msg_photo_error:"Profil enregistré, mais la photo n'a pas pu être mise à jour. Réessayez avec une autre image.",
       msg_success:"Merci ! Vos modifications nous sont bien parvenues. Notre équipe les examinera et les publiera dans le bottin sous 1 à 2 semaines.\n\nUne fois approuvées, pensez à rafraîchir la page du bottin pour les voir (Cmd + Maj + R sur Mac, Ctrl + Maj + R sur Windows).\n\nSi vous n'avez pas de nouvelles d'ici deux semaines, n'hésitez pas à nous écrire à rsn.gestion@rimuhc.ca — nous serons ravi·es de répondre.",
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
@@ -360,6 +376,13 @@ function t(key) {
       nl_footer:'If you are already subscribed, Mailchimp will simply let you know.',
       l_cv:'Website',
       h_cv:"One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
+      l_photo:'Profile photo',
+      h_photo:'Optional. Shown as a circle on your profile and your card in the directory. Drag the photo and zoom to frame your face. JPG, PNG or WebP.',
+      photo_choose:'Choose a photo', photo_change:'Change photo', photo_remove:'Remove',
+      photo_zoom:'Zoom', photo_drag:'Drag the photo to reframe it.',
+      photo_err_type:'Unsupported format: please use a JPG, PNG or WebP image.',
+      photo_err_size:'Photo too large (maximum 15 MB).',
+      msg_photo_error:'Profile saved, but the photo could not be updated. Please try again with another image.',
       msg_success:"Thank you! We've received your changes. Our team will review and publish them in the directory within 1 to 2 weeks.\n\nOnce approved, refresh the directory page to see them (Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows).\n\nIf you don't hear back within two weeks, feel free to email us at rsn.gestion@rimuhc.ca — we'll be happy to help.",
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
@@ -387,8 +410,17 @@ function applyI18n() {
    'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
-   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv'
+   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+  // Phase 3a: photo de profil — montage du cadreur au 1er passage, puis
+  // retraduction des boutons aux changements de langue.
+  const photoLabels = { choose: t('photo_choose'), change: t('photo_change'), remove: t('photo_remove'),
+    zoom: t('photo_zoom'), drag: t('photo_drag'), errType: t('photo_err_type'), errSize: t('photo_err_size') };
+  if (!window.photoCropper && window.PhotoCropper && document.getElementById('photoCropperRoot')) {
+    window.photoCropper = PhotoCropper.mount({ root: document.getElementById('photoCropperRoot'), input: document.getElementById('f_photo'), labels: photoLabels });
+  } else if (window.photoCropper) {
+    window.photoCropper.setLabels(photoLabels);
+  }
   const nlEmail = document.getElementById('nl_email');
   if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
   // Phase 2i: hint sous le textarea etudiants/referer
@@ -683,6 +715,8 @@ async function init() {
     document.getElementById('f_etudiants').value = profile.etudiants || '';
     document.getElementById('f_orcid').value = profile.orcid || '';
     document.getElementById('f_cv').value = profile.cv || '';
+    // Phase 3a: apercu de la photo actuelle (url Notion temporaire, 1 h)
+    if (window.photoCropper && profile.photoUrl) window.photoCropper.setExisting(profile.photoUrl);
     document.getElementById('f_consent').value = profile.consent || '';
 
     // Phase 2a: pre-remplir les radios statut + type d'adhesion
@@ -840,6 +874,9 @@ async function save() {
     etudiants: document.getElementById('f_etudiants').value.trim(),
     orcid: document.getElementById('f_orcid').value.trim() || null,
     cv: document.getElementById('f_cv').value.trim() || null,
+    // Phase 3a: nouvelle photo (data URL) et/ou retrait de l'actuelle
+    photo: (window.photoCropper && window.photoCropper.getDataUrl()) || undefined,
+    removePhoto: !!(window.photoCropper && window.photoCropper.isRemoved()),
     consent: document.getElementById('f_consent').value,
     axes: getChips('axes_group'),
     principes: getChips('principes_group'),
@@ -860,6 +897,8 @@ async function save() {
       btn.disabled = false; btn.textContent = t('saveBtn');
       return;
     }
+    // Phase 3a: le profil est enregistre, mais la photo a pu echouer separement
+    const saveResult = await resp.json().catch(function(){ return {}; });
 
     // 2) Si email a change : declencher la demande de confirmation
     if (emailChanged) {
@@ -879,6 +918,8 @@ async function save() {
       } catch (e) {
         showMsg(t('msg_email_error'), 'error');
       }
+    } else if (saveResult && saveResult.photoError) {
+      showMsg(t('msg_photo_error'), 'error');
     } else {
       showMsg(t('msg_success'), 'success');
     }

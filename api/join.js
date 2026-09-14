@@ -5,9 +5,10 @@
  * Creates a new member in Notion with workflow status "Nouveau".
  * Checks for duplicate email before creating.
  */
-const { findByEmail, createMember, findInstitutionByName, createInstitution, setMemberInstitutionRelation } = require('../lib/notion');
+const { findByEmail, createMember, findInstitutionByName, createInstitution, setMemberInstitutionRelation, uploadMemberPhoto } = require('../lib/notion');
 const { sendJoinConfirmation } = require('../lib/email');
 const { geocodeAddress } = require('../lib/geocode');
+const { decodePhotoDataUrl, photoFilename } = require('../lib/photo');
 
 // Simple in-memory rate limiter
 const attempts = new Map();
@@ -32,6 +33,18 @@ module.exports = async function handler(req, res) {
   }
   if (!email.includes('@')) {
     return res.status(400).json({ error: 'Invalid email' });
+  }
+
+  // Phase 3a (2026-09-14): photo de profil facultative (data URL, deja
+  // recadree en carre 512 px par photo-cropper.js). Validee avant toute
+  // ecriture : une photo invalide bloque la soumission avec un code clair.
+  let photo = null;
+  if (body.photo) {
+    try {
+      photo = decodePhotoDataUrl(body.photo);
+    } catch (photoErr) {
+      return res.status(400).json({ ok: false, code: photoErr.code || 'PHOTO_INVALID' });
+    }
   }
 
   // Rate limiting by IP
@@ -95,6 +108,16 @@ module.exports = async function handler(req, res) {
       consent: consent,
     });
     const newMemberId = newMemberPage && newMemberPage.id;
+
+    // Phase 3a: televerser la photo dans Notion et l'attacher a la fiche.
+    // Non bloquant : la fiche est creee, l'admin verra l'absence de photo.
+    if (photo && newMemberId) {
+      try {
+        await uploadMemberPhoto(newMemberId, photo.buffer, photo.contentType, photoFilename(photo.ext));
+      } catch (photoErr) {
+        console.error('[join] Photo upload failed:', photoErr.message);
+      }
+    }
 
     // Send confirmation email (non-blocking — failure shouldn't break the submission)
     try {

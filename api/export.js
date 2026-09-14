@@ -231,6 +231,7 @@ const HEADERS = [
   CSV_COL.ca1, CSV_COL.ca2, CSV_COL.ca3,
   CSV_COL.projet, CSV_COL.etudiants, CSV_COL.refere, CSV_COL.droitVote,
   CSV_COL.orcid, CSV_COL.cv, CSV_COL.evaluateur, CSV_COL.consent,
+  CSV_COL.photo, // Phase 3a: adresse du relais photo (ajoutee en fin, index.html lit par nom)
 ];
 
 // Sensitive columns masked for pending members
@@ -296,6 +297,11 @@ function memberToCSVRow(m, consent) {
     [CSV_COL.cv]: m.cv,
     [CSV_COL.evaluateur]: m.evaluateur,
     [CSV_COL.consent]: consent,
+    // Phase 3a: la photo passe par /api/photo (les urls Notion expirent) ;
+    // v = nom horodate du fichier => nouvelle photo, nouvelle adresse, cache CDN invalide.
+    [CSV_COL.photo]: m.photoName
+      ? `/api/photo?id=${String(m.id).replace(/-/g, '')}&v=${encodeURIComponent(m.photoName)}`
+      : '',
   };
 
   return row;
@@ -307,7 +313,7 @@ function maskSensitive(row) {
     CSV_COL.email, CSV_COL.email2, CSV_COL.statut, CSV_COL.institution,
     CSV_COL.reseau, CSV_COL.expertise, CSV_COL.themes, CSV_COL.projet,
     CSV_COL.etudiants, CSV_COL.refere, CSV_COL.orcid, CSV_COL.cv,
-    CSV_COL.evaluateur,
+    CSV_COL.evaluateur, CSV_COL.photo,
   ];
   for (const col of sensitive) {
     row[col] = PLACEHOLDER[col] || '';
