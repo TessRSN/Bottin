@@ -73,6 +73,14 @@
   .success-screen .icon { font-size:3rem; margin-bottom:1rem; }
   .success-screen h2 { color:var(--success); margin-bottom:.75rem; font-size:1.3rem; }
   .success-screen p { color:var(--muted); font-size:.9rem; line-height:1.6; max-width:420px; margin:0 auto; }
+  /* Infolettre (opt-in Mailchimp, formulaire integre) : affiche sur l'ecran de succes */
+  .newsletter-box { max-width:420px; margin:2rem auto 0; padding:1.25rem; text-align:left; background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius); }
+  .newsletter-box h3 { font-size:1rem; color:var(--text); margin-bottom:.4rem; }
+  .newsletter-box p { max-width:none; margin:0 0 .85rem; font-size:.85rem; }
+  .newsletter-box form { display:flex; flex-direction:column; gap:.6rem; }
+  .newsletter-box .btn { width:100%; }
+  .newsletter-box .nl-footer { margin:.75rem 0 0; font-size:.75rem; }
+  .newsletter-box .nl-done { color:var(--success); font-weight:600; margin:0; }
   .step-indicator { display:flex; justify-content:center; gap:.5rem; margin-bottom:1.5rem; }
   .step-dot { width:10px; height:10px; border-radius:50%; background:var(--border); transition:all .2s; }
   .step-dot.active { background:var(--primary); transform:scale(1.2); }
@@ -246,7 +254,7 @@
           <li id="l_consent_use2">être associées à votre institution et à vos projets ;</li>
           <li id="l_consent_use3">faciliter le réseautage et la collaboration entre membres.</li>
         </ul>
-        <p><strong id="l_consent_newsletter_bold">En adhérant</strong><span id="l_consent_newsletter_rest">, vous acceptez également de recevoir nos communications par courriel (infolettre, activités, événements). Vous pourrez vous désabonner à tout moment.</span></p>
+        <p><strong id="l_consent_newsletter_bold">Infolettre :</strong><span id="l_consent_newsletter_rest"> l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pourrez vous y abonner en un clic à la fin de l'inscription, et vous désabonner à tout moment.</span></p>
         <div class="field" style="margin:1rem 0 0 0">
           <label class="field-label" id="l_consent">Autorisez-vous le RSN à créer un profil de membre public ?<span class="required-mark">*</span></label>
           <select id="f_consent" style="margin-top:.5rem">
@@ -273,6 +281,23 @@
       <div class="icon">&#10003;</div>
       <h2 id="success_title">Candidature envoyée !</h2>
       <p id="success_msg">Merci pour votre intérêt envers le RSN. Votre candidature sera examinée par notre équipe. Vous recevrez une confirmation par courriel une fois votre profil approuvé.</p>
+
+      <!-- Infolettre : opt-in facultatif via le formulaire integre Mailchimp (meme audience que rsn.quebec).
+           Envoi direct navigateur -> Mailchimp, aucune cle API. Courriel/prenom/nom pre-remplis depuis la candidature. -->
+      <div class="newsletter-box" id="nlBox">
+        <h3 id="nl_title">Une dernière chose : souhaitez-vous recevoir l'infolettre du RSN ?</h3>
+        <p id="nl_text">Actualités du réseau, appels à communication, événements à venir. Pas de publicité, désabonnement en un clic.</p>
+        <form id="nlForm" action="https://quebec.us22.list-manage.com/subscribe/post?u=d3aa458695db41d98223d8c36&amp;id=5343fbdd97&amp;f_id=0022e0e1f0" method="post" target="_blank">
+          <input type="email" name="EMAIL" id="nl_email" required placeholder="Votre adresse courriel" autocomplete="email">
+          <input type="hidden" name="FNAME" id="nl_fname" value="">
+          <input type="hidden" name="LNAME" id="nl_lname" value="">
+          <div style="position:absolute;left:-5000px" aria-hidden="true"><input type="text" name="b_d3aa458695db41d98223d8c36_5343fbdd97" tabindex="-1" value=""></div>
+          <button type="submit" class="btn btn-primary" id="nl_btn">S'abonner à l'infolettre →</button>
+        </form>
+        <p class="nl-done" id="nl_done" style="display:none">Merci ! La confirmation s'ouvre dans un nouvel onglet.</p>
+        <p class="nl-footer" id="nl_footer">Facultatif. Vous pourrez aussi vous abonner plus tard depuis notre site web.</p>
+      </div>
+
       <a href="/" class="btn btn-primary" style="display:inline-block;margin-top:1.5rem;text-decoration:none" id="success_btn">Retour au bottin</a>
     </div>
   </div>
@@ -372,8 +397,8 @@ var I18N = {
     l_consent_use1: 'apparaître sur le bottin public du RSN ;',
     l_consent_use2: 'être associées à votre institution et à vos projets ;',
     l_consent_use3: 'faciliter le réseautage et la collaboration entre membres.',
-    l_consent_newsletter_bold: 'En adhérant',
-    l_consent_newsletter_rest: ", vous acceptez également de recevoir nos communications par courriel (infolettre, activités, événements). Vous pourrez vous désabonner à tout moment.",
+    l_consent_newsletter_bold: 'Infolettre :',
+    l_consent_newsletter_rest: " l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pourrez vous y abonner en un clic à la fin de l'inscription, et vous désabonner à tout moment.",
     l_consent_withdraw_pre: 'Vous pouvez retirer ou modifier votre consentement à tout moment depuis votre ',
     l_consent_withdraw_link1: 'page Mon profil',
     l_consent_withdraw_mid: ' ou en écrivant à ',
@@ -389,6 +414,12 @@ var I18N = {
     success_title: 'Candidature envoyée !',
     success_msg: 'Merci pour votre intérêt envers le RSN. Votre candidature sera examinée par notre équipe. Vous recevrez une confirmation par courriel une fois votre profil approuvé.',
     success_btn: 'Retour au bottin',
+    nl_title: "Une dernière chose : souhaitez-vous recevoir l'infolettre du RSN ?",
+    nl_text: 'Actualités du réseau, appels à communication, événements à venir. Pas de publicité, désabonnement en un clic.',
+    nl_email_placeholder: 'Votre adresse courriel',
+    nl_btn: "S'abonner à l'infolettre →",
+    nl_done: "Merci ! La confirmation s'ouvre dans un nouvel onglet.",
+    nl_footer: 'Facultatif. Vous pourrez aussi vous abonner plus tard depuis notre site web.',
     err_required: 'Veuillez remplir les champs obligatoires : ',
     err_email: "L'adresse courriel semble invalide.",
     err_submit: "Erreur lors de l'envoi. Veuillez réessayer.",
@@ -442,8 +473,8 @@ var I18N = {
     l_consent_use1: 'appear on the public RSN directory;',
     l_consent_use2: 'be associated with your institution and your projects;',
     l_consent_use3: 'facilitate networking and collaboration between members.',
-    l_consent_newsletter_bold: 'By joining',
-    l_consent_newsletter_rest: ', you also agree to receive our email communications (newsletter, activities, events). You may unsubscribe at any time.',
+    l_consent_newsletter_bold: 'Newsletter:',
+    l_consent_newsletter_rest: ' subscribing to our email communications (newsletter, activities, events) is optional. You can subscribe in one click at the end of the registration, and unsubscribe at any time.',
     l_consent_withdraw_pre: 'You can withdraw or modify your consent at any time from your ',
     l_consent_withdraw_link1: 'My profile page',
     l_consent_withdraw_mid: ' or by writing to ',
@@ -459,6 +490,12 @@ var I18N = {
     success_title: 'Application submitted!',
     success_msg: 'Thank you for your interest in the RSN. Your application will be reviewed by our team. You will receive an email confirmation once your profile is approved.',
     success_btn: 'Back to the directory',
+    nl_title: 'One last thing: would you like to receive the RSN newsletter?',
+    nl_text: 'Network news, calls for abstracts, upcoming events. No advertising, one-click unsubscribe.',
+    nl_email_placeholder: 'Your email address',
+    nl_btn: 'Subscribe to the newsletter →',
+    nl_done: 'Thank you! The confirmation opens in a new tab.',
+    nl_footer: 'Optional. You can also subscribe later from our website.',
     err_required: 'Please fill in the required fields: ',
     err_email: 'The email address seems invalid.',
     err_submit: 'Error submitting. Please try again.',
@@ -484,8 +521,11 @@ function setWithRequired(id, text, required) {
 
 function applyI18n() {
   // Simple text elements
-  var textKeys = ['title','subtitle','langBtn','success_title','success_msg','success_btn'];
+  var textKeys = ['title','subtitle','langBtn','success_title','success_msg','success_btn',
+    'nl_title','nl_text','nl_btn','nl_done','nl_footer'];
   textKeys.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = t(id); });
+  var nlEmail = document.getElementById('nl_email');
+  if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
 
   // Intro
   document.getElementById('intro').textContent = t('intro');
@@ -826,6 +866,10 @@ function submit() {
   .then(function(resp) {
     return resp.json().then(function(result) {
       if (resp.ok && result.ok) {
+        // Pre-remplir le formulaire infolettre (opt-in facultatif) avec la candidature.
+        document.getElementById('nl_email').value = data.email;
+        document.getElementById('nl_fname').value = data.prenom;
+        document.getElementById('nl_lname').value = data.nom;
         document.getElementById('formContainer').style.display = 'none';
         document.getElementById('successScreen').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -846,6 +890,20 @@ function submit() {
     btn.textContent = t('submitBtn');
   });
 }
+
+// ─── INFOLETTRE (opt-in Mailchimp) ───
+// Le formulaire poste directement chez Mailchimp dans un nouvel onglet ; ici on ne fait
+// que basculer l'affichage vers le message de remerciement (pas de preventDefault).
+(function() {
+  var nlForm = document.getElementById('nlForm');
+  if (!nlForm) return;
+  nlForm.addEventListener('submit', function() {
+    setTimeout(function() {
+      nlForm.style.display = 'none';
+      document.getElementById('nl_done').style.display = 'block';
+    }, 300);
+  });
+})();
 
 // ─── MESSAGES ───
 function showMsg(text, type) {
