@@ -513,7 +513,7 @@
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
         <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
-        <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="5" max="15" step="1" value="5" style="width:110px;margin:0;cursor:pointer"></label>
+        <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="4" max="15" step="1" value="4" style="width:110px;margin:0;cursor:pointer"></label>
         <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
         <span id="connexionsCount" style="color:var(--rsn-muted)">—</span>
         <button id="connexionsExportBtn" class="reset-btn" style="cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
@@ -1463,6 +1463,73 @@ const FR_TO_EN_DICT = {
   'family': 'family', 'famille': 'family', 'familles': 'family',
   'familial': 'family', 'familiale': 'family',
   'vieillissement': 'aging', 'aine': 'elderly', 'aines': 'elderly',
+  // Ajouts v7 (2026-09-14) : parite FR/EN du vocabulaire scientifique, pour
+  // que les profils francais et anglais se relient sur les memes concepts
+  // (connexions) et se trouvent avec les memes mots (recherche).
+  'telesante': 'telehealth', 'telemedecine': 'telemedicine',
+  'teleconsultation': 'telehealth', 'teleconsultations': 'telehealth',
+  'telereadaptation': 'telerehabilitation', 'telesurveillance': 'monitoring',
+  'neuroimagerie': 'neuroimaging', 'radiologie': 'radiology', 'tomographie': 'tomography',
+  'irm': 'mri', 'tep': 'pet', 'avc': 'stroke', 'asthme': 'asthma', 'epilepsie': 'epilepsy',
+  'cardiovasculaires': 'cardiovascular', 'vasculaire': 'vascular', 'vasculaires': 'vascular',
+  'pulmonaire': 'pulmonary', 'pulmonaires': 'pulmonary', 'intestinal': 'intestinal',
+  'intestinales': 'intestinal', 'perinatalite': 'perinatal', 'perinatal': 'perinatal',
+  'gerontologie': 'gerontology', 'geriatrie': 'geriatrics', 'geriatrique': 'geriatric',
+  'pediatriques': 'pediatric', 'pediatriques': 'pediatric',
+  'radiotherapie': 'radiotherapy', 'chimiotherapie': 'chemotherapy',
+  'infirmier': 'nursing', 'infirmiers': 'nursing', 'infirmiere': 'nursing', 'infirmieres': 'nursing',
+  'nurse': 'nursing', 'nurses': 'nursing',
+  'medecin': 'physicians', 'medecins': 'physicians', 'physician': 'physicians',
+  'clinicien': 'clinicians', 'cliniciens': 'clinicians', 'clinician': 'clinicians',
+  'professionnel': 'professionals', 'professionnels': 'professionals',
+  'professionnelle': 'professionals', 'professionnelles': 'professionals',
+  'genetiques': 'genetic', 'cerebral': 'brain', 'cerebrale': 'brain', 'cerebrales': 'brain',
+  'cognitif': 'cognitive', 'cognitifs': 'cognitive', 'cognitives': 'cognitive',
+  'chirurgical': 'surgical', 'chirurgicale': 'surgical', 'chirurgicaux': 'surgical',
+  'neurologiques': 'neurologic', 'physiologique': 'physiological', 'physiologiques': 'physiological',
+  'trouble': 'disorder', 'troubles': 'disorders', 'symptome': 'symptoms', 'symptomes': 'symptoms',
+  'biomarqueur': 'biomarkers', 'biomarqueurs': 'biomarkers', 'biomarker': 'biomarkers',
+  'agee': 'elderly', 'agees': 'elderly', 'ainee': 'elderly', 'ainees': 'elderly', 'older': 'elderly',
+  'domicile': 'home', 'physiotherapie': 'physiotherapy', 'ergotherapie': 'occupational',
+  'handicap': 'disability', 'handicaps': 'disability', 'autonomie': 'autonomy',
+  'mobilite': 'mobility', 'mouvement': 'movement', 'mouvements': 'movement',
+  'visuel': 'visual', 'visuelle': 'visual', 'visuels': 'visual', 'visuelles': 'visual',
+  'deficience': 'impairment', 'deficiences': 'impairment', 'parole': 'speech',
+  'capteur': 'sensors', 'capteurs': 'sensors', 'sensor': 'sensors',
+  'logiciel': 'software', 'logiciels': 'software', 'ordinateur': 'computer',
+  'graphe': 'graph', 'graphes': 'graph', 'graphs': 'graph', 'langage': 'language',
+  'serieux': 'serious', 'jeu': 'games', 'jeux': 'games', 'game': 'games',
+  'apprentissages': 'learning', 'renforcement': 'reinforcement',
+  'supervise': 'supervised', 'supervisee': 'supervised', 'neurone': 'neural', 'neurones': 'neural',
+  'generatif': 'generative', 'generatifs': 'generative', 'generatives': 'generative',
+  'conversationnel': 'conversational', 'conversationnels': 'conversational',
+  'conversationnelle': 'conversational', 'signaux': 'signal', 'signals': 'signal',
+  'prediction': 'prediction', 'predire': 'prediction', 'predictions': 'prediction',
+  'predictif': 'predictive', 'predictifs': 'predictive', 'predictives': 'predictive',
+  'cohorte': 'cohort', 'cohortes': 'cohort', 'cohorts': 'cohort',
+  'essai': 'trials', 'essais': 'trials', 'trial': 'trials',
+  'longitudinale': 'longitudinal', 'longitudinales': 'longitudinal',
+  'observationnelle': 'observational', 'observationnel': 'observational',
+  'registre': 'registry', 'registres': 'registry', 'biobanque': 'biobank',
+  'populationnelle': 'population', 'populations': 'population',
+  'communautaire': 'community', 'communautaires': 'community',
+  'participative': 'participatory', 'participatif': 'participatory', 'participatifs': 'participatory',
+  'aidance': 'caregivers', 'aidant': 'caregivers', 'aidants': 'caregivers',
+  'aidante': 'caregivers', 'aidantes': 'caregivers', 'caregiver': 'caregivers',
+  'lois': 'law', 'juridique': 'legal', 'juridiques': 'legal',
+  'biostatistique': 'biostatistics', 'biostatistiques': 'biostatistics',
+  'mathematique': 'mathematical', 'mathematiques': 'mathematical', 'mathematics': 'mathematical',
+  'proteomique': 'proteomics', 'pharmacogenomique': 'pharmacogenomics',
+  'psychologie': 'psychology', 'psychologique': 'psychological', 'psychologiques': 'psychological',
+  'psychosocial': 'psychosocial', 'psychosociale': 'psychosocial', 'psychosociaux': 'psychosocial',
+  'musculosquelettique': 'musculoskeletal', 'musculosquelettiques': 'musculoskeletal',
+  'dossier': 'records', 'dossiers': 'records', 'electronique': 'electronic', 'electroniques': 'electronic',
+  'interoperabilite': 'interoperability', 'nuage': 'cloud', 'infonuagique': 'cloud',
+  'segmentation': 'segmentation', 'classification': 'classification', 'simulation': 'simulation',
+  'simulations': 'simulation', 'diseases': 'disease', 'maladies': 'disease', 'maladie': 'disease',
+  'models': 'model', 'modeles': 'model', 'modele': 'model', 'modelling': 'modeling',
+  'interventions': 'intervention', 'treatments': 'treatment', 'traitements': 'treatment',
+  'images': 'imaging', 'image': 'imaging',
 };
 
 function canonicalizeToken(t) {
@@ -1692,6 +1759,113 @@ const CONNEXIONS_EXTRA_STOPWORDS = new Set([
   'essentially','mainly','primarily','actual','result','results','program','programs',
   'faciliter','facilite','aupres','how','goal','goals','change','changes','impact',
   'impacts','world',
+  // Balayage complet du vocabulaire retenu (2026-09-14, 1232 mots) : verbes,
+  // adverbes, quantites, mots d'organisation et de discours, FR puis EN.
+  'repondre','repond','reponse','favorisant','favoriser','favorise','structure',
+  'structures','deux','trois','cinq','usage','travaille','travailler','responsable',
+  'consiste','combinant','combine','combiner','activite','activites','public',
+  'publique','valorisation','complexe','complexes','complexite','expertise','vue',
+  'risque','risques','initiative','initiatives','conception','tests','test','teste',
+  'face','phase','phases','peut','peuvent','pourrait','propose','proposons','sera',
+  'serait','seront','appliquee','appliquees','applique','influence','creation',
+  'creer','cree','lien','liens','lies','liees','efficacite','efficience','participants',
+  'participant','avancee','avancees','avances','pre','post','pas','ressources','etat',
+  'chaque','validation','valider','valide','accessible','accessibles','integres',
+  'integrees','essentielle','essentiels','apres','avant','important','importante',
+  'importantes','importants','importance','coordination','transformer','echelle',
+  'potentiel','potentiellement','niveaux','terme','utilisant','utilisee','utilisees',
+  'utilisons','valeur','point','contribue','contribuent','contribuant','mecanismes',
+  'principes','type','types','evolution','evoluer','uvre','elements','souvent',
+  'largement','mesurer','mesure','mesures','mesuree','incluant','inclure','strategies',
+  'strategie','utiles','generer','generent','faisabilite','techniques','technique',
+  'aspect','problematique','problematiques','guide','guider','telles','fondation',
+  'effet','effets','cours','concue','concus','concevoir','mixte','mixtes','unite',
+  'consensus','organisation','organisations','organisationnelle','organisationnelles',
+  'organisationnels','specifiquement','offrir','offre','offrant','offrent','promotion',
+  'promouvoir','demeure','demeurent','acteurs','precisement','renforcer','utilisateur',
+  'utilisateurs','terrain','ultimement','existantes','existe','entrainer','determiner',
+  'capacites','accelerer','pertinentes','pertinent','pertinence','partage','partager',
+  'partagee','evenements','evenement','semi','repose','haute','accent','controle',
+  'confiance','transition','directeur','dirige','diriges','codirige','plan','plans',
+  'fournir','analysant','deploiement','indicateurs','parcours','secteur','sein',
+  'assurant','reduit','reduire','reduisant','basee','basees','fondee','fonde',
+  'robustes','robuste','robustesse','produire','cas','hypothese','enfin','celles',
+  'constituent','avons','abord','collecte','realiste','realistes','pilote','concentre',
+  'titre','dimensions','mobilisant','mobilise','cadres','estimation','examiner',
+  'parfois','prendre','preferences','bon','fonction','rendre','ayant','poursuivre',
+  'critiques','rapport','rapidement','rapide','effectuer','theorie','theorique',
+  'ensemble','ensembles','monde','implique','impliquant','composantes','augmenter',
+  'raison','situations','centree','pleinement','developpons','developpant','provenant',
+  'traiter','consequences','issus','limitee','limites','exemple','groupes','capable',
+  'mode','recommandations','mission','representant','represente','etendu','etendue',
+  'garantir','ont','realise','ajuster','calcul','automatiquement','demontre','lorsqu',
+  'lorsque','benefices','attendus','dela','construction','aimerais','presentant',
+  'presentent','presentement','eclairees','eclairee','eclaire','stage','etroite',
+  'tableau','bord','expliquer','percue','methodologique','reliant','constante',
+  'rigoureuses','rigoureux','rigoureuse','doivent','destines','destine','portee',
+  'fins','profil','moment','adaptees','vivant','activement','hybrides','modalites',
+  'binaires','reference','variabilite','compris','presence','reste','allons','soit',
+  'suivant','entourant','manque','manquent','financement','faute','obtenir','facons',
+  'intitule','survenue','observation','option','discussion','preparer','restant',
+  'champ','anticiper','invitees','soutiennent','soutient','soutien','collectif',
+  'experts','inter','extension','documentation','forme','pouvant','concernent',
+  'souhaitons','nombreux','nombreuses','comite','adopte','legitime','prenant','axee',
+  'comprend','allant','font','operationnels','concept','notions','heterogenes',
+  'preuves','probantes','ameliorant','coordonnateur','fais','ere','agit','apprenant',
+  'variees','note','regimes','canadiens','informationnel','caracteristiques',
+  'personnel','participe','elaboration','appui','national','plein','porteur',
+  'specifiques','collabore','quantifier','federe','flux','fraction','sorte',
+  'concretement','mis','echantillons','appele','pole','commune','acquises','optimisation',
+  'performance','performances','optimale','optimal','optimaux','securise','securisee',
+  'conseiller','conseillere','accompagnement','accompagner','comparer','identification',
+  'partenaires','partenaire','administratives','administrative','fonctionnel',
+  'fonctionnelle','fonctionnelles','fonctionnels','individus','individu','prototype',
+  'prototypes','inverse','foundation','mostly','utility','compare','individuals',
+  'individual','administrative','design','designs','communication','open','adapted',
+  'analyze','analyzing','innovative','transfer','engagement','adaptation','facteurs',
+  'facteur','factors','factor','massives','interaction','interactions','infrastructure',
+  'infrastructures','progression','outcomes','outcome','evidence','personnalisee',
+  'personnalise','personnalises','personalized','discovery','computer','computers',
+  'universitaire','universitaires','perennisation','mandat','mandats','microprogramme',
+  'chercheur','chercheurs','chercheuse','chercheuses','societe','society','usager',
+  'usagers','analytique','analytiques','intelligent','intelligente','intelligents',
+  'intelligentes','primary','primaire','primaires','app','apps','audit','protection',
+  'biais','bias','risk','risks','trajectoire','trajectoires','defi','defis','appuyant',
+  'ponderation','reproducible','quantitative','quantitatives','qualitative',
+  'qualitatives','interactive','interactif','sensitive','states','workflows','workflow',
+  'flow','questionnaire','questionnaires',
+  // EN
+  'enhance','enhancing','relevant','scale','scalable','advanced','advances',
+  'advancing','advance','driven','validated','valid','integrated','integrating',
+  'integrate','integrates','essential','building','aligns','frameworks','framework',
+  'making','where','which','about','now','directly','effective','effectiveness',
+  'efficacy','enable','enabling','assess','assessment','assessments','specifically',
+  'explore','exploration','promote','ultimately','ultimate','existing','assist','self',
+  'determine','capacity','life','cycle','accelerate','sharing','feedback','occur',
+  'objective','deployment','key','intersection','practical','domains','standardized',
+  'standard','ensuring','reducing','reduction','robust','together','informed','axis',
+  'action','examine','critical','multiple','comprehensive','insights','completed',
+  'other','lead','leading','reported','emphasis','barriers','living','component',
+  'facilitate','interface','interfaces','routine','routines','centered','centred',
+  'leverage','leveraging','both','taking','attention','providing','limited',
+  'addressing','cannot','patterns','group','long','leadership','global','identifying',
+  'representation','looking','refined','ahead','ranging','selection','score','scores',
+  'package','findings','clients','concise','rich','all','providers','quantify',
+  'quantification','investigating','supporting','account','versus','associations',
+  'association','inclusion','core','settings','ongoing','characterized','features',
+  'only','establishing','strong','reliable','ability','interpretation','step',
+  'previous','perform','further','responsible','award','met','linking','funded',
+  'holds','his','form','yet','arise','like','following','what','when','lack',
+  'bridges','internationally','preserving','fair','affects','actionable','synthesis',
+  'active','continuously','engaging','delivery','especially','called','focusing',
+  'construct','update','great','uncover','differences','continuous','benefits',
+  'minimal','thesis','value','option','plan','plans','review','tests','test','testing',
+  'creating','generate','generating','generation','measure','measures','include',
+  'strategy','strategies','structured','mixed','organization','importance','present',
+  'stage','function','function','mode','concept','national','early','valid','rapid',
+  // sigles et noms propres restants
+  'jean','lac','muhc','douglas','iucpq','chus','rsss','dsn','saguenay','medomicslab',
+  'unagi','3drespiview','desiir','com','2016','2023','2024','2025','000',
   'high','low','understanding','understand','condition','conditions','planning',
   'precise','optimize','optimization','nature','communications','journal',
   'published','profile','profiles',
@@ -1731,9 +1905,10 @@ const CONNEXIONS_PARAMS = {
   DF_MAX_RATIO: 0.20,    // un item present dans > 20 % des profils n'est pas distinctif
   WEIGHT_CAP: 4.0,       // plafond du poids idf (un item ultra-rare ne domine pas)
   BIGRAM_BOOST: 1.25,    // une expression de 2 mots partagee vaut un peu plus qu'un mot
-  MIN_SCORE_DEFAULT: 5,  // seuil par defaut du curseur "Liens"
-  TOP_K: 3,              // voisins les plus proches conserves par membre
-  DEGREE_CAP: 8,         // nombre max de liens par membre (anti-hub)
+  SINGLE_MIN_WEIGHT: 3.5,// un seul mot partage suffit s'il est rare (df <= ~3 % des profils)
+  MIN_SCORE_DEFAULT: 4,  // seuil par defaut du curseur "Liens" (= min du curseur)
+  TOP_K: 4,              // voisins les plus proches conserves par membre
+  DEGREE_CAP: 10,        // nombre max de liens par membre (anti-hub)
 };
 
 // Tokens en position (null = mot vide ou trop court), pour ne former des
@@ -1825,7 +2000,11 @@ function connexionsSimilarityDetail(a, b, index) {
   const covered = new Set();
   for (const bg of bigrams) for (const w of bg.split('+')) covered.add(w);
   const items = bigrams.concat(unigrams.filter(t => !covered.has(t)));
-  if (items.length < 2 && bigrams.length === 0) return empty;
+  if (items.length === 0) return empty;
+  // Un seul mot partage n'est un signal que s'il est rare ("telehealth",
+  // "amblyopia"), pas s'il est courant ("learning").
+  if (items.length === 1 && bigrams.length === 0
+      && (index.weights.get(items[0]) || 0) < CONNEXIONS_PARAMS.SINGLE_MIN_WEIGHT) return empty;
   let score = 0;
   for (const t of items) score += index.weights.get(t) || 0;
   return {

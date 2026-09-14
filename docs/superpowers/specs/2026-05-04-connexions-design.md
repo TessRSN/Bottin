@@ -336,13 +336,45 @@ Décisions :
 - **Score pondéré par la rareté** : somme des poids idf `min(log(N/df), 4)` des items
   partagés, bigramme × 1,25. Fenêtre DF `[2, 20 %]`. Un lien exige au moins 2 items
   partagés ou 1 bigramme : un seul mot commun n'est pas un signal.
-- **Sélection des liens** : seuil (curseur, défaut 5), top-3 voisins par membre (union),
-  puis plafond de 8 liens par membre en traitant les liens du plus fort au plus faible.
-- **UI** : curseur « Liens : tous ↔ les plus forts » (5 → 15) et case « Masquer les
+- **Sélection des liens** : seuil (curseur, défaut 4), top-4 voisins par membre (union),
+  puis plafond de 10 liens par membre en traitant les liens du plus fort au plus faible.
+- **UI** : curseur « Liens : tous ↔ les plus forts » (4 → 15) et case « Masquer les
   membres sans lien » dans la légende ; sélection rejouée sans reconstruire le graphe.
   Le survol d'un lien affiche les items partagés.
 - **Un seul index** (`ensureConnexionsIndex`) pour le graphe et le bloc « Profils
   proches » de la modal ; le nombre affiché est le nombre d'items partagés.
 
-Résultat (277 membres) : 485 liens au seuil 5 (306 à 10), degré max 8, 31 isolés.
-Paramètres dans `CONNEXIONS_PARAMS`.
+Un seul mot partagé suffit s'il est rare (`SINGLE_MIN_WEIGHT`, poids idf ≥ 3,5, soit
+présent dans au plus ~3 % des profils) : « telehealth » ou « amblyopia » relient, pas
+« learning ».
+
+Résultat (277 membres) : ~600 liens au seuil 4, degré max 10, ~30 isolés (profils
+trop courts). Paramètres dans `CONNEXIONS_PARAMS`.
+
+### Validation par groupes thématiques (2026-09-14)
+
+Balayage complet des 1 232 mots retenus (`scratchpad/vocab_kept.txt`) pour exclure
+verbes, adverbes, quantités et mots d'organisation, FR et EN, plus ~180 entrées ajoutées
+au dictionnaire FR→EN pour le vocabulaire scientifique (télésanté/telehealth,
+neuroimagerie/neuroimaging, aidants/caregivers, cohorte/cohort, IRM/MRI…).
+
+Métrique (`scratchpad/connexions_eval2.py`) : part des membres d'un groupe thématique
+(repéré par expression régulière dans les textes) qui ont au moins un voisin affiché du
+même groupe.
+
+| Groupe | Couverture |
+|---|---|
+| télésanté | 7/9 |
+| éthique | 13/15 |
+| santé mentale | 11/18 |
+| réadaptation | 18/21 |
+| oncologie | 21/22 |
+| imagerie | 27/30 |
+| soins infirmiers | 7/9 |
+| pédiatrie | 15/16 |
+
+Avant la révision (v4), ces mêmes groupes étaient reliés surtout par des mots
+génériques ; le curseur à 8 fait tomber la télésanté à 0/9, ce qui montre que les liens
+thématiques sont dans la zone 4 à 6 du score.
+
+Les membres non couverts ont des profils courts ou rédigés en termes génériques.
