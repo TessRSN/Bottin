@@ -525,7 +525,6 @@
         <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0"></div>
         <!-- Phase 2j v7: message pendant le calcul du placement (physique hors ecran) -->
         <div id="connexionsStabilizing" class="hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:11;background:var(--rsn-card-bg);color:var(--rsn-muted);padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;box-shadow:var(--shadow-sm);pointer-events:none" data-i18n="connexions_loading">Calcul des connexions…</div>
-        <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
         <!-- Pastilles : meme rendu que les noeuds du graphe (disque plein semi-transparent, sans bord) -->
@@ -640,7 +639,6 @@ const I18N = {
         connexions_help_s5_t: "●●● proximité forte, plusieurs mots rares en commun. ●●○ moyenne. ●○○ faible, mots courants seulement. Le classement suit le score, pas le nombre de mots : cinq mots rares valent plus que six mots courants. Les mots communs sont listés du plus rare au plus courant.",
         connexions_help_s6_h: 'Limites',
         connexions_help_s6_t: "Un profil court ou rédigé en termes généraux aura peu de liens : la qualité du graphe dépend de la richesse des textes. Les mots communs sont affichés dans leur forme anglaise, forme pivot du rapprochement français-anglais.",
-        connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
         connexions_density_label: 'Liens : tous ↔ les plus forts',
         connexions_hide_isolated: 'Masquer les membres sans lien',
         similar_profiles_title: 'Profils proches',
@@ -726,7 +724,6 @@ const I18N = {
         connexions_help_s5_t: '●●● strong match, several rare words in common. ●●○ medium. ●○○ weak, common words only. The ranking follows the score, not the number of words: five rare words outweigh six common ones. Shared words are listed from rarest to most common.',
         connexions_help_s6_h: 'Limitations',
         connexions_help_s6_t: 'A short profile, or one written in general terms, will have few links: the graph is only as good as the profile texts. Shared words are shown in their English form, the pivot used to bridge French and English.',
-        connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
         connexions_density_label: 'Links: all ↔ strongest',
         connexions_hide_isolated: 'Hide members without links',
         similar_profiles_title: 'Similar profiles',
@@ -2270,12 +2267,8 @@ function applyConnexionsFiltersToGraph() {
     opacity: anyFilterActive ? (matchedIds.has(n.id) ? 1 : 0.12) : 1,
   }));
   _connexionsState.nodesDS.update(updates);
-
-  // Update message d'aide en haut du graphe
-  const hint = document.getElementById('connexionsHint');
-  if (hint) {
-    hint.classList.toggle('hidden', anyFilterActive);
-  }
+  // (Le message « Tous les membres affichés… » a ete retire le 2026-09-14 :
+  //  le bandeau d'introduction et le bouton « ? » suffisent.)
 
   // Si recherche dans la barre principale, focus sur le 1er match
   if (queryNorm && _connexionsNetwork) {
