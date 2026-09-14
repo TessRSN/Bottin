@@ -123,6 +123,74 @@
       .catch(function () { return []; }); // OpenAlex indisponible : on garde les mots-clés ORCID
   }
 
+  // 3e source : les publications. Beaucoup de profils ORCID n'ont ni mots-clés
+  // déclarés ni fiche auteur OpenAlex (identifiants récents), mais listent des
+  // publications avec DOI. OpenAlex connaît ces publications une par une, avec
+  // un thème principal précis et des mots-clés.
+  var MAX_DOIS = 40;
+  var GENERIC_KEYWORDS = {
+    'medicine': 1, 'population': 1, 'populations': 1, 'health care': 1, 'healthcare': 1, 'health': 1,
+    'medline': 1, 'data collection': 1, 'descriptive statistics': 1, 'descriptive research': 1,
+    'statistics': 1, 'research': 1, 'science': 1, 'biology': 1, 'psychology': 1, 'sociology': 1,
+    'gerontology': 1, 'pediatrics': 1, 'family medicine': 1, 'internal medicine': 1, 'nursing': 1,
+    'computer science': 1, 'engineering': 1, 'mathematics': 1, 'physics': 1, 'chemistry': 1,
+    'political science': 1, 'economics': 1, 'business': 1, 'law': 1, 'philosophy': 1, 'geography': 1,
+    'history': 1, 'art': 1, 'quality': 1, 'context': 1, 'process': 1, 'structure': 1, 'analysis': 1,
+    'evaluation': 1, 'study': 1, 'data': 1, 'model': 1, 'models': 1, 'method': 1, 'methods': 1,
+    'approach': 1, 'system': 1, 'systems': 1, 'technology': 1, 'information': 1, 'knowledge': 1,
+    'management': 1, 'development': 1, 'intervention': 1, 'interventions': 1, 'patients': 1,
+    'patient care': 1, 'care': 1, 'disease': 1, 'diseases': 1, 'sample size': 1, 'cross-sectional study': 1,
+    'logistic regression': 1, 'regression analysis': 1, 'social science': 1, 'sociodemographic': 1,
+  };
+
+  // DOI des publications listées sur le profil ORCID
+  function fetchOrcidDois(id) {
+    return fetchJson('https://pub.orcid.org/v3.0/' + id + '/works', { 'Accept': 'application/json' })
+      .then(function (d) {
+        var dois = [], seen = {};
+        ((d && d.group) || []).forEach(function (g) {
+          var s = (g['work-summary'] || [])[0];
+          var ids = ((s && s['external-ids']) || {})['external-id'] || [];
+          ids.forEach(function (e) {
+            if (e['external-id-type'] !== 'doi') return;
+            var v = String(e['external-id-value'] || '').toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '');
+            if (v && !seen[v] && dois.length < MAX_DOIS) { seen[v] = true; dois.push(v); }
+          });
+        });
+        return dois;
+      })
+      .catch(function () { return []; });
+  }
+
+  // Thèmes principaux + mots-clés des publications, agrégés par fréquence.
+  // Un mot-clé n'est retenu que s'il revient sur au moins 2 publications
+  // (filtre le bruit) ; un thème principal est retenu dès 1 publication.
+  function fetchPublicationTopics(dois) {
+    if (!dois.length) return Promise.resolve([]);
+    var filter = 'doi:' + dois.join('|');
+    var url = 'https://api.openalex.org/works?filter=' + encodeURIComponent(filter) + '&select=doi,keywords,primary_topic&per-page=50';
+    return fetchJson(url).then(function (d) {
+      var works = (d && d.results) || [];
+      var topics = {}, keywords = {}, label = {};
+      works.forEach(function (w) {
+        var t = w.primary_topic && w.primary_topic.display_name;
+        if (t) { var kt = norm(t); topics[kt] = (topics[kt] || 0) + 1; label[kt] = t; }
+        (w.keywords || []).forEach(function (k) {
+          var name = k.display_name || '';
+          var kk = norm(name);
+          if (!kk || GENERIC_KEYWORDS[kk] || name.indexOf('(') >= 0) return;
+          keywords[kk] = (keywords[kk] || 0) + 1; label[kk] = name;
+        });
+      });
+      var out = Object.keys(topics).sort(function (a, b) { return topics[b] - topics[a]; }).map(function (k) { return label[k]; });
+      Object.keys(keywords)
+        .filter(function (k) { return keywords[k] >= 2 && !topics[k]; })
+        .sort(function (a, b) { return keywords[b] - keywords[a]; })
+        .forEach(function (k) { out.push(label[k]); });
+      return out;
+    }).catch(function () { return []; });
+  }
+
   function mount(opts) {
     injectCss();
     var root = opts.root, input = opts.input, target = opts.target;
@@ -176,7 +244,7 @@
         var c = el('button', 'os-chip', s.text);
         c.type = 'button';
         c.setAttribute('aria-pressed', s.selected ? 'true' : 'false');
-        var tag = el('span', 'os-src', s.src === 'orcid' ? 'ORCID' : 'OpenAlex');
+        var tag = el('span', 'os-src', s.src === 'orcid' ? 'ORCID' : (s.src === 'openalex' ? 'OpenAlex' : (labels.publications || 'Publications')));
         c.appendChild(tag);
         c.addEventListener('click', function () {
           s.selected = !s.selected;
@@ -200,10 +268,13 @@
           setStatus(labels.notFound || 'Aucun profil ORCID public trouvé pour cet identifiant.', true);
           return null;
         }
-        return fetchOpenAlexTopics(id, person.family).then(function (topics) { return { orcid: orcid, topics: topics }; });
+        return Promise.all([
+          fetchOpenAlexTopics(id, person.family),
+          fetchOrcidDois(id).then(fetchPublicationTopics),
+        ]).then(function (r) { return { orcid: orcid, topics: r[0], pubs: r[1] }; });
       }).then(function (res) {
         if (!res) return;
-        var orcid = res.orcid, topics = res.topics;
+        var orcid = res.orcid, topics = res.topics, pubs = res.pubs;
         var seen = {};
         existingValues().forEach(function (v) { seen[v] = true; });
         suggestions = [];
@@ -215,6 +286,7 @@
         }
         orcid.items.forEach(function (t) { push(t, 'orcid'); });
         topics.forEach(function (t) { push(t, 'openalex'); });
+        pubs.forEach(function (t) { push(t, 'publications'); });
         if (suggestions.length === 0) {
           setStatus(labels.empty || 'Votre profil ORCID public ne contient pas encore de mots-clés exploitables.', false);
           return;
