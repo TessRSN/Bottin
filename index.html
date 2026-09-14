@@ -2161,6 +2161,25 @@ function connexionsMakeEdge(e, edgeColor) {
 //    simulation des qu'elle est loin de l'equilibre et le plafond ne tient plus.
 const CONNEXIONS_PHYSICS_FAST = { enabled: true, maxVelocity: 50, minVelocity: 0.75, timestep: 0.25, adaptiveTimestep: true };
 const CONNEXIONS_PHYSICS_CALM = { enabled: true, maxVelocity: 0.8, minVelocity: 0.05, timestep: 0.15, adaptiveTimestep: false };
+// Le plafond est en unites du graphe ; a l'ecran, le zoom le multiplie. On le
+// recalcule donc a chaque zoom pour garder ~4 px/s quel que soit le niveau
+// (au zoom par defaut ~0.19, maxVelocity 0.8 mesure ~4 px/s ; d'ou la constante).
+const CONNEXIONS_CALM_PX_PER_S = 4;
+let _connexionsCalm = false; // true quand le graphe est en regime calme (pas pendant un calcul hors ecran)
+function connexionsApplyCalm() {
+  const net = _connexionsNetwork;
+  if (!net) return;
+  const scale = Math.max(0.05, net.getScale() || 0.19);
+  const maxVelocity = Math.max(0.04, Math.min(0.8, CONNEXIONS_CALM_PX_PER_S / (26 * scale)));
+  net.setOptions({ physics: Object.assign({}, CONNEXIONS_PHYSICS_CALM, { maxVelocity: maxVelocity }) });
+  _connexionsCalm = true;
+}
+let _connexionsZoomTimer = null;
+function connexionsOnZoom() {
+  if (!_connexionsCalm) return;
+  clearTimeout(_connexionsZoomTimer);
+  _connexionsZoomTimer = setTimeout(connexionsApplyCalm, 150);
+}
 
 // Recalcule le placement hors ecran puis repasse en regime calme.
 // vis-network ne redessine pas pendant la stabilisation : les points passent
@@ -2170,10 +2189,11 @@ function connexionsRelayout(iterations) {
   if (!net) return;
   const stabilizingEl = document.getElementById('connexionsStabilizing');
   if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  _connexionsCalm = false;
   net.setOptions({ physics: CONNEXIONS_PHYSICS_FAST });
   net.once('stabilizationIterationsDone', function () {
     if (!_connexionsNetwork) return;
-    _connexionsNetwork.setOptions({ physics: CONNEXIONS_PHYSICS_CALM });
+    connexionsApplyCalm();
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
   });
   net.stabilize(iterations || 200);
@@ -2261,6 +2281,9 @@ function applyConnexionsFiltersToGraph() {
   if (queryNorm && _connexionsNetwork) {
     const found = _connexionsState.nodes.find(n => matchedIds.has(n.id));
     if (found) {
+      // Le zoom programme (focus) n'emet pas l'evenement 'zoom' : on readapte
+      // le plafond de vitesse a la fin de l'animation.
+      _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
       _connexionsNetwork.focus(found.id, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
       _connexionsNetwork.selectNodes([found.id]);
     }
@@ -2402,12 +2425,16 @@ function buildAndShowConnexionsGraph() {
   // couvre le temps de calcul.
   const stabilizingEl = document.getElementById('connexionsStabilizing');
   if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  _connexionsCalm = false;
   _connexionsNetwork.once('stabilizationIterationsDone', function () {
     if (!_connexionsNetwork) return;
-    _connexionsNetwork.setOptions({ physics: CONNEXIONS_PHYSICS_CALM });
     _connexionsNetwork.fit({ animation: false });
+    connexionsApplyCalm();
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
   });
+  // Le zoom (recherche qui centre un membre, molette) change l'echelle : on
+  // readapte le plafond de vitesse pour que le mouvement reste lent a l'ecran.
+  _connexionsNetwork.on('zoom', connexionsOnZoom);
   // Forcer setSize + redraw apres que le container soit visible.
   setTimeout(function(){
     if (_connexionsNetwork && graphEl) {
