@@ -519,7 +519,12 @@
         <span data-i18n="connexions_intro">Chaque point est un membre. Un trait relie deux membres dont les profils partagent des mots-clés scientifiques distinctifs ; plus il est épais, plus la proximité est forte. Cliquez sur un point pour ouvrir la fiche, survolez un trait pour voir les mots communs.</span>
         <button type="button" id="connexionsHelpBtn" class="reset-btn" data-i18n-title="connexions_help_btn" title="Comment sont calculées les connexions ?" aria-label="Comment sont calculées les connexions ?" onclick="openConnexionsHelp()" style="flex-shrink:0;width:28px;height:28px;padding:0;border-radius:50%;font-weight:700;font-size:0.95rem;cursor:pointer;color:var(--rsn-accent);border-color:var(--rsn-accent)">?</button>
       </div>
-      <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0">
+      <!-- vis-network vide le contenu de #connexionsGraph a la creation : les
+           messages superposes doivent etre des freres du graphe, pas des enfants. -->
+      <div style="position:relative;flex:1;min-height:0;display:flex">
+        <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0"></div>
+        <!-- Phase 2j v7: message pendant le calcul du placement (physique hors ecran) -->
+        <div id="connexionsStabilizing" class="hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:11;background:var(--rsn-card-bg);color:var(--rsn-muted);padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;box-shadow:var(--shadow-sm);pointer-events:none" data-i18n="connexions_loading">Calcul des connexions…</div>
         <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
@@ -2145,6 +2150,23 @@ function connexionsMakeEdge(e, edgeColor) {
   };
 }
 
+// Recalcule le placement hors ecran puis fige a nouveau la physique.
+// vis-network ne redessine pas pendant la stabilisation : les points passent
+// directement a leur nouvelle position, sans course visible.
+function connexionsRelayout(iterations) {
+  const net = _connexionsNetwork;
+  if (!net) return;
+  const stabilizingEl = document.getElementById('connexionsStabilizing');
+  if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  net.setOptions({ physics: { enabled: true } });
+  net.once('stabilizationIterationsDone', function () {
+    if (!_connexionsNetwork) return;
+    _connexionsNetwork.setOptions({ physics: { enabled: false } });
+    if (stabilizingEl) stabilizingEl.classList.add('hidden');
+  });
+  net.stabilize(iterations || 300);
+}
+
 // Curseur "Liens" + case "masquer les membres sans lien" : on rejoue la
 // selection sur les scores deja calcules, sans reconstruire le graphe.
 function applyConnexionsDensity() {
@@ -2157,6 +2179,10 @@ function applyConnexionsDensity() {
   st.edgesDS.clear();
   st.edgesDS.add(edges);
   st.edges = edges; st.edgeSet = edgeSet;
+  // Nouveau jeu de liens = nouvelles forces : on recalcule le placement hors
+  // ecran (physique reactivee le temps de la stabilisation, puis coupee),
+  // plutot que de laisser les points courir a l'ecran.
+  connexionsRelayout(200);
   const degree = new Array(st.N).fill(0);
   for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
   const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
@@ -2343,22 +2369,39 @@ function buildAndShowConnexionsGraph() {
     physics: {
       // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
       // pas une fixation totale. Garde un effet "vivant" sans deriver loin.
-      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 110, springConstant: 0.05, damping: 0.92 },
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 110, springConstant: 0.05, damping: 0.95 },
       solver: 'forceAtlas2Based',
-      stabilization: { iterations: 250, fit: true, updateInterval: 25 },
-      timestep: 0.3,
+      // Phase 2j v7 (2026-09-14): le placement se calcule hors ecran (400
+      // iterations, ~3 s pour 277 membres), puis la physique est coupee des
+      // que c'est fait (voir stabilizationIterationsDone plus bas) : le graphe
+      // apparait pose et plus rien ne bouge tout seul. maxVelocity ne sert
+      // qu'au glisser-deposer d'un point.
+      stabilization: { iterations: 400, fit: true, updateInterval: 50 },
+      maxVelocity: 8,
+      minVelocity: 0.75,
+      timestep: 0.25,
       adaptiveTimestep: true,
     },
     interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragNodes: true },
   };
   _connexionsNetwork = new vis.Network(graphEl, data, options);
+  // Phase 2j v7: le placement se calcule hors ecran (stabilisation), puis la
+  // physique est coupee : plus aucun point ne bouge tout seul. Un message
+  // couvre le temps de calcul.
+  const stabilizingEl = document.getElementById('connexionsStabilizing');
+  if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  _connexionsNetwork.once('stabilizationIterationsDone', function () {
+    if (!_connexionsNetwork) return;
+    _connexionsNetwork.setOptions({ physics: { enabled: false } });
+    _connexionsNetwork.fit({ animation: false });
+    if (stabilizingEl) stabilizingEl.classList.add('hidden');
+  });
   // Forcer setSize + redraw apres que le container soit visible.
   setTimeout(function(){
     if (_connexionsNetwork && graphEl) {
       const r = graphEl.getBoundingClientRect();
       _connexionsNetwork.setSize(r.width + 'px', r.height + 'px');
       _connexionsNetwork.redraw();
-      _connexionsNetwork.fit({ animation: false });
     }
   }, 50);
   // Stockons les datasets pour pouvoir reagir aux filtres et a la recherche
