@@ -470,7 +470,7 @@
     <div class="search-box" id="searchBox">
         <div class="search-input-wrapper">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, expertise, projet...">
+            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, projet...">
         </div>
     </div>
     <div class="filters-row" id="filtersRow">
@@ -602,7 +602,7 @@ const I18N = {
         regular: 'Régulier', regular_pl: 'Réguliers',
         student: 'Étudiant', student_pl: 'Étudiants',
         partner: 'Partenaire', partner_pl: 'Partenaires',
-        search_placeholder: 'Rechercher par nom, institution, thème, expertise, projet...',
+        search_placeholder: 'Rechercher par nom, institution, thème, projet...',
         filter_type: "Type d'adhésion", filter_region: 'Région',
         filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
@@ -624,7 +624,7 @@ const I18N = {
         connexions_help_title: 'Comment sont calculées les connexions ?',
         connexions_help_lead: "Aucune intelligence artificielle : un calcul déterministe, refait dans votre navigateur à partir des textes des profils consentants.",
         connexions_help_s1_h: "D'où viennent les mots",
-        connexions_help_s1_t: "Des trois champs libres du profil : expertise, thèmes d'intérêt et projet de recherche. Un dictionnaire de plus de 500 correspondances rapproche le français et l'anglais, pour qu'« apprentissage automatique » et « machine learning » comptent comme un même mot.",
+        connexions_help_s1_t: "Des deux champs libres du profil : thèmes de recherche ou d'intérêt, et projet de recherche. Un dictionnaire de plus de 500 correspondances rapproche le français et l'anglais, pour qu'« apprentissage automatique » et « machine learning » comptent comme un même mot.",
         connexions_help_s2_h: 'Quels mots comptent',
         connexions_help_s2_t: "Les mots de liaison, le vocabulaire générique de la recherche et les noms d'institutions sont ignorés. Un mot présent dans plus de 20 % des profils ne distingue personne ; un mot présent dans un seul profil ne peut relier personne. Les expressions de deux mots, comme « inférence causale », sont reconnues comme un tout.",
         connexions_help_s3_h: 'Comment se calcule la proximité',
@@ -651,7 +651,7 @@ const I18N = {
         upload_hint: 'glissez un fichier CSV ici ou cliquez pour sélectionner',
         upload_format: 'Format attendu : CSV exporté de la BD membres (encodage UTF-8)',
         // Card / table labels
-        lbl_status: 'Statut', lbl_expertise: 'Expertise', lbl_network: 'Réseau',
+        lbl_status: 'Statut', lbl_expertise: 'Thèmes', lbl_network: 'Réseau',
         lbl_project: 'Projet', lbl_students: 'Étudiants',
         lbl_other_axes: 'Autres axes', lbl_other_principles: 'Autres principes',
         lbl_other_actions: 'Autres actions',
@@ -661,7 +661,7 @@ const I18N = {
         th_name: 'Nom', th_institution: 'Institution', th_email: 'Email',
         th_status: 'Statut', th_type: 'Type', th_axis: 'Axe prioritaire',
         th_principle: 'Principe', th_action: "Champ d'action",
-        th_expertise: 'Expertise', th_links: 'Liens',
+        th_expertise: 'Thèmes', th_links: 'Liens',
         lbl_website: 'Site web',
         // Map
         map_geolocated: 'membres géolocalisés',
@@ -688,7 +688,7 @@ const I18N = {
         regular: 'Regular', regular_pl: 'Regular',
         student: 'Student', student_pl: 'Students',
         partner: 'Partner', partner_pl: 'Partners',
-        search_placeholder: 'Search by name, institution, theme, expertise, project...',
+        search_placeholder: 'Search by name, institution, theme, project...',
         filter_type: 'Membership type', filter_region: 'Region',
         filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
@@ -710,7 +710,7 @@ const I18N = {
         connexions_help_title: 'How are connections computed?',
         connexions_help_lead: 'No artificial intelligence: a deterministic computation, run in your browser from the text of consenting members\' profiles.',
         connexions_help_s1_h: 'Where the words come from',
-        connexions_help_s1_t: 'From the three free-text fields of the profile: expertise, research interests and research project. A dictionary of over 500 entries bridges French and English, so that "apprentissage automatique" and "machine learning" count as the same word.',
+        connexions_help_s1_t: 'From the two free-text fields of the profile: research or interest themes, and research project. A dictionary of over 500 entries bridges French and English, so that "apprentissage automatique" and "machine learning" count as the same word.',
         connexions_help_s2_h: 'Which words count',
         connexions_help_s2_t: 'Function words, generic research vocabulary and institution names are ignored. A word found in more than 20% of profiles distinguishes no one; a word found in a single profile can connect no one. Two-word expressions such as "causal inference" are recognised as a whole.',
         connexions_help_s3_h: 'How closeness is scored',
@@ -736,7 +736,7 @@ const I18N = {
         upload_title: 'Update data:',
         upload_hint: 'drag a CSV file here or click to select',
         upload_format: 'Expected format: CSV exported from the members database (UTF-8 encoding)',
-        lbl_status: 'Status', lbl_expertise: 'Expertise', lbl_network: 'Network',
+        lbl_status: 'Status', lbl_expertise: 'Themes', lbl_network: 'Network',
         lbl_project: 'Project', lbl_students: 'Students',
         lbl_other_axes: 'Other axes', lbl_other_principles: 'Other principles',
         lbl_other_actions: 'Other actions',
@@ -745,7 +745,7 @@ const I18N = {
         th_name: 'Name', th_institution: 'Institution', th_email: 'Email',
         th_status: 'Status', th_type: 'Type', th_axis: 'Primary axis',
         th_principle: 'Principle', th_action: 'Field of action',
-        th_expertise: 'Expertise', th_links: 'Links',
+        th_expertise: 'Themes', th_links: 'Links',
         lbl_website: 'Website',
         map_geolocated: 'geolocated members',
         map_coverage: 'Coverage',
@@ -909,7 +909,7 @@ const CONFIG = {
         email: 'E-mail / Courriel', email2: 'Autre courriel',
         statut: 'Statut actuel', institution: 'Institution / organisation 1',
         type: "Type d'adhesion", reseau: 'Réseau 1',
-        expertise: 'Expertise', themes: "Thèmes d'intérêt",
+        themes: "Thèmes d'intérêt", // libelle affiche : « Thèmes » (ex-Expertise fusionnee le 2026-09-14)
         axe1: "1e Axe d'intérêt", axe2: "2e Axe d'intérêt",
         axe3: "3e Axe d'intérêt", axe4: "4e Axe d'intérêt",
         pf1: "1è Principles fondateurs", pf2: "2è Principles fondateurs",
@@ -1106,7 +1106,6 @@ function loadMembers(data) {
             type: typeRaw, typeNorm,
             consent, formComplete,
             themes: (m[C.themes]||'').trim(),
-            expertise: (m[C.expertise]||'').trim(),
             axes, principes, champsAction,
             projet: (m[C.projet]||'').trim(),
             orcid: (m[C.orcid]||'').trim(),
@@ -1116,7 +1115,7 @@ function loadMembers(data) {
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
             _search: [name, email, institution, statut, typeRaw,
-                m[C.themes], m[C.expertise], m[C.projet], axes[0], principes[0],
+                m[C.themes], m[C.projet], axes[0], principes[0],
                 champsAction[0], m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
         });
     });
@@ -1622,7 +1621,7 @@ function buildFuseDoc(m) {
     // contient la version EN canonicalisee, permettant a "machine learning"
     // de matcher un profil qui ecrit "apprentissage automatique".
     const allText = [
-        m.expertise, m.themes, m.projet, m.refere, m.reseau,
+        m.themes, m.projet, m.refere, m.reseau,
         (m.axes || []).join(' '),
         (m.principes || []).join(' '),
         (m.champsAction || []).join(' ')
@@ -1639,7 +1638,6 @@ function buildFuseDoc(m) {
         statutEN: fold(STATUT_FR_TO_EN[m.statut] || ''),
         typeFR: fold(m.type || ''),
         typeEN: fold(TYPE_FR_TO_EN[m.type] || ''),
-        expertise: fold(m.expertise || ''),
         themes: fold(m.themes || ''),
         projet: fold(m.projet || ''),
         axes: fold((m.axes || []).join(' ')),
@@ -1678,7 +1676,6 @@ const FUSE_OPTIONS = {
     keys: [
         { name: 'name',         weight: 4.0 },
         { name: 'institutions', weight: 3.5 },
-        { name: 'expertise',    weight: 4.0 },
         { name: 'themes',       weight: 4.0 },
         { name: 'projet',       weight: 4.0 },
         { name: 'statutFR',     weight: 2.0 },
@@ -2001,7 +1998,7 @@ function connexionsTokenizePos(text) {
 // et "artificial intelligence" donnent la meme cle "artificial+intelligence".
 function connexionsItemsOf(m) {
   const items = new Set();
-  for (const text of [m.expertise, m.themes, m.projet]) {
+  for (const text of [m.themes, m.projet]) {
     const pos = connexionsTokenizePos(text);
     for (let i = 0; i < pos.length; i++) {
       const a = pos[i];
@@ -2200,7 +2197,7 @@ function applyConnexionsFiltersToGraph() {
     if (fs.length && !fs.includes(m.statutGroup)) return false;
     if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
     if (queryNorm) {
-      const haystack = fold(`${m.prenom||''} ${m.nom||''} ${m.institution||''} ${m.expertise||''} ${m.themes||''} ${m.projet||''}`);
+      const haystack = fold(`${m.prenom||''} ${m.nom||''} ${m.institution||''} ${m.themes||''} ${m.projet||''}`);
       if (!haystack.includes(queryNorm)) return false;
     }
     return true;
@@ -2522,7 +2519,7 @@ function renderCards() {
         const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
         const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
         const eid = `ex-${i}`;
-        const expertiseText = m.themes || m.expertise || '';
+        const expertiseText = m.themes || '';
         let links=[];
         if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
         if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
@@ -2580,7 +2577,7 @@ function renderTable() {
         const ax1=m.axes[0]?trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,''):'';
         const pf1=m.principes[0]?trPrincipe(m.principes[0]):'';
         const ca1=m.champsAction[0]?trChamp(m.champsAction[0]):'';
-        const th=m.themes||m.expertise||'';
+        const th=m.themes||'';
         const isPending = m.consent !== 'oui';
         let lk=[];
         if(m.orcid){const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);}
@@ -2823,7 +2820,7 @@ function showMemberPopup(name) {
     const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /, '') : '';
     const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
     const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
-    const expertiseText = m.themes || m.expertise || '';
+    const expertiseText = m.themes || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
     if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }

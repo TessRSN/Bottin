@@ -21,6 +21,13 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 - Désigner formellement un Responsable de la Protection des Renseignements Personnels (RPRP) et publier son nom + courriel.
 - Documenter le registre des incidents de confidentialité (interne).
 
+## Données membres (unification, 2026-09-14)
+
+- **Fait dans Notion le 2026-09-14** : l'ancien champ « Expertise » (47 fiches) a été fusionné dans « Thèmes d'intérêt » (sauvegarde hors dépôt), et les 10 « Incertain·e pour le moment » normalisés en « Incertain ». La branche `connexions` ne lit ni n'écrit plus « Expertise ».
+- **À faire au moment de fusionner `connexions` dans `main`** (pas avant, sinon la prod lit une propriété inexistante) : renommer la propriété Notion « Thèmes d'intérêt » → « Thèmes de recherche ou d'intérêt » et mettre à jour `PROP.themes` (lib/notion.js), `CSV_COL.themes` et `CONFIG.COL.themes` (index.html) dans le même déploiement.
+- Supprimer la propriété Notion « Expertise » (vide) et l'option « Incertain·e pour le moment » du select « Évaluateur » (sans fiche) — à la main dans Notion, quand `main` ne les lit plus.
+- Statut : 34 fiches « Coordination ou gestion d'équipe » hors taxonomie, 293 fiches sans statut — décision en cours (ajouter une option ou reclasser).
+
 ## Édition profil
 
 - Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html` (pour la cohérence légale).

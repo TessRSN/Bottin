@@ -23,7 +23,7 @@ module.exports.config = { maxDuration: 30 };
 // Fields that members can edit themselves
 const EDITABLE_FIELDS = [
   'prenom', 'nom', 'email', 'email2', 'institution', 'statut', 'type',
-  'reseau', 'expertise', 'themes', 'projet', 'etudiants',
+  'reseau', 'themes', 'projet', 'etudiants',
   'axes', 'principes', 'champs', 'orcid', 'cv', 'consent',
   'afficherCourriel', // Phase 2f (2026-05-04): toggle email public
   'evaluateur',       // Phase 2i (2026-05-04): Oui/Non/Incertain

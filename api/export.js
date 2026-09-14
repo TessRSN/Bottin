@@ -225,7 +225,7 @@ module.exports.config = { maxDuration: 60 };
 const HEADERS = [
   CSV_COL.prenom, CSV_COL.nom, CSV_COL.email, CSV_COL.email2,
   CSV_COL.statut, CSV_COL.institution, CSV_COL.type, CSV_COL.reseau,
-  CSV_COL.expertise, CSV_COL.themes,
+  CSV_COL.themes,
   CSV_COL.axe1, CSV_COL.axe2, CSV_COL.axe3, CSV_COL.axe4,
   CSV_COL.pf1, CSV_COL.pf2, CSV_COL.pf3, CSV_COL.pf4, CSV_COL.pf5,
   CSV_COL.ca1, CSV_COL.ca2, CSV_COL.ca3,
@@ -275,7 +275,6 @@ function memberToCSVRow(m, consent) {
     [CSV_COL.institution]: m.institution,
     [CSV_COL.type]: m.type,
     [CSV_COL.reseau]: m.reseau,
-    [CSV_COL.expertise]: m.expertise,
     [CSV_COL.themes]: m.themes,
     [CSV_COL.axe1]: axes[0] || '',
     [CSV_COL.axe2]: axes[1] || '',
@@ -311,7 +310,7 @@ function maskSensitive(row) {
   // Mask personal data but keep structural fields
   const sensitive = [
     CSV_COL.email, CSV_COL.email2, CSV_COL.statut, CSV_COL.institution,
-    CSV_COL.reseau, CSV_COL.expertise, CSV_COL.themes, CSV_COL.projet,
+    CSV_COL.reseau, CSV_COL.themes, CSV_COL.projet,
     CSV_COL.etudiants, CSV_COL.refere, CSV_COL.orcid, CSV_COL.cv,
     CSV_COL.evaluateur, CSV_COL.photo,
   ];
