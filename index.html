@@ -1883,10 +1883,12 @@ const CONNEXIONS_EXTRA_STOPWORDS = new Set([
   'complex','better','best','working','student','students','professor','associate',
   'assistant','candidate','phd','postdoc','postdoctoral','lab','laboratory','team',
   'chair','member','members','person','persons',
-  // 3. commun a tout le reseau (FR + EN)
-  'sante','health','numerique','numeriques','digital','donnees','donnee','data',
-  'soins','soin','care','clinique','cliniques','clinical','medical','medicale',
-  'medicaux','medicales','patient','patiente','patients','patientes','rsn','reseau',
+  // 3. commun a tout le reseau (FR + EN). NB : "sante", "numerique", "donnees",
+  //    "soins", "clinique", "medical" ne sont volontairement PAS ici : comme mots
+  //    seuls, le plafond DF (20 %) les elimine deja ; mais ils doivent rester
+  //    disponibles pour les bigrammes ("sante mentale", "soins intensifs",
+  //    "sante publique", "decision clinique"), qui, eux, sont distinctifs.
+  'patient','patiente','patients','patientes','rsn','reseau',
   'reseaux','network','networks','healthcare','transformation','transformations',
   // 4. institutions et lieux
   'universite','university','montreal','quebec','canada','canadian','canadien',

@@ -365,13 +365,18 @@ même groupe.
 | Groupe | Couverture |
 |---|---|
 | télésanté | 7/9 |
-| éthique | 13/15 |
-| santé mentale | 11/18 |
+| éthique | 12/15 |
+| santé mentale | 14/18 |
 | réadaptation | 18/21 |
 | oncologie | 21/22 |
-| imagerie | 27/30 |
-| soins infirmiers | 7/9 |
+| imagerie | 28/30 |
+| soins infirmiers | 8/9 |
 | pédiatrie | 15/16 |
+
+Les mots communs à tout le réseau (« santé », « soins », « clinique », « données ») ne
+sont pas dans les mots vides : le plafond DF les élimine comme mots seuls, mais ils
+restent disponibles pour les bigrammes (« santé mentale », « soins intensifs »), ce qui a
+fait passer la santé mentale de 11/18 à 14/18.
 
 Avant la révision (v4), ces mêmes groupes étaient reliés surtout par des mots
 génériques ; le curseur à 8 fait tomber la télésanté à 0/9, ce qui montre que les liens
