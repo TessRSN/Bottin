@@ -505,6 +505,11 @@
     </div>
     <!-- Phase 2j v3: vue Connexions plein ecran avec legende compacte en bas -->
     <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:600px">
+      <!-- Phase 2j v7: description du graphe + bouton "?" qui ouvre la fenetre d'explication de la methode -->
+      <div id="connexionsIntro" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;border-bottom:1.5px solid var(--rsn-border);font-size:0.82rem;line-height:1.45;color:var(--rsn-muted)">
+        <span data-i18n="connexions_intro">Chaque point est un membre. Un trait relie deux membres dont les profils partagent des mots-clés scientifiques distinctifs ; plus il est épais, plus la proximité est forte. Cliquez sur un point pour ouvrir la fiche, survolez un trait pour voir les mots communs.</span>
+        <button type="button" id="connexionsHelpBtn" class="reset-btn" data-i18n-title="connexions_help_btn" title="Comment sont calculées les connexions ?" aria-label="Comment sont calculées les connexions ?" onclick="openConnexionsHelp()" style="flex-shrink:0;width:28px;height:28px;padding:0;border-radius:50%;font-weight:700;font-size:0.95rem;cursor:pointer;color:var(--rsn-accent);border-color:var(--rsn-accent)">?</button>
+      </div>
       <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0">
         <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
@@ -566,6 +571,13 @@
     </div>
 </div>
 
+<!-- Phase 2j v7: fenetre "Comment sont calculees les connexions ?" (contenu construit par openConnexionsHelp, dans la langue courante) -->
+<div class="member-overlay" id="connexionsHelpOverlay" onclick="if(event.target===this)closeConnexionsHelp()" role="dialog" aria-modal="true" aria-labelledby="connexionsHelpTitle">
+    <div class="member-modal" id="connexionsHelpContent">
+        <button class="member-modal-close" onclick="closeConnexionsHelp()" aria-label="Fermer">&times;</button>
+    </div>
+</div>
+
 <script>
 const UPDATE_FORM_URL = '/magic-link.html';
 const JOIN_FORM_URL = '/join.html';
@@ -597,6 +609,22 @@ const I18N = {
         connexions_strength_strong: 'Proximité forte : plusieurs mots-clés rares en commun',
         connexions_strength_medium: 'Proximité moyenne',
         connexions_strength_weak: 'Proximité faible : mots-clés courants',
+        connexions_intro: "Chaque point est un membre. Un trait relie deux membres dont les profils partagent des mots-clés scientifiques distinctifs ; plus il est épais, plus la proximité est forte. Cliquez sur un point pour ouvrir la fiche, survolez un trait pour voir les mots communs.",
+        connexions_help_btn: 'Comment sont calculées les connexions ?',
+        connexions_help_title: 'Comment sont calculées les connexions ?',
+        connexions_help_lead: "Aucune intelligence artificielle : un calcul déterministe, refait dans votre navigateur à partir des textes des profils consentants.",
+        connexions_help_s1_h: "D'où viennent les mots",
+        connexions_help_s1_t: "Des trois champs libres du profil : expertise, thèmes d'intérêt et projet de recherche. Un dictionnaire de plus de 500 correspondances rapproche le français et l'anglais, pour qu'« apprentissage automatique » et « machine learning » comptent comme un même mot.",
+        connexions_help_s2_h: 'Quels mots comptent',
+        connexions_help_s2_t: "Les mots de liaison, le vocabulaire générique de la recherche et les noms d'institutions sont ignorés. Un mot présent dans plus de 20 % des profils ne distingue personne ; un mot présent dans un seul profil ne peut relier personne. Les expressions de deux mots, comme « inférence causale », sont reconnues comme un tout.",
+        connexions_help_s3_h: 'Comment se calcule la proximité',
+        connexions_help_s3_t: "Chaque mot partagé pèse selon sa rareté dans le réseau : « oncologie » vaut plus que « modèle ». Le score d'une paire est la somme de ces poids. Un seul mot partagé suffit s'il est rare ; sinon il en faut au moins deux.",
+        connexions_help_s4_h: 'Quels liens sont affichés',
+        connexions_help_s4_t: "Les liens au-dessus du seuil du curseur, puis les 4 voisins les plus proches de chaque membre, avec un maximum de 10 liens par membre pour éviter les étoiles illisibles. L'épaisseur du trait suit le score.",
+        connexions_help_s5_h: 'Les ●●● dans « Profils proches »',
+        connexions_help_s5_t: "●●● proximité forte, plusieurs mots rares en commun. ●●○ moyenne. ●○○ faible, mots courants seulement. Le classement suit le score, pas le nombre de mots : cinq mots rares valent plus que six mots courants. Les mots communs sont listés du plus rare au plus courant.",
+        connexions_help_s6_h: 'Limites',
+        connexions_help_s6_t: "Un profil court ou rédigé en termes généraux aura peu de liens : la qualité du graphe dépend de la richesse des textes. Les mots communs sont affichés dans leur forme anglaise, forme pivot du rapprochement français-anglais.",
         connexions_hint_filters: 'Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.',
         connexions_density_label: 'Liens : tous ↔ les plus forts',
         connexions_hide_isolated: 'Masquer les membres sans lien',
@@ -666,6 +694,22 @@ const I18N = {
         connexions_strength_strong: 'Strong match: several rare keywords in common',
         connexions_strength_medium: 'Medium match',
         connexions_strength_weak: 'Weak match: common keywords only',
+        connexions_intro: 'Each dot is a member. A line connects two members whose profiles share distinctive scientific keywords; the thicker the line, the closer the match. Click a dot to open the profile, hover a line to see the shared keywords.',
+        connexions_help_btn: 'How are connections computed?',
+        connexions_help_title: 'How are connections computed?',
+        connexions_help_lead: 'No artificial intelligence: a deterministic computation, run in your browser from the text of consenting members\' profiles.',
+        connexions_help_s1_h: 'Where the words come from',
+        connexions_help_s1_t: 'From the three free-text fields of the profile: expertise, research interests and research project. A dictionary of over 500 entries bridges French and English, so that "apprentissage automatique" and "machine learning" count as the same word.',
+        connexions_help_s2_h: 'Which words count',
+        connexions_help_s2_t: 'Function words, generic research vocabulary and institution names are ignored. A word found in more than 20% of profiles distinguishes no one; a word found in a single profile can connect no one. Two-word expressions such as "causal inference" are recognised as a whole.',
+        connexions_help_s3_h: 'How closeness is scored',
+        connexions_help_s3_t: 'Each shared word is weighted by its rarity across the network: "oncology" is worth more than "model". The score of a pair is the sum of these weights. A single shared word is enough if it is rare; otherwise at least two are needed.',
+        connexions_help_s4_h: 'Which links are shown',
+        connexions_help_s4_t: 'Links above the slider threshold, then the 4 nearest neighbours of each member, with at most 10 links per member to avoid unreadable stars. Line thickness follows the score.',
+        connexions_help_s5_h: 'The ●●● in "Similar profiles"',
+        connexions_help_s5_t: '●●● strong match, several rare words in common. ●●○ medium. ●○○ weak, common words only. The ranking follows the score, not the number of words: five rare words outweigh six common ones. Shared words are listed from rarest to most common.',
+        connexions_help_s6_h: 'Limitations',
+        connexions_help_s6_t: 'A short profile, or one written in general terms, will have few links: the graph is only as good as the profile texts. Shared words are shown in their English form, the pivot used to bridge French and English.',
         connexions_hint_filters: 'All members displayed. Use the search bar or filters above to explore in detail.',
         connexions_density_label: 'Links: all ↔ strongest',
         connexions_hide_isolated: 'Hide members without links',
@@ -753,7 +797,7 @@ function openQrModal(type) {
 function closeQrModal() {
     document.getElementById('qrOverlay').classList.remove('active');
 }
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeQrModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') { closeQrModal(); if (typeof closeConnexionsHelp === 'function') closeConnexionsHelp(); } });
 
 function applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -762,6 +806,12 @@ function applyI18n() {
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         el.placeholder = tr(el.getAttribute('data-i18n-placeholder'));
+    });
+    // Infobulles et libelles d'accessibilite traduits (ex. bouton "?" des connexions)
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const txt = tr(el.getAttribute('data-i18n-title'));
+        el.title = txt;
+        el.setAttribute('aria-label', txt);
     });
     document.getElementById('langLabel').textContent = currentLang === 'fr' ? 'EN' : 'FR';
     document.documentElement.lang = currentLang;
@@ -2771,6 +2821,50 @@ function showMemberPopup(name) {
     document.getElementById('memberOverlay').classList.add('active');
 }
 function closeMemberPopup() { document.getElementById('memberOverlay').classList.remove('active'); }
+
+// ─── Connexions : fenetre d'explication de la methode (Phase 2j v7) ───
+// Contenu reconstruit a chaque ouverture avec tr(), donc toujours dans la
+// langue courante. DOM uniquement (textContent), pas de HTML injecte.
+const CONNEXIONS_HELP_SECTIONS = [
+  ['connexions_help_s1_h', 'connexions_help_s1_t'],
+  ['connexions_help_s2_h', 'connexions_help_s2_t'],
+  ['connexions_help_s3_h', 'connexions_help_s3_t'],
+  ['connexions_help_s4_h', 'connexions_help_s4_t'],
+  ['connexions_help_s5_h', 'connexions_help_s5_t'],
+  ['connexions_help_s6_h', 'connexions_help_s6_t'],
+];
+function openConnexionsHelp() {
+  const box = document.getElementById('connexionsHelpContent');
+  const overlay = document.getElementById('connexionsHelpOverlay');
+  if (!box || !overlay) return;
+  // On garde le bouton de fermeture (1er enfant), on remplace le reste.
+  while (box.childNodes.length > 1) box.removeChild(box.lastChild);
+  const title = document.createElement('h3');
+  title.id = 'connexionsHelpTitle';
+  title.style.cssText = 'font-size:1.05rem;color:var(--rsn-accent);margin:0 1.5rem 0.35rem 0';
+  title.textContent = tr('connexions_help_title');
+  box.appendChild(title);
+  const lead = document.createElement('p');
+  lead.style.cssText = 'font-size:0.82rem;color:var(--rsn-muted);margin:0 0 1rem;line-height:1.5';
+  lead.textContent = tr('connexions_help_lead');
+  box.appendChild(lead);
+  CONNEXIONS_HELP_SECTIONS.forEach(([hKey, tKey]) => {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin:0.85rem 0 0.25rem';
+    h.textContent = tr(hKey);
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:0.86rem;line-height:1.55;margin:0;color:var(--rsn-text)';
+    p.textContent = tr(tKey);
+    box.appendChild(h); box.appendChild(p);
+  });
+  overlay.classList.add('active');
+  const closeBtn = box.querySelector('.member-modal-close');
+  if (closeBtn) closeBtn.focus();
+}
+function closeConnexionsHelp() {
+  const overlay = document.getElementById('connexionsHelpOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
 document.addEventListener('click', e => { const el = e.target.closest('.map-member-link'); if (el && el.dataset.member) showMemberPopup(el.dataset.member); });
 
 // ─── MAP ───
