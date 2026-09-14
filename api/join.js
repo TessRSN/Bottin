@@ -95,6 +95,9 @@ module.exports = async function handler(req, res) {
       // Si le toggle n'est pas dans le body (ancien client), default true.
       afficherCourriel: body.afficherCourriel !== false,
       themes: (themes || '').trim(),
+      // Phase 3c (2026-09-14): harmonisation avec la page de modification —
+      // le projet de recherche se saisit aussi a l'inscription (facultatif).
+      projet: (body.projet || '').trim(),
       cv: body.cv || null,
       orcid: body.orcid || null,
       refere: (body.refere || '').trim(),

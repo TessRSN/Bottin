@@ -178,10 +178,32 @@
 
   <div class="card">
     <div class="section-title" id="s_research">Recherche &amp; expertise</div>
-    <div class="field"><label id="l_expertise">Expertise</label><textarea id="f_expertise"></textarea></div>
-    <div class="field"><label id="l_themes">Thèmes d'intérêt</label><textarea id="f_themes"></textarea></div>
+    <!-- Phase 3c (2026-09-14): meme ordre que le formulaire d'inscription :
+         themes -> ORCID (suggestions juste sous leur cible) -> projet. Le champ
+         Expertise vient de l'ancien formulaire (16 fiches sur 708) : affiche
+         seulement s'il contient encore du texte, pour le deplacer ou l'effacer. -->
+    <div class="field" id="expertiseField" style="display:none">
+      <label id="l_expertise">Expertise (ancien formulaire)</label>
+      <div class="field-hint" id="h_expertise"></div>
+      <textarea id="f_expertise"></textarea>
+    </div>
+    <div class="field">
+      <label id="l_themes">Thèmes d'intérêt</label>
+      <div class="field-hint" id="h_themes"></div>
+      <textarea id="f_themes"></textarea>
+    </div>
+    <div class="field">
+      <label>ORCID</label>
+      <input id="f_orcid" placeholder="https://orcid.org/0000-...">
+      <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "themes" -->
+      <div id="orcidSuggestRoot"></div>
+    </div>
+    <div class="field">
+      <label id="l_projet">Projet de recherche</label>
+      <div class="field-hint" id="h_projet"></div>
+      <textarea id="f_projet"></textarea>
+    </div>
     <div class="field"><label id="l_reseau">Réseau</label><input id="f_reseau"></div>
-    <div class="field"><label id="l_projet">Projet de recherche</label><textarea id="f_projet"></textarea></div>
     <div class="field"><label id="l_etudiants">Personnes ou étudiant·es à référer pour rejoindre le RSN</label><div class="field-hint" id="h_etudiants"></div><textarea id="f_etudiants"></textarea></div>
   </div>
 
@@ -202,12 +224,6 @@
 
   <div class="card">
     <div class="section-title" id="s_links">Liens</div>
-    <div class="field">
-      <label>ORCID</label>
-      <input id="f_orcid" placeholder="https://orcid.org/0000-...">
-      <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "expertise" -->
-      <div id="orcidSuggestRoot"></div>
-    </div>
     <div class="field">
       <label id="l_cv">Site web</label>
       <div class="field-hint" id="h_cv">Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.</div>
@@ -322,7 +338,7 @@ function t(key) {
       s_identity:'Identité', s_research:'Recherche & expertise', s_axes:"Axes, principes & champs d'action", s_links:'Liens',
       s_status:'Statut actuel', s_institution:"Institution(s) d'affiliation", s_membership:"Type d'adhésion",
       l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel principal', l_email2:'Courriel secondaire',
-      l_expertise:'Expertise',
+      l_expertise:'Expertise (ancien formulaire)',
       l_themes:"Thèmes d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Personnes ou étudiant·es à référer pour rejoindre le RSN',
       h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Cela peut inclure vos étudiant·es sous supervision ou des collègues qui auraient leur place dans le réseau. L'équipe du RSN les contactera et leur proposera de rejoindre le réseau.",
       s_evaluateur:'Évaluation',
@@ -356,8 +372,10 @@ function t(key) {
       os_added:'Ajouté :',
       os_publications:'Publications',
       os_mesh:'MeSH (PubMed)',
-      os_site:'Site web trouvé sur votre profil ORCID, cliquez pour le renseigner :',
-      os_site_added:'Site web renseigné :',
+      os_bio_src:'Biographie',
+      h_expertise:"Champ hérité de l'ancien formulaire, qui n'apparaît plus à l'inscription. Déplacez son contenu dans « Thèmes d'intérêt » ou « Projet de recherche », puis videz-le.",
+      h_themes:'Séparés par une virgule. Votre identifiant ORCID, ci-dessous, peut vous en proposer.',
+      h_projet:'Facultatif. Quelques phrases sur vos travaux actuels ; ce texte apparaît sur votre fiche et sert aux connexions entre membres.',
       os_bio:'Biographie de votre profil ORCID, utilisable telle quelle comme point de départ :',
       os_bio_use:'Utiliser comme {field}',
       os_bio_filled:'Ce champ contient déjà du texte ; videz-le d’abord si vous voulez le remplacer.',
@@ -382,7 +400,7 @@ function t(key) {
       s_identity:'Identity', s_research:'Research & expertise', s_axes:'Axes, principles & action fields', s_links:'Links',
       s_status:'Present status', s_institution:'Institution(s) of affiliation', s_membership:'Membership type',
       l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
-      l_expertise:'Expertise',
+      l_expertise:'Expertise (old form)',
       l_themes:'Research themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'People or students to refer to join the RSN',
       h_etudiants:'Optional. List the name and email of each person, one per line. This can include students under your supervision or colleagues who would fit in the network. The RSN team will reach out and invite them to join.',
       s_evaluateur:'Evaluation',
@@ -416,8 +434,10 @@ function t(key) {
       os_added:'Added:',
       os_publications:'Publications',
       os_mesh:'MeSH (PubMed)',
-      os_site:'Website found on your ORCID profile, click to use it:',
-      os_site_added:'Website filled in:',
+      os_bio_src:'Biography',
+      h_expertise:'Field inherited from the old form, no longer shown at registration. Move its content to "Research interests" or "Research project", then clear it.',
+      h_themes:'Separated by commas. Your ORCID identifier, below, can suggest some.',
+      h_projet:'Optional. A few sentences about your current work; this text appears on your profile and feeds the connections between members.',
       os_bio:'Biography from your ORCID profile, usable as a starting point:',
       os_bio_use:'Use as {field}',
       os_bio_filled:'This field already contains text; clear it first if you want to replace it.',
@@ -449,7 +469,8 @@ function applyI18n() {
    'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
-   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo'
+   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo',
+   'h_expertise','h_themes','h_projet'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
   // Phase 3a: photo de profil — montage du cadreur au 1er passage, puis
   // retraduction des boutons aux changements de langue.
@@ -463,15 +484,12 @@ function applyI18n() {
   // Phase 3b: suggestions de mots-cles depuis ORCID (alimente f_expertise)
   const osLabels = { button: t('os_button'), loading: t('os_loading'), notFound: t('os_not_found'), empty: t('os_empty'),
     network: t('os_network'), pick: t('os_pick'), add: t('os_add'), added: t('os_added'), source: t('os_source'),
-    publications: t('os_publications'), mesh: t('os_mesh'), site: t('os_site'), siteAdded: t('os_site_added'),
+    publications: t('os_publications'), mesh: t('os_mesh'), bioSrc: t('os_bio_src'),
     bio: t('os_bio'), bioUse: t('os_bio_use'), bioFilled: t('os_bio_filled'),
-    bioTargets: [
-      { el: document.getElementById('f_expertise'), label: t('l_expertise') },
-      { el: document.getElementById('f_projet'), label: t('l_projet') },
-    ] };
+    bioTargets: [{ el: document.getElementById('f_projet'), label: t('l_projet') }] };
   if (!window.orcidSuggest && window.OrcidSuggest && document.getElementById('orcidSuggestRoot')) {
-    // Modification : mots-cles -> expertise, site web -> Site web, biographie -> expertise ou projet
-    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_expertise'), website: document.getElementById('f_cv'), labels: osLabels });
+    // Mots-cles -> themes ; biographie -> projet de recherche (identique au formulaire d'inscription)
+    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_themes'), labels: osLabels });
   } else if (window.orcidSuggest) {
     window.orcidSuggest.setLabels(osLabels);
   }
@@ -763,6 +781,8 @@ async function init() {
     // Phase 2f: precharger toggle afficher courriel
     document.getElementById('f_afficher_courriel').checked = (profile.afficherCourriel !== false);
     document.getElementById('f_expertise').value = profile.expertise || '';
+    // Phase 3c: champ Expertise herite de l'ancien formulaire, montre seulement s'il a du contenu
+    document.getElementById('expertiseField').style.display = (profile.expertise || '').trim() ? 'block' : 'none';
     document.getElementById('f_themes').value = profile.themes || '';
     document.getElementById('f_reseau').value = profile.reseau || '';
     document.getElementById('f_projet').value = profile.projet || '';
