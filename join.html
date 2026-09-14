@@ -216,6 +216,8 @@
         <label class="field-label" id="l_orcid">Identifiant ORCID</label>
         <div class="field-hint" id="h_orcid">Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)</div>
         <input id="f_orcid" placeholder="0000-0000-0000-0000">
+        <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "themes" -->
+        <div id="orcidSuggestRoot"></div>
       </div>
     </div>
 
@@ -329,6 +331,8 @@
 
 <!-- Phase 3a: cadrage de la photo de profil (partage avec edit.html) -->
 <script src="/photo-cropper.js"></script>
+<!-- Phase 3b: suggestions de mots-cles depuis le profil ORCID public (partage avec edit.html) -->
+<script src="/orcid-suggest.js"></script>
 <script>
 // ─── OPTIONS ───
 // Taxonomie validee 2026-05-04 : 14 options epicene neutre.
@@ -412,6 +416,15 @@ var I18N = {
     h_cv: 'Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
     l_orcid: 'Identifiant ORCID',
     h_orcid: 'Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)',
+    os_button: 'Suggérer des thèmes depuis mon profil ORCID',
+    os_loading: 'Lecture de votre profil ORCID public…',
+    os_not_found: "Aucun profil ORCID public trouvé pour cet identifiant. Vérifiez le format.",
+    os_empty: "Votre profil ORCID public ne contient pas encore de mots-clés ni de publications exploitables.",
+    os_network: "Impossible de joindre ORCID pour le moment. Réessayez plus tard.",
+    os_pick: 'Cochez les mots-clés à garder, puis ajoutez-les à vos thèmes :',
+    os_add: 'Ajouter à mes thèmes',
+    os_added: 'Ajouté :',
+    os_source: "Suggestions tirées des mots-clés de votre profil ORCID public et des thèmes qu'OpenAlex déduit de vos publications. Rien n'est ajouté sans votre choix ; vous pouvez ensuite modifier le texte librement.",
     s_referral: 'Informations complémentaires',
     l_refere: 'Référence par un membre actuel du RSN',
     h_refere: 'Nom, institution et courriel de la personne qui vous réfère',
@@ -495,6 +508,15 @@ var I18N = {
     h_cv: "Optional. One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
     l_orcid: 'ORCID Identifier',
     h_orcid: 'Format: XXXX-XXXX-XXXX-XXXX (last 16 digits)',
+    os_button: 'Suggest themes from my ORCID profile',
+    os_loading: 'Reading your public ORCID profile…',
+    os_not_found: 'No public ORCID profile found for this identifier. Please check the format.',
+    os_empty: 'Your public ORCID profile does not contain usable keywords or publications yet.',
+    os_network: 'ORCID cannot be reached right now. Please try again later.',
+    os_pick: 'Tick the keywords you want to keep, then add them to your themes:',
+    os_add: 'Add to my themes',
+    os_added: 'Added:',
+    os_source: 'Suggestions come from the keywords on your public ORCID profile and the research topics OpenAlex derives from your publications. Nothing is added without your choice; you can edit the text freely afterwards.',
     s_referral: 'Additional information',
     l_refere: 'Referral by a current RSN member',
     h_refere: 'Name, institution and email of the person referring you',
@@ -600,6 +622,14 @@ function applyI18n() {
     window.photoCropper = PhotoCropper.mount({ root: document.getElementById('photoCropperRoot'), input: document.getElementById('f_photo'), labels: photoLabels });
   } else if (window.photoCropper) {
     window.photoCropper.setLabels(photoLabels);
+  }
+  // Phase 3b: suggestions de themes depuis ORCID (alimente f_themes)
+  var osLabels = { button: t('os_button'), loading: t('os_loading'), notFound: t('os_not_found'), empty: t('os_empty'),
+    network: t('os_network'), pick: t('os_pick'), add: t('os_add'), added: t('os_added'), source: t('os_source') };
+  if (!window.orcidSuggest && window.OrcidSuggest && document.getElementById('orcidSuggestRoot')) {
+    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_themes'), labels: osLabels });
+  } else if (window.orcidSuggest) {
+    window.orcidSuggest.setLabels(osLabels);
   }
   setWithRequired('l_orcid', t('l_orcid'), false);
   setWithRequired('l_refere', t('l_refere'), false);
