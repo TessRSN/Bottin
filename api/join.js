@@ -100,6 +100,9 @@ module.exports = async function handler(req, res) {
       projet: (body.projet || '').trim(),
       cv: body.cv || null,
       orcid: body.orcid || null,
+      // Phase 3d (2026-09-14): fiche auteur OpenAlex choisie par la personne
+      // pour les suggestions de themes (format verifie dans createMember).
+      openalex: body.openalex || null,
       refere: (body.refere || '').trim(),
       reseau: (body.reseau || '').trim(),
       // Phase 2i (2026-05-04): champs reintegres depuis l'ancien formulaire

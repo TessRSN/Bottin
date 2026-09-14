@@ -28,6 +28,7 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 - Supprimer la propriété Notion « Expertise » (vide) et l'option « Incertain·e pour le moment » du select « Évaluateur » (sans fiche) — à la main dans Notion, quand `main` ne les lit plus.
 - **Au moment de la fusion dans `main`, aussi** : (a) renommer la propriété Notion « Projet de recherche » → « Présentation » et mettre à jour `PROP.projet`, `CSV_COL.projet`, `CONFIG.COL.projet` ; (b) migrer les 34 fiches « Coordination ou gestion d'équipe » vers « Personne en coordination ou gestion de la recherche » (nouveau libellé du 2026-09-14) puis retirer l'ancien libellé de `STATUT_OPTIONS` (api/membership-report.js) et du select Notion. D'ici là, la page de modification présélectionne le nouveau libellé pour l'ancien.
 - 293 fiches approuvées sans statut, 430 sans consentement, ~300 sans axes : à combler par la campagne de renouvellement et de re-consentement.
+- **Créée dans Notion le 2026-09-14** : propriété technique « OpenAlex ID » (texte) — fiche auteur OpenAlex choisie par la personne dans les formulaires (recherche par nom, sans ORCID) pour les suggestions de thèmes. Jamais affichée ni exportée dans le bottin ; présente dans les sauvegardes. Pourra servir plus tard à lister les publications.
 
 ## Édition profil
 

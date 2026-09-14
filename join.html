@@ -206,15 +206,17 @@
            themes -> ORCID (suggestions juste sous leur cible) -> projet -> site web -->
       <div class="field">
         <label class="field-label" id="l_themes">Thèmes de recherche ou d'intérêt<span class="required-mark">*</span></label>
-        <div class="field-hint" id="h_themes">Séparés par une virgule. Votre identifiant ORCID, ci-dessous, peut vous en proposer.</div>
+        <div class="field-hint" id="h_themes">Séparés par une virgule. Votre profil ORCID ou vos publications, ci-dessous, peuvent vous en proposer.</div>
         <textarea id="f_themes" rows="2"></textarea>
       </div>
       <div class="field">
         <label class="field-label" id="l_orcid">Identifiant ORCID</label>
         <div class="field-hint" id="h_orcid">Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)</div>
         <input id="f_orcid" placeholder="0000-0000-0000-0000">
-        <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "themes" -->
+        <!-- Phase 3b: boutons + puces de suggestions, alimentent le champ "themes".
+             Phase 3d: fiche auteur OpenAlex retenue par la personne (recherche par nom), memorisee dans Notion -->
         <div id="orcidSuggestRoot"></div>
+        <input type="hidden" id="f_openalex">
       </div>
       <div class="field">
         <label class="field-label" id="l_projet">Présentation</label>
@@ -411,7 +413,7 @@ var I18N = {
     s_membership: "Type d'adhésion souhaité",
     s_research: 'Recherche et intérêts',
     l_themes: "Thèmes de recherche ou d'intérêt",
-    h_themes: 'Séparés par une virgule. Votre identifiant ORCID, ci-dessous, peut vous en proposer.',
+    h_themes: 'Séparés par une virgule. Votre profil ORCID ou vos publications, ci-dessous, peuvent vous en proposer.',
     l_photo: 'Photo de profil',
     h_photo: 'Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.',
     photo_choose: 'Choisir une photo', photo_change: 'Changer de photo', photo_remove: 'Retirer',
@@ -440,6 +442,30 @@ var I18N = {
     l_projet: 'Présentation',
     h_projet: 'Facultatif. Vos travaux et intérêts en quelques phrases ; ce texte apparaît sur votre fiche et sert aux connexions entre membres.',
     os_source: "Suggestions tirées des mots-clés de votre profil ORCID public et des thèmes qu'OpenAlex déduit de vos publications. Rien n'est ajouté sans votre choix ; vous pouvez ensuite modifier le texte librement.",
+    // Phase 3d : recherche de la fiche de publications (OpenAlex) par le nom, sans ORCID
+    os_pubs_button: 'Suggérer des thèmes depuis mes publications',
+    os_name_button: 'Chercher mes publications par mon nom',
+    os_name_search: 'Chercher',
+    os_name_placeholder: 'Prénom Nom',
+    os_name_loading: 'Recherche des fiches correspondantes dans OpenAlex…',
+    os_name_none: "Aucune fiche de publications trouvée pour ce nom. Essayez une autre orthographe ou une initiale ; si vous publiez, un identifiant ORCID facilite ce lien.",
+    os_name_pick: 'Fiches trouvées dans OpenAlex. Choisissez la vôtre :',
+    os_name_me: "C'est moi",
+    os_name_none_of_these: 'Aucune de ces fiches',
+    os_name_chosen: 'Fiche de publications retenue : {name}',
+    os_name_change: 'Changer',
+    os_name_remove: 'Retirer',
+    os_works: '{n} publications',
+    os_work: '1 publication',
+    os_pubs_loading: 'Lecture de vos publications…',
+    os_pubs_empty: "Cette fiche ne contient pas encore de thèmes exploitables.",
+    os_network_openalex: "Impossible de joindre OpenAlex pour le moment. Réessayez plus tard.",
+    os_source_pubs: "Suggestions tirées des thèmes qu'OpenAlex déduit de vos publications. Rien n'est ajouté sans votre choix ; vous pouvez ensuite modifier le texte librement.",
+    os_help_btn: "D'où viennent ces suggestions ?",
+    os_help_orcid: "ORCID (orcid.org) : nous lisons, par l'interface publique d'ORCID, uniquement ce que vous avez rendu visible à tout le monde sur votre profil : mots-clés, nom, biographie et liste de publications.",
+    os_help_openalex: "OpenAlex (openalex.org) : base ouverte et gratuite des publications scientifiques (données sous licence CC0, maintenue par l'organisme sans but lucratif OurResearch), qui déduit des thèmes de recherche à partir des articles. La recherche par nom interroge cette base ; vous choisissez vous-même votre fiche.",
+    os_help_mesh: "MeSH (PubMed) : termes d'indexation attribués à vos articles par la Bibliothèque nationale de médecine des États-Unis, relayés par OpenAlex.",
+    os_help_privacy: "Ces services ne reçoivent que votre identifiant ORCID ou le nom que vous saisissez, rien d'autre de ce formulaire. Rien n'est ajouté à votre fiche sans votre choix. Seul l'identifiant de la fiche OpenAlex que vous retenez est conservé, pour vous éviter de la rechercher de nouveau.",
     s_referral: 'Informations complémentaires',
     l_refere: 'Référence par un membre actuel du RSN',
     h_refere: 'Nom, institution et courriel de la personne qui vous réfère',
@@ -511,7 +537,7 @@ var I18N = {
     s_membership: 'Desired RSN Membership',
     s_research: 'Research and interests',
     l_themes: 'Research or interest themes',
-    h_themes: 'Separated by commas. Your ORCID identifier, below, can suggest some.',
+    h_themes: 'Separated by commas. Your ORCID profile or your publications, below, can suggest some.',
     l_photo: 'Profile photo',
     h_photo: 'Optional. Shown as a circle on your profile and your card in the directory. Drag the photo and zoom to frame your face. JPG, PNG or WebP.',
     photo_choose: 'Choose a photo', photo_change: 'Change photo', photo_remove: 'Remove',
@@ -540,6 +566,30 @@ var I18N = {
     l_projet: 'About your work',
     h_projet: 'Optional. Your work and interests in a few sentences; this text appears on your profile and feeds the connections between members.',
     os_source: 'Suggestions come from the keywords on your public ORCID profile and the research topics OpenAlex derives from your publications. Nothing is added without your choice; you can edit the text freely afterwards.',
+    // Phase 3d: find the publication record (OpenAlex) by name, without ORCID
+    os_pubs_button: 'Suggest themes from my publications',
+    os_name_button: 'Find my publications by my name',
+    os_name_search: 'Search',
+    os_name_placeholder: 'First name Last name',
+    os_name_loading: 'Searching for matching records in OpenAlex…',
+    os_name_none: 'No publication record found for this name. Try another spelling or an initial; if you publish, an ORCID identifier makes this link easier.',
+    os_name_pick: 'Records found in OpenAlex. Pick yours:',
+    os_name_me: "That's me",
+    os_name_none_of_these: 'None of these',
+    os_name_chosen: 'Publication record selected: {name}',
+    os_name_change: 'Change',
+    os_name_remove: 'Remove',
+    os_works: '{n} publications',
+    os_work: '1 publication',
+    os_pubs_loading: 'Reading your publications…',
+    os_pubs_empty: 'This record does not contain usable topics yet.',
+    os_network_openalex: 'OpenAlex cannot be reached right now. Please try again later.',
+    os_source_pubs: 'Suggestions come from the research topics OpenAlex derives from your publications. Nothing is added without your choice; you can edit the text freely afterwards.',
+    os_help_btn: 'Where do these suggestions come from?',
+    os_help_orcid: "ORCID (orcid.org): through ORCID's public interface we read only what you have made visible to everyone on your profile: keywords, name, biography and list of publications.",
+    os_help_openalex: 'OpenAlex (openalex.org): a free, open database of scholarly publications (CC0 data, maintained by the non-profit OurResearch) that derives research topics from articles. The search by name queries this database; you pick your own record.',
+    os_help_mesh: 'MeSH (PubMed): indexing terms assigned to your articles by the United States National Library of Medicine, relayed by OpenAlex.',
+    os_help_privacy: 'These services receive only your ORCID identifier or the name you type, nothing else from this form. Nothing is added to your record without your choice. Only the identifier of the OpenAlex record you select is kept, so you do not have to search for it again.',
     s_referral: 'Additional information',
     l_refere: 'Referral by a current RSN member',
     h_refere: 'Name, institution and email of the person referring you',
@@ -648,14 +698,23 @@ function applyI18n() {
     window.photoCropper.setLabels(photoLabels);
   }
   // Phase 3b: suggestions de themes depuis ORCID (alimente f_themes)
+  // Phase 3d: ou depuis la fiche de publications OpenAlex retrouvee par le nom (f_openalex memorise la fiche choisie)
   var osLabels = { button: t('os_button'), loading: t('os_loading'), notFound: t('os_not_found'), empty: t('os_empty'),
     network: t('os_network'), pick: t('os_pick'), add: t('os_add'), added: t('os_added'), source: t('os_source'),
     publications: t('os_publications'), mesh: t('os_mesh'), bioSrc: t('os_bio_src'),
     bio: t('os_bio'), bioUse: t('os_bio_use'), bioFilled: t('os_bio_filled'),
+    pubsButton: t('os_pubs_button'), nameButton: t('os_name_button'), nameSearch: t('os_name_search'), namePlaceholder: t('os_name_placeholder'),
+    nameLoading: t('os_name_loading'), nameNone: t('os_name_none'), namePick: t('os_name_pick'), nameMe: t('os_name_me'),
+    nameNoneOfThese: t('os_name_none_of_these'), nameChosen: t('os_name_chosen'), nameChange: t('os_name_change'), nameRemove: t('os_name_remove'),
+    works: t('os_works'), work: t('os_work'), pubsLoading: t('os_pubs_loading'), pubsEmpty: t('os_pubs_empty'),
+    networkOpenAlex: t('os_network_openalex'), sourcePubs: t('os_source_pubs'),
+    helpBtn: t('os_help_btn'), helpTitle: t('os_help_btn'), helpOrcid: t('os_help_orcid'), helpOpenAlex: t('os_help_openalex'),
+    helpMesh: t('os_help_mesh'), helpPrivacy: t('os_help_privacy'),
     bioTargets: [{ el: document.getElementById('f_projet'), label: t('l_projet') }] };
   if (!window.orcidSuggest && window.OrcidSuggest && document.getElementById('orcidSuggestRoot')) {
-    // Mots-cles -> themes ; biographie -> projet de recherche (identique a la page de modification)
-    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_themes'), labels: osLabels });
+    // Mots-cles -> themes ; biographie -> presentation (identique a la page de modification)
+    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_themes'),
+      openalexInput: document.getElementById('f_openalex'), nameInputs: [document.getElementById('f_prenom'), document.getElementById('f_nom')], labels: osLabels });
   } else if (window.orcidSuggest) {
     window.orcidSuggest.setLabels(osLabels);
   }
@@ -957,6 +1016,8 @@ function submit() {
     // Phase 3a: photo de profil recadree (data URL JPEG 512 px) ou null
     photo: (window.photoCropper && window.photoCropper.getDataUrl()) || null,
     orcid: document.getElementById('f_orcid').value.trim() || null,
+    // Phase 3d: fiche de publications OpenAlex retenue (identifiant « A… ») ou null
+    openalex: document.getElementById('f_openalex').value.trim() || null,
     refere: document.getElementById('f_refere').value.trim(),
     reseau: document.getElementById('f_reseau').value.trim(),
     axes: getChips('axes_group'),

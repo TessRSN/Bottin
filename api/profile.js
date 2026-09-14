@@ -27,6 +27,7 @@ const EDITABLE_FIELDS = [
   'axes', 'principes', 'champs', 'orcid', 'cv', 'consent',
   'afficherCourriel', // Phase 2f (2026-05-04): toggle email public
   'evaluateur',       // Phase 2i (2026-05-04): Oui/Non/Incertain
+  'openalex',         // Phase 3d (2026-09-14): fiche auteur OpenAlex choisie (format verifie dans updateProfile)
 ];
 
 module.exports = async function handler(req, res) {
