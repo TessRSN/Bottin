@@ -246,8 +246,10 @@
         .principe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #fefcbf; color: #975a16; white-space: nowrap; }
         .action-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #c6f6d5; color: #276749; white-space: nowrap; }
         .card-links { display: flex; gap: 0.75rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--rsn-border); flex-wrap: wrap; }
-        .card-link { font-size: 0.78rem; color: var(--rsn-accent); text-decoration: none; display: flex; align-items: center; gap: 0.2rem; }
-        .card-link:hover { text-decoration: underline; }
+        /* Liens externes (ORCID, site web) : vrais boutons, cliquables au premier coup d'oeil */
+        .card-link { font-size: 0.78rem; font-weight: 600; color: var(--rsn-accent); text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--rsn-accent); border-radius: 999px; background: transparent; line-height: 1.2; transition: background 0.15s, color 0.15s; }
+        .card-link::after { content: '\2197'; font-size: 0.8em; opacity: 0.85; }
+        .card-link:hover { background: var(--rsn-accent); color: #fff; text-decoration: none; }
         .card-expand-btn { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0; margin-top: 0.3rem; }
         .card-expand-btn:hover { text-decoration: underline; }
         .card-extra { display: none; }
@@ -514,9 +516,10 @@
         <div id="connexionsHint" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;background:rgba(43,108,176,0.92);color:#fff;padding:0.5rem 0.9rem;border-radius:6px;font-size:0.78rem;font-weight:500;max-width:90%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);pointer-events:none" data-i18n="connexions_hint_filters">Tous les membres affichés. Utilisez la barre de recherche ou les filtres ci-dessus pour mieux explorer.</div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-regulier);border:2px solid #2b6cb0"></span> <span data-i18n="regular">Régulier</span></div>
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-etudiant);border:2px solid #975a16"></span> <span data-i18n="student">Étudiant</span></div>
-        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:var(--rsn-tag-partenaire);border:2px solid #276749"></span> <span data-i18n="partner">Partenaire</span></div>
+        <!-- Pastilles : meme rendu que les noeuds du graphe et les marqueurs de la carte (remplissage 40 %, bord 70 %) -->
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(43,108,176,0.4);border:1.5px solid rgba(43,108,176,0.7)"></span> <span data-i18n="regular">Régulier</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(214,158,46,0.4);border:1.5px solid rgba(214,158,46,0.7)"></span> <span data-i18n="student">Étudiant</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(56,161,105,0.4);border:1.5px solid rgba(56,161,105,0.7)"></span> <span data-i18n="partner">Partenaire</span></div>
         <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
         <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="4" max="15" step="1" value="4" style="width:110px;margin:0;cursor:pointer"></label>
         <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
@@ -652,6 +655,7 @@ const I18N = {
         th_status: 'Statut', th_type: 'Type', th_axis: 'Axe prioritaire',
         th_principle: 'Principe', th_action: "Champ d'action",
         th_expertise: 'Expertise', th_links: 'Liens',
+        lbl_website: 'Site web',
         // Map
         map_geolocated: 'membres géolocalisés',
         map_coverage: 'Couverture',
@@ -735,6 +739,7 @@ const I18N = {
         th_status: 'Status', th_type: 'Type', th_axis: 'Primary axis',
         th_principle: 'Principle', th_action: 'Field of action',
         th_expertise: 'Expertise', th_links: 'Links',
+        lbl_website: 'Website',
         map_geolocated: 'geolocated members',
         map_coverage: 'Coverage',
         map_institutions_on: 'institutions out of',
@@ -2112,6 +2117,18 @@ function connexionsNodeSize(degree) {
   return Math.min(Math.max(8 + Math.sqrt(degree) * 3, 6), 28);
 }
 
+// Couleur des traits : assez contrastee sur fond blanc (mode clair) comme sur
+// fond sombre. Avant v7 : rgba(120,120,140,0.35), quasi invisible en clair.
+function connexionsEdgeColor(isDark) {
+  return isDark ? 'rgba(203,213,225,0.45)' : 'rgba(71,85,105,0.55)';
+}
+
+// '#2b6cb0' + alpha -> 'rgba(43,108,176,alpha)'
+function connexionsRgba(hex, alpha) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
 function connexionsMakeEdge(e, edgeColor) {
   return {
     id: e.key,
@@ -2129,7 +2146,7 @@ function applyConnexionsDensity() {
   if (!st || !_connexionsNetwork || !st.pairScores) return;
   const edgeSet = selectConnexionsEdges(st.pairScores, st.N, getConnexionsMinScore());
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const edgeColor = isDark ? 'rgba(200,200,220,0.3)' : 'rgba(120,120,140,0.35)';
+  const edgeColor = connexionsEdgeColor(isDark);
   const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
   st.edgesDS.clear();
   st.edgesDS.add(edges);
@@ -2266,14 +2283,23 @@ function buildAndShowConnexionsGraph() {
   const edgeSet = selectConnexionsEdges(pairScores, N, getConnexionsMinScore());
   const degree = new Array(N).fill(0);
   for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
-  const TYPE_COLORS = {
-    'Régulier':   { background: '#bee3f8', border: '#2b6cb0' },
-    'Étudiant':   { background: '#fefcbf', border: '#975a16' },
-    'Partenaire': { background: '#c6f6d5', border: '#276749' },
-  };
-  const DEFAULT_COLOR = { background: '#e2e8f0', border: '#718096' };
   // Phase 2j v3: detection theme pour la couleur des labels (lisible en dark mode).
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  // Phase 2j v7: meme rendu que les marqueurs de la carte (bord fin
+  // semi-transparent, remplissage a 40 %), avec la couleur du type de membre
+  // (--rsn-tag-*). Un peu plus opaque en mode sombre pour rester lisible.
+  const FILL_A = isDark ? 0.5 : 0.4, BORDER_A = isDark ? 0.9 : 0.7;
+  const typeColor = (hex) => ({
+    background: connexionsRgba(hex, FILL_A), border: connexionsRgba(hex, BORDER_A),
+    highlight: { background: connexionsRgba(hex, 0.75), border: hex },
+    hover: { background: connexionsRgba(hex, 0.6), border: hex },
+  });
+  const TYPE_COLORS = {
+    'Régulier':   typeColor('#2b6cb0'),
+    'Étudiant':   typeColor('#d69e2e'),
+    'Partenaire': typeColor('#38a169'),
+  };
+  const DEFAULT_COLOR = typeColor('#718096');
   const nodeFontColor = isDark ? '#f1f5f9' : '#1a202c';
   const nodeFontStrokeColor = isDark ? '#0f172a' : '#ffffff';
   const nodes = eligible.map((m, i) => {
@@ -2284,8 +2310,8 @@ function buildAndShowConnexionsGraph() {
       id: i,
       label: stripped,
       title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
-      color: { background: c.background, border: c.border, highlight: { background: c.background, border: c.border } },
-      borderWidth: 2,
+      color: c,
+      borderWidth: 1.5,
       size: connexionsNodeSize(degree[i]),
       shape: 'dot',
       font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
@@ -2293,7 +2319,7 @@ function buildAndShowConnexionsGraph() {
     };
   });
   // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
-  const edgeColor = isDark ? 'rgba(200,200,220,0.3)' : 'rgba(120,120,140,0.35)';
+  const edgeColor = connexionsEdgeColor(isDark);
   const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
   const countEl = document.getElementById('connexionsCount');
   if (countEl) {
@@ -2306,7 +2332,7 @@ function buildAndShowConnexionsGraph() {
   const edgesDS = new vis.DataSet(edges);
   const data = { nodes: nodesDS, edges: edgesDS };
   const options = {
-    nodes: { shape: 'dot', borderWidth: 2 },
+    nodes: { shape: 'dot', borderWidth: 1.5, borderWidthSelected: 2.5 },
     edges: { smooth: { type: 'continuous', roundness: 0.2 }, scaling: { min: 0.5, max: 4 } },
     physics: {
       // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
@@ -2473,7 +2499,7 @@ function renderCards() {
         const expertiseText = m.themes || m.expertise || '';
         let links=[];
         if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
-        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
         const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
         let chips = [];
         if(ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
@@ -2774,7 +2800,7 @@ function showMemberPopup(name) {
     const expertiseText = m.themes || m.expertise || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
-    if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+    if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
     const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
     let chips = [];
     if (ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);

@@ -196,7 +196,11 @@
   <div class="card">
     <div class="section-title" id="s_links">Liens</div>
     <div class="field"><label>ORCID</label><input id="f_orcid" placeholder="https://orcid.org/0000-..."></div>
-    <div class="field"><label>CV / LinkedIn</label><input id="f_cv" placeholder="https://..."></div>
+    <div class="field">
+      <label id="l_cv">Site web</label>
+      <div class="field-hint" id="h_cv">Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.</div>
+      <input id="f_cv" placeholder="https://...">
+    </div>
   </div>
 
   <div class="card">
@@ -317,6 +321,8 @@ function t(key) {
       nl_btn:"S'abonner à l'infolettre →",
       nl_done:"Merci ! La confirmation s'ouvre dans un nouvel onglet.",
       nl_footer:'Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.',
+      l_cv:'Site web',
+      h_cv:'Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
       msg_success:"Merci ! Vos modifications nous sont bien parvenues. Notre équipe les examinera et les publiera dans le bottin sous 1 à 2 semaines.\n\nUne fois approuvées, pensez à rafraîchir la page du bottin pour les voir (Cmd + Maj + R sur Mac, Ctrl + Maj + R sur Windows).\n\nSi vous n'avez pas de nouvelles d'ici deux semaines, n'hésitez pas à nous écrire à rsn.gestion@rimuhc.ca — nous serons ravi·es de répondre.",
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
@@ -352,6 +358,8 @@ function t(key) {
       nl_btn:'Subscribe to the newsletter →',
       nl_done:'Thank you! The confirmation opens in a new tab.',
       nl_footer:'If you are already subscribed, Mailchimp will simply let you know.',
+      l_cv:'Website',
+      h_cv:"One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
       msg_success:"Thank you! We've received your changes. Our team will review and publish them in the directory within 1 to 2 weeks.\n\nOnce approved, refresh the directory page to see them (Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows).\n\nIf you don't hear back within two weeks, feel free to email us at rsn.gestion@rimuhc.ca — we'll be happy to help.",
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
@@ -379,7 +387,7 @@ function applyI18n() {
    'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
-   'nl_title','nl_text','nl_btn','nl_done','nl_footer'
+   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
   const nlEmail = document.getElementById('nl_email');
   if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
