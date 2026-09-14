@@ -78,6 +78,12 @@
   .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; z-index:10; display:inline-flex; align-items:center; }
   .theme-toggle svg { width:14px; height:14px; }
   .hidden { display:none !important; }
+  /* Infolettre (opt-in Mailchimp, formulaire integre) : bloc permanent de la page profil */
+  .newsletter-box h3 { font-size:1rem; color:var(--text); margin:0 0 .4rem; }
+  .newsletter-box p { font-size:.85rem; color:var(--muted); line-height:1.5; margin:0 0 .85rem; }
+  .newsletter-box form { display:flex; flex-direction:column; gap:.6rem; max-width:420px; }
+  .newsletter-box .nl-footer { margin:.75rem 0 0; font-size:.75rem; }
+  .newsletter-box .nl-done { color:var(--success); font-weight:600; margin:0; }
 </style>
 </head>
 <body>
@@ -206,6 +212,22 @@
     </div>
   </div>
 
+  <!-- Infolettre : opt-in facultatif via le formulaire integre Mailchimp (meme audience que rsn.quebec).
+       Envoi direct navigateur -> Mailchimp, aucune cle API. Independant du bouton Enregistrer. -->
+  <div class="card newsletter-box" id="nlBox">
+    <h3 id="nl_title">Infolettre du RSN</h3>
+    <p id="nl_text">Recevez les actualités du réseau, les appels à communication et les événements à venir. Facultatif, désabonnement en un clic.</p>
+    <form id="nlForm" action="https://quebec.us22.list-manage.com/subscribe/post?u=d3aa458695db41d98223d8c36&amp;id=5343fbdd97&amp;f_id=0022e0e1f0" method="post" target="_blank">
+      <input type="email" name="EMAIL" id="nl_email" required placeholder="Votre adresse courriel" autocomplete="email">
+      <input type="hidden" name="FNAME" id="nl_fname" value="">
+      <input type="hidden" name="LNAME" id="nl_lname" value="">
+      <div style="position:absolute;left:-5000px" aria-hidden="true"><input type="text" name="b_d3aa458695db41d98223d8c36_5343fbdd97" tabindex="-1" value=""></div>
+      <button type="submit" class="btn btn-primary" id="nl_btn">S'abonner à l'infolettre →</button>
+    </form>
+    <p class="nl-done" id="nl_done" style="display:none">Merci ! La confirmation s'ouvre dans un nouvel onglet.</p>
+    <p class="nl-footer" id="nl_footer">Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.</p>
+  </div>
+
   <div class="actions">
     <a href="/" class="btn btn-secondary" style="text-decoration:none" id="cancelBtn">Annuler</a>
     <button class="btn btn-primary" onclick="save()" id="saveBtn">Enregistrer</button>
@@ -289,6 +311,12 @@ function t(key) {
       l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
       opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
+      nl_title:'Infolettre du RSN',
+      nl_text:'Recevez les actualités du réseau, les appels à communication et les événements à venir. Facultatif, désabonnement en un clic.',
+      nl_email_placeholder:'Votre adresse courriel',
+      nl_btn:"S'abonner à l'infolettre →",
+      nl_done:"Merci ! La confirmation s'ouvre dans un nouvel onglet.",
+      nl_footer:'Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.',
       msg_success:"Merci ! Vos modifications nous sont bien parvenues. Notre équipe les examinera et les publiera dans le bottin sous 1 à 2 semaines.\n\nUne fois approuvées, pensez à rafraîchir la page du bottin pour les voir (Cmd + Maj + R sur Mac, Ctrl + Maj + R sur Windows).\n\nSi vous n'avez pas de nouvelles d'ici deux semaines, n'hésitez pas à nous écrire à rsn.gestion@rimuhc.ca — nous serons ravi·es de répondre.",
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
@@ -318,6 +346,12 @@ function t(key) {
       l_consent:'Do you authorize RSN to create a public member profile?',
       opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
+      nl_title:'RSN newsletter',
+      nl_text:'Network news, calls for abstracts and upcoming events. Optional, one-click unsubscribe.',
+      nl_email_placeholder:'Your email address',
+      nl_btn:'Subscribe to the newsletter →',
+      nl_done:'Thank you! The confirmation opens in a new tab.',
+      nl_footer:'If you are already subscribed, Mailchimp will simply let you know.',
       msg_success:"Thank you! We've received your changes. Our team will review and publish them in the directory within 1 to 2 weeks.\n\nOnce approved, refresh the directory page to see them (Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows).\n\nIf you don't hear back within two weeks, feel free to email us at rsn.gestion@rimuhc.ca — we'll be happy to help.",
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
@@ -344,8 +378,11 @@ function applyI18n() {
    'l_prenom','l_nom','l_email','l_email2',
    'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
-   'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn'
+   'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
+   'nl_title','nl_text','nl_btn','nl_done','nl_footer'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+  const nlEmail = document.getElementById('nl_email');
+  if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
   // Phase 2i: hint sous le textarea etudiants/referer
   const hEtu = document.getElementById('h_etudiants');
   if (hEtu) hEtu.textContent = t('h_etudiants');
@@ -625,6 +662,10 @@ async function init() {
     document.getElementById('f_nom').value = profile.nom || '';
     document.getElementById('f_email').value = profile.email || '';
     document.getElementById('f_email2').value = profile.email2 || '';
+    // Pre-remplir le formulaire infolettre (opt-in facultatif) avec la fiche
+    document.getElementById('nl_email').value = profile.email || '';
+    document.getElementById('nl_fname').value = profile.prenom || '';
+    document.getElementById('nl_lname').value = profile.nom || '';
     // Phase 2f: precharger toggle afficher courriel
     document.getElementById('f_afficher_courriel').checked = (profile.afficherCourriel !== false);
     document.getElementById('f_expertise').value = profile.expertise || '';
@@ -844,6 +885,20 @@ function showMsg(text, type) {
   const el = document.getElementById('msgBox');
   el.textContent = text; el.className = 'msg ' + type;
 }
+
+// ─── INFOLETTRE (opt-in Mailchimp) ───
+// Le formulaire poste directement chez Mailchimp dans un nouvel onglet ; ici on ne fait
+// que basculer l'affichage vers le message de remerciement (pas de preventDefault).
+(function() {
+  const nlForm = document.getElementById('nlForm');
+  if (!nlForm) return;
+  nlForm.addEventListener('submit', function() {
+    setTimeout(function() {
+      nlForm.style.display = 'none';
+      document.getElementById('nl_done').style.display = 'block';
+    }, 300);
+  });
+})();
 
 init();
 </script>

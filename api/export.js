@@ -7,7 +7,8 @@
  */
 const crypto = require('crypto');
 const {
-  getAllMembers, markAcceptanceEmailSent, setMemberCheckbox, archiveMemberPage,
+  getAllMembers, getAllInstitutions, markAcceptanceEmailSent,
+  setMemberCheckbox, archiveMemberPage,
   CSV_COL,
 } = require('../lib/notion');
 const {
@@ -321,6 +322,39 @@ module.exports = async function handler(req, res) {
 
   try {
     const members = await getAllMembers();
+
+    // Phase 2k (2026-05-16) : prioriser la relation "Institution liée"
+    // (Notion DB Institutions) sur le champ texte legacy "Institution /
+    // organisation 1" pour le rendu du bottin.
+    //
+    // Avantages :
+    // - Renommer une institution dans la DB Institutions se reflète
+    //   automatiquement sur le bottin (avant : fallait éditer chaque fiche
+    //   membre une par une parce que le bottin lisait le champ texte qui ne
+    //   bougeait pas quand on renommait l'institution).
+    // - Les coordonnées GEOCODE pointent sur le nom canonique, donc plus de
+    //   marqueurs "perdus" après un renommage.
+    //
+    // Fallback : si la relation est vide pour un membre (vieille fiche pas
+    // encore migrée), on garde son champ texte existant.
+    try {
+      const institutions = await getAllInstitutions();
+      const instMap = Object.fromEntries(institutions.map(i => [i.id, i.name]));
+      let resolved = 0;
+      for (const m of members) {
+        if (!m.institutionIds || m.institutionIds.length === 0) continue;
+        const canonical = m.institutionIds.map(id => instMap[id]).filter(Boolean);
+        if (canonical.length > 0) {
+          m.institution = canonical.join('; ');
+          resolved++;
+        }
+      }
+      console.log(`[export] Institutions resolved via relation: ${resolved}/${members.length} members`);
+    } catch (err) {
+      // En cas d'erreur (Notion down sur la DB Institutions), on log et on
+      // continue avec le champ texte — le bottin reste fonctionnel.
+      console.error('[export] Failed to resolve institution relation:', err.message);
+    }
 
     const publicRows = [];
     const pendingRows = [];
