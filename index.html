@@ -2150,7 +2150,19 @@ function connexionsMakeEdge(e, edgeColor) {
   };
 }
 
-// Recalcule le placement hors ecran puis fige a nouveau la physique.
+// Deux regimes de physique :
+//  - FAST : pendant les calculs hors ecran (stabilisation), vitesse par defaut ;
+//  - CALM : a l'ecran, vitesse plafonnee tres bas et seuil d'arret quasi nul,
+//    pour que le graphe respire lentement sans jamais courir.
+//    Calibre par mesure (2026-09-14, 277 membres) : maxVelocity 0.8 et timestep
+//    0.15 donnent ~3 px/s au zoom habituel apres chargement, ~7 px/s juste apres
+//    un changement de curseur, puis ca decroit. Le pas de temps adaptatif est
+//    coupe en regime calme : sinon la bibliotheque accelere d'elle-meme la
+//    simulation des qu'elle est loin de l'equilibre et le plafond ne tient plus.
+const CONNEXIONS_PHYSICS_FAST = { enabled: true, maxVelocity: 50, minVelocity: 0.75, timestep: 0.25, adaptiveTimestep: true };
+const CONNEXIONS_PHYSICS_CALM = { enabled: true, maxVelocity: 0.8, minVelocity: 0.05, timestep: 0.15, adaptiveTimestep: false };
+
+// Recalcule le placement hors ecran puis repasse en regime calme.
 // vis-network ne redessine pas pendant la stabilisation : les points passent
 // directement a leur nouvelle position, sans course visible.
 function connexionsRelayout(iterations) {
@@ -2158,13 +2170,13 @@ function connexionsRelayout(iterations) {
   if (!net) return;
   const stabilizingEl = document.getElementById('connexionsStabilizing');
   if (stabilizingEl) stabilizingEl.classList.remove('hidden');
-  net.setOptions({ physics: { enabled: true } });
+  net.setOptions({ physics: CONNEXIONS_PHYSICS_FAST });
   net.once('stabilizationIterationsDone', function () {
     if (!_connexionsNetwork) return;
-    _connexionsNetwork.setOptions({ physics: { enabled: false } });
+    _connexionsNetwork.setOptions({ physics: CONNEXIONS_PHYSICS_CALM });
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
   });
-  net.stabilize(iterations || 300);
+  net.stabilize(iterations || 200);
 }
 
 // Curseur "Liens" + case "masquer les membres sans lien" : on rejoue la
@@ -2372,12 +2384,12 @@ function buildAndShowConnexionsGraph() {
       forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 110, springConstant: 0.05, damping: 0.95 },
       solver: 'forceAtlas2Based',
       // Phase 2j v7 (2026-09-14): le placement se calcule hors ecran (400
-      // iterations, ~3 s pour 277 membres), puis la physique est coupee des
-      // que c'est fait (voir stabilizationIterationsDone plus bas) : le graphe
-      // apparait pose et plus rien ne bouge tout seul. maxVelocity ne sert
-      // qu'au glisser-deposer d'un point.
+      // iterations, ~3 s pour 277 membres) a pleine vitesse, puis la physique
+      // passe en mode "calme" (CONNEXIONS_PHYSICS_CALM, voir
+      // stabilizationIterationsDone plus bas) : le graphe apparait pose et
+      // continue de respirer tres lentement, sans jamais courir.
       stabilization: { iterations: 400, fit: true, updateInterval: 50 },
-      maxVelocity: 8,
+      maxVelocity: 50,
       minVelocity: 0.75,
       timestep: 0.25,
       adaptiveTimestep: true,
@@ -2392,7 +2404,7 @@ function buildAndShowConnexionsGraph() {
   if (stabilizingEl) stabilizingEl.classList.remove('hidden');
   _connexionsNetwork.once('stabilizationIterationsDone', function () {
     if (!_connexionsNetwork) return;
-    _connexionsNetwork.setOptions({ physics: { enabled: false } });
+    _connexionsNetwork.setOptions({ physics: CONNEXIONS_PHYSICS_CALM });
     _connexionsNetwork.fit({ animation: false });
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
   });
