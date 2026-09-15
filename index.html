@@ -2305,7 +2305,9 @@ function applyConnexionsFiltersToGraph() {
   const anyFilterActive = ft.length || fr.length || fs.length || fa.length || queryNorm;
   const updates = _connexionsState.nodes.map(n => ({
     id: n.id,
-    opacity: anyFilterActive ? (matchedIds.has(n.id) ? 1 : 0.12) : 1,
+    // Phase 2j v9 : estompage a 0,35 (avant 0,12) — les photos des non-resultats
+    // restaient trop transparentes, on veut encore reconnaitre les visages.
+    opacity: anyFilterActive ? (matchedIds.has(n.id) ? 1 : 0.35) : 1,
   }));
   _connexionsState.nodesDS.update(updates);
   // (Le message « Tous les membres affichés… » a ete retire le 2026-09-14 :
