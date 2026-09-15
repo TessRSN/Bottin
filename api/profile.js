@@ -12,19 +12,22 @@
 const {
   getProfile, updateProfile,
   findInstitutionByName, createInstitution, setMemberInstitutionRelation,
+  uploadMemberPhoto, removeMemberPhoto,
 } = require('../lib/notion');
 const { verifyToken } = require('../lib/token');
 const { geocodeAddress } = require('../lib/geocode');
+const { decodePhotoDataUrl, photoFilename } = require('../lib/photo');
 
 module.exports.config = { maxDuration: 30 };
 
 // Fields that members can edit themselves
 const EDITABLE_FIELDS = [
   'prenom', 'nom', 'email', 'email2', 'institution', 'statut', 'type',
-  'reseau', 'expertise', 'themes', 'projet', 'etudiants',
+  'reseau', 'themes', 'projet', 'etudiants',
   'axes', 'principes', 'champs', 'orcid', 'cv', 'consent',
   'afficherCourriel', // Phase 2f (2026-05-04): toggle email public
   'evaluateur',       // Phase 2i (2026-05-04): Oui/Non/Incertain
+  'openalex',         // Phase 3d (2026-09-14): fiche auteur OpenAlex choisie (format verifie dans updateProfile)
 ];
 
 module.exports = async function handler(req, res) {
@@ -55,7 +58,20 @@ module.exports = async function handler(req, res) {
         if (body[key] !== undefined) data[key] = body[key];
       }
 
-      if (Object.keys(data).length === 0) {
+      // Phase 3a (2026-09-14): photo de profil. body.photo = data URL d'une
+      // nouvelle photo ; body.removePhoto = true pour retirer l'actuelle.
+      // Validee avant toute ecriture.
+      let photo = null;
+      if (body.photo) {
+        try {
+          photo = decodePhotoDataUrl(body.photo);
+        } catch (photoErr) {
+          return res.status(400).json({ ok: false, code: photoErr.code || 'PHOTO_INVALID' });
+        }
+      }
+      const removePhoto = body.removePhoto === true && !photo;
+
+      if (Object.keys(data).length === 0 && !photo && !removePhoto) {
         return res.status(400).json({ error: 'No editable fields provided' });
       }
 
@@ -76,6 +92,20 @@ module.exports = async function handler(req, res) {
 
       // 1) Update the editable fields first (keeps the rest in sync if institutions fail)
       await updateProfile(payload.pageId, data);
+
+      // 1b) Photo : televersement ou retrait. Une erreur ici ne perd pas
+      // les autres modifications, mais est signalee au client.
+      let photoError = null;
+      try {
+        if (photo) {
+          await uploadMemberPhoto(payload.pageId, photo.buffer, photo.contentType, photoFilename(photo.ext));
+        } else if (removePhoto) {
+          await removeMemberPhoto(payload.pageId);
+        }
+      } catch (photoErr) {
+        console.error('[profile] Photo update failed:', photoErr.message);
+        photoError = 'PHOTO_UPLOAD_FAILED';
+      }
 
       // 2) Process new institutions (geocode + create as "En attente")
       // Failures here don't break the save — the profile is already updated.
@@ -124,7 +154,7 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      return res.status(200).json({ ok: true, message: 'Profile updated' });
+      return res.status(200).json({ ok: true, message: 'Profile updated', photoError });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

@@ -64,6 +64,14 @@
   .consent-section { background:linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-radius:var(--radius); padding:1rem; margin-top:1rem; }
   [data-theme="dark"] .consent-section { background:linear-gradient(135deg, #1a365d 0%, #2a4365 100%); }
   .consent-section label { color:var(--text); font-size:.9rem; text-transform:none; letter-spacing:0; }
+  /* Bloc consentement complet (Loi 25), identique au formulaire d'inscription (2026-09-14) */
+  .consent-title { margin:0 0 .5rem 0; font-size:1rem; font-weight:700; color:var(--text); }
+  .consent-section p { font-size:.85rem; line-height:1.5; margin:.5rem 0; color:var(--text); }
+  .consent-section ul { font-size:.85rem; line-height:1.5; margin:.25rem 0 .75rem 1.25rem; padding:0; color:var(--text); }
+  .consent-section .consent-fields { font-style:italic; }
+  .consent-footer { font-size:.8rem !important; opacity:.85; margin-top:.75rem !important; padding-top:.75rem; border-top:1px solid rgba(0,0,0,.1); }
+  [data-theme="dark"] .consent-footer { border-top-color:rgba(255,255,255,.15); }
+  .consent-footer a { color:inherit; text-decoration:underline; }
   .msg { padding:.75rem 1rem; border-radius:var(--radius); font-size:.85rem; margin-bottom:1rem; display:none; white-space:pre-line; line-height:1.5; }
   .msg.success { display:block; background:#c6f6d5; color:#22543d; }
   .msg.error { display:block; background:#fed7d7; color:#9b2c2c; }
@@ -118,7 +126,7 @@
       <div class="field"><label id="l_nom">Nom<span class="required-mark">*</span></label><input id="f_nom" required></div>
     </div>
     <div class="field">
-      <label id="l_email">Courriel principal<span class="required-mark">*</span></label>
+      <label id="l_email">Courriel<span class="required-mark">*</span></label>
       <input id="f_email" type="email" required>
       <div class="field-hint" id="h_email"></div>
       <label class="checkbox-inline" style="display:flex;align-items:flex-start;gap:.5rem;margin-top:.5rem;font-size:.85rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)">
@@ -132,10 +140,18 @@
       <input id="f_email2" type="email">
       <div class="field-hint" id="h_email2"></div>
     </div>
+    <!-- Phase 3a (2026-09-14): photo de profil facultative, recadree en carre dans le navigateur -->
+    <div class="field">
+      <label id="l_photo">Photo de profil</label>
+      <div class="field-hint" id="h_photo">Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.</div>
+      <input type="file" id="f_photo" accept="image/jpeg,image/png,image/webp" style="display:none">
+      <div id="photoCropperRoot"></div>
+    </div>
   </div>
 
   <div class="card">
     <div class="section-title" id="s_status">Statut actuel<span class="required-mark">*</span></div>
+    <div class="field-hint" id="h_status"></div>
     <div class="radio-group" id="status_group"></div>
   </div>
 
@@ -153,11 +169,40 @@
   </div>
 
   <div class="card">
-    <div class="section-title" id="s_research">Recherche &amp; expertise</div>
-    <div class="field"><label id="l_expertise">Expertise</label><textarea id="f_expertise"></textarea></div>
-    <div class="field"><label id="l_themes">Thèmes d'intérêt</label><textarea id="f_themes"></textarea></div>
-    <div class="field"><label id="l_reseau">Réseau</label><input id="f_reseau"></div>
-    <div class="field"><label id="l_projet">Projet de recherche</label><textarea id="f_projet"></textarea></div>
+    <div class="section-title" id="s_research">Recherche et intérêts</div>
+    <!-- Phase 3c (2026-09-14): meme ordre que le formulaire d'inscription :
+         themes -> ORCID (suggestions juste sous leur cible) -> projet.
+         L'ancien champ Expertise a ete fusionne dans les themes (Notion) le 2026-09-14. -->
+    <!-- Libelles et aides identiques au formulaire d'inscription (2026-09-14) -->
+    <div class="field">
+      <label id="l_themes">Thèmes de recherche ou d'intérêt</label>
+      <div class="field-hint" id="h_themes"></div>
+      <textarea id="f_themes"></textarea>
+    </div>
+    <div class="field">
+      <label id="l_orcid">Identifiant ORCID</label>
+      <div class="field-hint" id="h_orcid">Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)</div>
+      <input id="f_orcid" placeholder="0000-0000-0000-0000">
+      <!-- Phase 3b: bouton + puces de suggestions, alimentent le champ "themes" -->
+      <div id="orcidSuggestRoot"></div>
+      <!-- Phase 3d: fiche auteur OpenAlex retenue (recherche par nom), memorisee dans Notion -->
+      <input type="hidden" id="f_openalex">
+    </div>
+    <div class="field">
+      <label id="l_projet">Présentation</label>
+      <div class="field-hint" id="h_projet"></div>
+      <textarea id="f_projet"></textarea>
+    </div>
+    <div class="field">
+      <label id="l_cv">Site web</label>
+      <div class="field-hint" id="h_cv">Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.</div>
+      <input id="f_cv" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label id="l_reseau">Autres réseaux de recherche financés par les FRQ</label>
+      <div class="field-hint" id="h_reseau">Excluant le RSN</div>
+      <input id="f_reseau">
+    </div>
     <div class="field"><label id="l_etudiants">Personnes ou étudiant·es à référer pour rejoindre le RSN</label><div class="field-hint" id="h_etudiants"></div><textarea id="f_etudiants"></textarea></div>
   </div>
 
@@ -170,21 +215,28 @@
   </div>
 
   <div class="card">
-    <div class="section-title" id="s_axes">Axes, principes &amp; champs d'action</div>
-    <div class="field"><label id="l_axes">Axes d'intérêt<span class="required-mark">*</span></label><div class="checkbox-group" id="axes_group"></div></div>
+    <div class="section-title" id="s_axes">Vos thématiques d'intérêt<span class="required-mark">*</span></div>
+    <div class="field-hint" id="h_themes_pick">Choisissez au moins une option parmi les trois familles ci-dessous.</div>
+    <div class="field"><label id="l_axes">Axes</label><div class="checkbox-group" id="axes_group"></div></div>
     <div class="field"><label id="l_principes">Principes fondateurs</label><div class="checkbox-group" id="principes_group"></div></div>
     <div class="field"><label id="l_champs">Champs d'action</label><div class="checkbox-group" id="champs_group"></div></div>
   </div>
 
-  <div class="card">
-    <div class="section-title" id="s_links">Liens</div>
-    <div class="field"><label>ORCID</label><input id="f_orcid" placeholder="https://orcid.org/0000-..."></div>
-    <div class="field"><label>CV / LinkedIn</label><input id="f_cv" placeholder="https://..."></div>
-  </div>
 
   <div class="card">
+    <!-- Bloc consentement complet (Loi 25), meme contenu que l'inscription ; chaque fragment a son id (textContent) -->
     <div class="consent-section">
-      <div class="field" style="margin:0">
+      <h3 class="consent-title" id="l_consent_title">Consentement à la diffusion de vos informations</h3>
+      <p id="l_consent_intro">Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :</p>
+      <p class="consent-fields" id="l_consent_fields">prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, présentation, axes / principes / champs d'action, et facultativement votre courriel, votre site web et votre photo.</p>
+      <p id="l_consent_uses_intro">Ces informations seront utilisées pour :</p>
+      <ul>
+        <li id="l_consent_use1">apparaître sur le bottin public du RSN ;</li>
+        <li id="l_consent_use2">être associées à votre institution et à vos projets ;</li>
+        <li id="l_consent_use3">faciliter le réseautage et la collaboration entre membres.</li>
+      </ul>
+      <p><strong id="l_consent_newsletter_bold">Infolettre :</strong><span id="l_consent_newsletter_rest"> l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pouvez vous y abonner en un clic dans le bloc Infolettre ci-dessous, et vous désabonner à tout moment.</span></p>
+      <div class="field" style="margin:1rem 0 0 0">
         <label id="l_consent">Autorisez-vous le RSN à créer un profil de membre public ?<span class="required-mark">*</span></label>
         <select id="f_consent" style="margin-top:.5rem">
           <option value="Oui" id="opt_yes">Oui, afficher mon profil publiquement</option>
@@ -192,6 +244,7 @@
           <option value="" id="opt_pending">Je déciderai plus tard</option>
         </select>
       </div>
+      <p class="consent-footer"><span id="l_consent_withdraw_pre">Vous pouvez retirer ou modifier votre consentement à tout moment en changeant votre réponse ci-dessus, ou en écrivant à </span><a href="mailto:rsn.gestion@rimuhc.ca" id="l_consent_withdraw_link2">rsn.gestion@rimuhc.ca</a><span id="l_consent_withdraw_post">.</span></p>
     </div>
   </div>
 
@@ -217,6 +270,10 @@
   </div>
 </div>
 
+<!-- Phase 3a: cadrage de la photo de profil (partage avec join.html) -->
+<script src="/photo-cropper.js"></script>
+<!-- Phase 3b: suggestions de mots-cles depuis le profil ORCID public (partage avec join.html) -->
+<script src="/orcid-suggest.js"></script>
 <script>
 const OPTIONS = {
   axes: [
@@ -241,7 +298,7 @@ var STATUS_OPTIONS = [
   { fr: 'Personne en stage postdoctoral', en: 'Postdoctoral fellow' },
   { fr: 'Personnel de recherche', en: 'Research staff' },
   { fr: 'Personnel de la santé', en: 'Health professional' },
-  { fr: "Coordination ou gestion d'équipe", en: 'Team coordination or management' },
+  { fr: 'Personne en coordination ou gestion de la recherche', en: 'Research coordinator or manager' }, // ex-"Coordination ou gestion d'équipe" (2026-09-14)
   { fr: 'Personne en milieu industriel ou gouvernemental', en: 'Industry or government professional' },
   { fr: 'Personne partenaire citoyenne', en: 'Citizen partner' },
   { fr: 'Autre', en: 'Other' },
@@ -282,17 +339,32 @@ let lang = (function(){
 function t(key) {
   const map = {
     fr: { title:'Modifier mon profil', subtitle:'Modifiez uniquement les champs que vous souhaitez mettre à jour.',
-      s_identity:'Identité', s_research:'Recherche & expertise', s_axes:"Axes, principes & champs d'action", s_links:'Liens',
+      s_identity:'Identité', s_research:'Recherche et intérêts', s_axes:"Vos thématiques d'intérêt", s_links:'Liens',
+      h_themes_pick:'Choisissez au moins une option parmi les trois familles ci-dessous.',
+      h_status_text:'Voir les définitions du FRQ', h_status_link:'PDF',
+      l_orcid:'Identifiant ORCID', h_orcid:'Format : XXXX-XXXX-XXXX-XXXX (16 derniers chiffres)',
+      h_reseau:'Excluant le RSN',
       s_status:'Statut actuel', s_institution:"Institution(s) d'affiliation", s_membership:"Type d'adhésion",
-      l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel principal', l_email2:'Courriel secondaire',
-      l_expertise:'Expertise',
-      l_themes:"Thèmes d'intérêt", l_reseau:'Réseau', l_projet:'Projet de recherche', l_etudiants:'Personnes ou étudiant·es à référer pour rejoindre le RSN',
-      h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Cela peut inclure vos étudiant·es sous supervision ou des collègues qui auraient leur place dans le réseau. L'équipe du RSN les contactera et leur proposera de rejoindre le réseau.",
+      l_prenom:'Prénom', l_nom:'Nom', l_email:'Courriel', l_email2:'Courriel secondaire',
+      l_themes:"Thèmes de recherche ou d'intérêt", l_reseau:'Autres réseaux de recherche financés par les FRQ', l_projet:'Présentation', l_etudiants:'Personnes ou étudiant·es à référer pour rejoindre le RSN',
+      h_etudiants:"Optionnel. Indiquez nom, prénom et courriel de chaque personne, une par ligne. Cela peut inclure vos étudiant·es sous supervision ou des collègues qui auraient leur place dans le réseau. Nous les contacterons et leur proposerons de remplir le formulaire d'inscription.",
       s_evaluateur:'Évaluation',
       l_evaluateur:'Souhaitez-vous agir comme évaluateur·rice pour les programmes de financement du RSN ?',
-      l_axes:"Axes d'intérêt", l_principes:'Principes fondateurs', l_champs:"Champs d'action",
+      l_axes:'Axes', l_principes:'Principes fondateurs', l_champs:"Champs d'action",
       l_consent:'Autorisez-vous le RSN à créer un profil de membre public ?',
       opt_yes:'Oui, afficher mon profil publiquement', opt_no:'Non, ne pas afficher mon profil', opt_pending:'Je déciderai plus tard',
+      l_consent_title:'Consentement à la diffusion de vos informations',
+      l_consent_intro:'Les renseignements suivants seront diffusés publiquement sur le bottin du Réseau de santé numérique :',
+      l_consent_fields:"prénom, nom, statut, type d'adhésion, institution d'affiliation, thèmes de recherche, présentation, axes / principes / champs d'action, et facultativement votre courriel, votre site web et votre photo.",
+      l_consent_uses_intro:'Ces informations seront utilisées pour :',
+      l_consent_use1:'apparaître sur le bottin public du RSN ;',
+      l_consent_use2:'être associées à votre institution et à vos projets ;',
+      l_consent_use3:'faciliter le réseautage et la collaboration entre membres.',
+      l_consent_newsletter_bold:'Infolettre :',
+      l_consent_newsletter_rest:" l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pouvez vous y abonner en un clic dans le bloc Infolettre ci-dessous, et vous désabonner à tout moment.",
+      l_consent_withdraw_pre:'Vous pouvez retirer ou modifier votre consentement à tout moment en changeant votre réponse ci-dessus, ou en écrivant à ',
+      l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
+      l_consent_withdraw_post:'.',
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
       nl_title:'Infolettre du RSN',
       nl_text:'Recevez les actualités du réseau, les appels à communication et les événements à venir. Facultatif, désabonnement en un clic.',
@@ -300,13 +372,63 @@ function t(key) {
       nl_btn:"S'abonner à l'infolettre →",
       nl_done:"Merci ! La confirmation s'ouvre dans un nouvel onglet.",
       nl_footer:'Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.',
+      l_cv:'Site web',
+      h_cv:'Facultatif. Un seul lien, au choix : votre page LinkedIn, votre profil sur le site de votre institution ou votre site personnel.',
+      l_photo:'Photo de profil',
+      h_photo:'Facultatif. Affichée en rond sur votre fiche et votre carte du bottin. Glissez la photo et zoomez pour cadrer votre visage. JPG, PNG ou WebP.',
+      photo_choose:'Choisir une photo', photo_change:'Changer de photo', photo_remove:'Retirer',
+      photo_zoom:'Zoom', photo_drag:'Glissez la photo pour la recadrer.',
+      photo_err_type:'Format non pris en charge : utilisez une image JPG, PNG ou WebP.',
+      photo_err_size:'Photo trop lourde (maximum 15 Mo).',
+      msg_photo_error:"Profil enregistré, mais la photo n'a pas pu être mise à jour. Réessayez avec une autre image.",
+      os_button:'Suggérer des thèmes depuis mon profil ORCID',
+      os_loading:'Lecture de votre profil ORCID public…',
+      os_not_found:"Aucun profil ORCID public trouvé pour cet identifiant. Vérifiez le format.",
+      os_empty:"Votre profil ORCID public ne contient pas encore de mots-clés ni de publications exploitables.",
+      os_network:"Impossible de joindre ORCID pour le moment. Réessayez plus tard.",
+      os_pick:'Cochez les mots-clés à garder, puis ajoutez-les à vos thèmes :',
+      os_add:'Ajouter à mes thèmes',
+      os_added:'Ajouté :',
+      os_publications:'Publications',
+      os_mesh:'MeSH (PubMed)',
+      os_bio_src:'Biographie',
+      h_themes:'Séparés par une virgule. Votre profil ORCID ou vos publications, ci-dessous, peuvent vous en proposer.',
+      h_projet:'Facultatif. Vos travaux et intérêts en quelques phrases ; ce texte apparaît sur votre fiche et sert aux connexions entre membres.',
+      os_bio:'Biographie de votre profil ORCID, utilisable telle quelle comme point de départ :',
+      os_bio_use:'Utiliser comme {field}',
+      os_bio_filled:'Ce champ contient déjà du texte ; videz-le d’abord si vous voulez le remplacer.',
+      os_source:"Suggestions tirées des mots-clés de votre profil ORCID public et des thèmes qu'OpenAlex déduit de vos publications. Rien n'est ajouté sans votre choix ; vous pouvez ensuite modifier le texte librement.",
+      // Phase 3d : recherche de la fiche de publications (OpenAlex) par le nom, sans ORCID (memes textes que join.html)
+      os_pubs_button:'Suggérer des thèmes depuis mes publications',
+      os_name_button:'Chercher mes publications par mon nom',
+      os_name_search:'Chercher',
+      os_name_placeholder:'Prénom Nom',
+      os_name_loading:'Recherche des fiches correspondantes dans OpenAlex…',
+      os_name_none:"Aucune fiche de publications trouvée pour ce nom. Essayez une autre orthographe ou une initiale ; si vous publiez, un identifiant ORCID facilite ce lien.",
+      os_name_pick:'Fiches trouvées dans OpenAlex. Choisissez la vôtre :',
+      os_name_me:"C'est moi",
+      os_name_none_of_these:'Aucune de ces fiches',
+      os_name_chosen:'Fiche de publications retenue : {name}',
+      os_name_change:'Changer',
+      os_name_remove:'Retirer',
+      os_works:'{n} publications',
+      os_work:'1 publication',
+      os_pubs_loading:'Lecture de vos publications…',
+      os_pubs_empty:"Cette fiche ne contient pas encore de thèmes exploitables.",
+      os_network_openalex:"Impossible de joindre OpenAlex pour le moment. Réessayez plus tard.",
+      os_source_pubs:"Suggestions tirées des thèmes qu'OpenAlex déduit de vos publications. Rien n'est ajouté sans votre choix ; vous pouvez ensuite modifier le texte librement.",
+      os_help_btn:"D'où viennent ces suggestions ?",
+      os_help_orcid:"ORCID (orcid.org) : nous lisons, par l'interface publique d'ORCID, uniquement ce que vous avez rendu visible à tout le monde sur votre profil : mots-clés, nom, biographie et liste de publications.",
+      os_help_openalex:"OpenAlex (openalex.org) : base ouverte et gratuite des publications scientifiques (données sous licence CC0, maintenue par l'organisme sans but lucratif OurResearch), qui déduit des thèmes de recherche à partir des articles. La recherche par nom interroge cette base ; vous choisissez vous-même votre fiche.",
+      os_help_mesh:"MeSH (PubMed) : termes d'indexation attribués à vos articles par la Bibliothèque nationale de médecine des États-Unis, relayés par OpenAlex.",
+      os_help_privacy:"Ces services ne reçoivent que votre identifiant ORCID ou le nom que vous saisissez, rien d'autre de ce formulaire. Rien n'est ajouté à votre fiche sans votre choix. Seul l'identifiant de la fiche OpenAlex que vous retenez est conservé, pour vous éviter de la rechercher de nouveau.",
       msg_success:"Merci ! Vos modifications nous sont bien parvenues. Notre équipe les examinera et les publiera dans le bottin sous 1 à 2 semaines.\n\nUne fois approuvées, pensez à rafraîchir la page du bottin pour les voir (Cmd + Maj + R sur Mac, Ctrl + Maj + R sur Windows).\n\nSi vous n'avez pas de nouvelles d'ici deux semaines, n'hésitez pas à nous écrire à rsn.gestion@rimuhc.ca — nous serons ravi·es de répondre.",
       msg_error:'Erreur lors de la sauvegarde.', expired_title:'Lien expiré',
       expired_msg:'Ce lien a expiré. Veuillez en demander un nouveau.', expired_btn:'Demander un nouveau lien',
       h_email:"Si vous modifiez ce courriel, vous recevrez un lien de confirmation à la nouvelle adresse pour valider le changement.",
       l_afficher_courriel:'Afficher mon courriel dans le bottin public',
       h_afficher_courriel:'Décochez pour limiter le partage de votre adresse aux administrateurs du RSN.',
-      h_email2:"Optionnel. Jamais affiché publiquement, sert uniquement aux administrateurs du RSN pour vous joindre.",
+      h_email2:"Optionnel. Ex. courriel personnel ou d'une autre institution. Jamais affiché publiquement.",
       msg_email_pending:'Profil sauvegardé. Un courriel de confirmation a été envoyé à {email} pour valider le changement de courriel principal.\n\nVos autres modifications seront examinées par notre équipe et publiées sous 1 à 2 semaines. Sans nouvelles, contactez-nous à rsn.gestion@rimuhc.ca.',
       msg_email_taken:"Ce courriel est déjà utilisé par un autre membre. Le changement n'a pas été effectué.",
       msg_email_error:"Profil sauvegardé, mais l'envoi du courriel de confirmation a échoué. Vous pouvez réessayer.",
@@ -317,17 +439,32 @@ function t(key) {
       l_inst_address:"Adresse complète de l'institution",
       h_inst_address:'Ex. 845 rue Sherbrooke O., Montréal, QC, Canada' },
     en: { title:'Update my profile', subtitle:'Only modify the fields you want to update.',
-      s_identity:'Identity', s_research:'Research & expertise', s_axes:'Axes, principles & action fields', s_links:'Links',
+      s_identity:'Identity', s_research:'Research and interests', s_axes:'Your topics of interest', s_links:'Links',
+      h_themes_pick:'Choose at least one option from any of the three families below.',
+      h_status_text:'Refer to the FRQ definitions', h_status_link:'PDF',
+      l_orcid:'ORCID Identifier', h_orcid:'Format: XXXX-XXXX-XXXX-XXXX (last 16 digits)',
+      h_reseau:'Excluding the RSN',
       s_status:'Present status', s_institution:'Institution(s) of affiliation', s_membership:'Membership type',
-      l_prenom:'First name', l_nom:'Last name', l_email:'Primary email', l_email2:'Secondary email',
-      l_expertise:'Expertise',
-      l_themes:'Research themes', l_reseau:'Network', l_projet:'Research project', l_etudiants:'People or students to refer to join the RSN',
-      h_etudiants:'Optional. List the name and email of each person, one per line. This can include students under your supervision or colleagues who would fit in the network. The RSN team will reach out and invite them to join.',
+      l_prenom:'First name', l_nom:'Last name', l_email:'Email', l_email2:'Secondary email',
+      l_themes:'Research or interest themes', l_reseau:'Other FRQ-funded research networks', l_projet:'About your work', l_etudiants:'People or students to refer to join the RSN',
+      h_etudiants:'Optional. List the name and email of each person, one per line. This can include students under your supervision or colleagues who would fit in the network. We will reach out and invite them to complete the registration form.',
       s_evaluateur:'Evaluation',
       l_evaluateur:'Would you like to act as an evaluator for RSN funding programs?',
-      l_axes:'Research axes', l_principes:'Founding principles', l_champs:'Action fields',
+      l_axes:'Axes', l_principes:'Founding principles', l_champs:'Action fields',
       l_consent:'Do you authorize RSN to create a public member profile?',
       opt_yes:'Yes, display my profile publicly', opt_no:'No, do not display my profile', opt_pending:"I'll decide later",
+      l_consent_title:'Consent to share your information',
+      l_consent_intro:'The following information will be publicly displayed on the directory of the Digital Health Network:',
+      l_consent_fields:'first name, last name, status, membership type, affiliated institution, research themes, presentation text, axes / principles / action fields, and optionally your email, your website and your photo.',
+      l_consent_uses_intro:'This information will be used to:',
+      l_consent_use1:'appear on the public RSN directory;',
+      l_consent_use2:'be associated with your institution and your projects;',
+      l_consent_use3:'facilitate networking and collaboration between members.',
+      l_consent_newsletter_bold:'Newsletter:',
+      l_consent_newsletter_rest:' subscribing to our email communications (newsletter, activities, events) is optional. You can subscribe in one click in the Newsletter block below, and unsubscribe at any time.',
+      l_consent_withdraw_pre:'You can withdraw or modify your consent at any time by changing your answer above, or by writing to ',
+      l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
+      l_consent_withdraw_post:'.',
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
       nl_title:'RSN newsletter',
       nl_text:'Network news, calls for abstracts and upcoming events. Optional, one-click unsubscribe.',
@@ -335,13 +472,63 @@ function t(key) {
       nl_btn:'Subscribe to the newsletter →',
       nl_done:'Thank you! The confirmation opens in a new tab.',
       nl_footer:'If you are already subscribed, Mailchimp will simply let you know.',
+      l_cv:'Website',
+      h_cv:"Optional. One link of your choice: your LinkedIn page, your profile on your institution's website, or your personal website.",
+      l_photo:'Profile photo',
+      h_photo:'Optional. Shown as a circle on your profile and your card in the directory. Drag the photo and zoom to frame your face. JPG, PNG or WebP.',
+      photo_choose:'Choose a photo', photo_change:'Change photo', photo_remove:'Remove',
+      photo_zoom:'Zoom', photo_drag:'Drag the photo to reframe it.',
+      photo_err_type:'Unsupported format: please use a JPG, PNG or WebP image.',
+      photo_err_size:'Photo too large (maximum 15 MB).',
+      msg_photo_error:'Profile saved, but the photo could not be updated. Please try again with another image.',
+      os_button:'Suggest themes from my ORCID profile',
+      os_loading:'Reading your public ORCID profile…',
+      os_not_found:'No public ORCID profile found for this identifier. Please check the format.',
+      os_empty:'Your public ORCID profile does not contain usable keywords or publications yet.',
+      os_network:'ORCID cannot be reached right now. Please try again later.',
+      os_pick:'Tick the keywords you want to keep, then add them to your themes:',
+      os_add:'Add to my themes',
+      os_added:'Added:',
+      os_publications:'Publications',
+      os_mesh:'MeSH (PubMed)',
+      os_bio_src:'Biography',
+      h_themes:'Separated by commas. Your ORCID profile or your publications, below, can suggest some.',
+      h_projet:'Optional. Your work and interests in a few sentences; this text appears on your profile and feeds the connections between members.',
+      os_bio:'Biography from your ORCID profile, usable as a starting point:',
+      os_bio_use:'Use as {field}',
+      os_bio_filled:'This field already contains text; clear it first if you want to replace it.',
+      os_source:'Suggestions come from the keywords on your public ORCID profile and the research topics OpenAlex derives from your publications. Nothing is added without your choice; you can edit the text freely afterwards.',
+      // Phase 3d: find the publication record (OpenAlex) by name, without ORCID (same texts as join.html)
+      os_pubs_button:'Suggest themes from my publications',
+      os_name_button:'Find my publications by my name',
+      os_name_search:'Search',
+      os_name_placeholder:'First name Last name',
+      os_name_loading:'Searching for matching records in OpenAlex…',
+      os_name_none:'No publication record found for this name. Try another spelling or an initial; if you publish, an ORCID identifier makes this link easier.',
+      os_name_pick:'Records found in OpenAlex. Pick yours:',
+      os_name_me:"That's me",
+      os_name_none_of_these:'None of these',
+      os_name_chosen:'Publication record selected: {name}',
+      os_name_change:'Change',
+      os_name_remove:'Remove',
+      os_works:'{n} publications',
+      os_work:'1 publication',
+      os_pubs_loading:'Reading your publications…',
+      os_pubs_empty:'This record does not contain usable topics yet.',
+      os_network_openalex:'OpenAlex cannot be reached right now. Please try again later.',
+      os_source_pubs:'Suggestions come from the research topics OpenAlex derives from your publications. Nothing is added without your choice; you can edit the text freely afterwards.',
+      os_help_btn:'Where do these suggestions come from?',
+      os_help_orcid:"ORCID (orcid.org): through ORCID's public interface we read only what you have made visible to everyone on your profile: keywords, name, biography and list of publications.",
+      os_help_openalex:'OpenAlex (openalex.org): a free, open database of scholarly publications (CC0 data, maintained by the non-profit OurResearch) that derives research topics from articles. The search by name queries this database; you pick your own record.',
+      os_help_mesh:'MeSH (PubMed): indexing terms assigned to your articles by the United States National Library of Medicine, relayed by OpenAlex.',
+      os_help_privacy:'These services receive only your ORCID identifier or the name you type, nothing else from this form. Nothing is added to your record without your choice. Only the identifier of the OpenAlex record you select is kept, so you do not have to search for it again.',
       msg_success:"Thank you! We've received your changes. Our team will review and publish them in the directory within 1 to 2 weeks.\n\nOnce approved, refresh the directory page to see them (Cmd + Shift + R on Mac, Ctrl + Shift + R on Windows).\n\nIf you don't hear back within two weeks, feel free to email us at rsn.gestion@rimuhc.ca — we'll be happy to help.",
       msg_error:'Error saving profile.', expired_title:'Link expired',
       expired_msg:'This link has expired. Please request a new one.', expired_btn:'Request a new link',
       h_email:'If you change this email, you will receive a confirmation link at the new address to validate the change.',
       l_afficher_courriel:'Display my email in the public directory',
       h_afficher_courriel:'Uncheck to limit sharing of your address to RSN administrators only.',
-      h_email2:'Optional. Never publicly displayed, used only by RSN administrators to reach you.',
+      h_email2:'Optional. E.g. personal email or another institution. Never publicly displayed.',
       msg_email_pending:'Profile saved. A confirmation email has been sent to {email} to validate the primary email change.\n\nYour other changes will be reviewed by our team and published within 1 to 2 weeks. If you don\'t hear back, please contact us at rsn.gestion@rimuhc.ca.',
       msg_email_taken:'This email is already used by another member. The change was not applied.',
       msg_email_error:'Profile saved, but sending the confirmation email failed. You can try again.',
@@ -359,11 +546,59 @@ function applyI18n() {
   ['title','subtitle','langBtn','expiredTitle','expiredMsg','expiredBtn',
    's_identity','s_research','s_axes','s_links','s_status','s_institution','s_membership','s_evaluateur',
    'l_prenom','l_nom','l_email','l_email2',
-   'l_expertise','l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
+   'l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
    'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
-   'nl_title','nl_text','nl_btn','nl_done','nl_footer'
+   'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo',
+   'h_themes','h_projet','l_orcid','h_orcid','h_reseau','h_themes_pick',
+   // Bloc consentement (fragments a id propre -> textContent uniquement)
+   'l_consent_title','l_consent_intro','l_consent_fields','l_consent_uses_intro',
+   'l_consent_use1','l_consent_use2','l_consent_use3','l_consent_newsletter_bold','l_consent_newsletter_rest',
+   'l_consent_withdraw_pre','l_consent_withdraw_link2','l_consent_withdraw_post'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
+  // Aide statut avec lien vers les definitions du FRQ (identique au formulaire d'inscription)
+  const hStatus = document.getElementById('h_status');
+  if (hStatus) {
+    while (hStatus.firstChild) hStatus.removeChild(hStatus.firstChild);
+    hStatus.appendChild(document.createTextNode(t('h_status_text') + ' ('));
+    const statusLink = document.createElement('a');
+    statusLink.href = 'https://frqnet.frq.gouv.qc.ca/Documents/RGC_FRQ_EN.pdf';
+    statusLink.target = '_blank';
+    statusLink.rel = 'noopener';
+    statusLink.textContent = t('h_status_link');
+    hStatus.appendChild(statusLink);
+    hStatus.appendChild(document.createTextNode(')'));
+  }
+  // Phase 3a: photo de profil — montage du cadreur au 1er passage, puis
+  // retraduction des boutons aux changements de langue.
+  const photoLabels = { choose: t('photo_choose'), change: t('photo_change'), remove: t('photo_remove'),
+    zoom: t('photo_zoom'), drag: t('photo_drag'), errType: t('photo_err_type'), errSize: t('photo_err_size') };
+  if (!window.photoCropper && window.PhotoCropper && document.getElementById('photoCropperRoot')) {
+    window.photoCropper = PhotoCropper.mount({ root: document.getElementById('photoCropperRoot'), input: document.getElementById('f_photo'), labels: photoLabels });
+  } else if (window.photoCropper) {
+    window.photoCropper.setLabels(photoLabels);
+  }
+  // Phase 3b: suggestions de themes depuis ORCID (alimente f_themes)
+  // Phase 3d: ou depuis la fiche de publications OpenAlex retrouvee par le nom (f_openalex memorise la fiche choisie)
+  const osLabels = { button: t('os_button'), loading: t('os_loading'), notFound: t('os_not_found'), empty: t('os_empty'),
+    network: t('os_network'), pick: t('os_pick'), add: t('os_add'), added: t('os_added'), source: t('os_source'),
+    publications: t('os_publications'), mesh: t('os_mesh'), bioSrc: t('os_bio_src'),
+    bio: t('os_bio'), bioUse: t('os_bio_use'), bioFilled: t('os_bio_filled'),
+    pubsButton: t('os_pubs_button'), nameButton: t('os_name_button'), nameSearch: t('os_name_search'), namePlaceholder: t('os_name_placeholder'),
+    nameLoading: t('os_name_loading'), nameNone: t('os_name_none'), namePick: t('os_name_pick'), nameMe: t('os_name_me'),
+    nameNoneOfThese: t('os_name_none_of_these'), nameChosen: t('os_name_chosen'), nameChange: t('os_name_change'), nameRemove: t('os_name_remove'),
+    works: t('os_works'), work: t('os_work'), pubsLoading: t('os_pubs_loading'), pubsEmpty: t('os_pubs_empty'),
+    networkOpenAlex: t('os_network_openalex'), sourcePubs: t('os_source_pubs'),
+    helpBtn: t('os_help_btn'), helpTitle: t('os_help_btn'), helpOrcid: t('os_help_orcid'), helpOpenAlex: t('os_help_openalex'),
+    helpMesh: t('os_help_mesh'), helpPrivacy: t('os_help_privacy'),
+    bioTargets: [{ el: document.getElementById('f_projet'), label: t('l_projet') }] };
+  if (!window.orcidSuggest && window.OrcidSuggest && document.getElementById('orcidSuggestRoot')) {
+    // Mots-cles -> themes ; biographie -> presentation (identique au formulaire d'inscription)
+    window.orcidSuggest = OrcidSuggest.mount({ root: document.getElementById('orcidSuggestRoot'), input: document.getElementById('f_orcid'), target: document.getElementById('f_themes'),
+      openalexInput: document.getElementById('f_openalex'), nameInputs: [document.getElementById('f_prenom'), document.getElementById('f_nom')], labels: osLabels });
+  } else if (window.orcidSuggest) {
+    window.orcidSuggest.setLabels(osLabels);
+  }
   const nlEmail = document.getElementById('nl_email');
   if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
   // Phase 2i: hint sous le textarea etudiants/referer
@@ -651,17 +886,25 @@ async function init() {
     document.getElementById('nl_lname').value = profile.nom || '';
     // Phase 2f: precharger toggle afficher courriel
     document.getElementById('f_afficher_courriel').checked = (profile.afficherCourriel !== false);
-    document.getElementById('f_expertise').value = profile.expertise || '';
     document.getElementById('f_themes').value = profile.themes || '';
     document.getElementById('f_reseau').value = profile.reseau || '';
     document.getElementById('f_projet').value = profile.projet || '';
     document.getElementById('f_etudiants').value = profile.etudiants || '';
     document.getElementById('f_orcid').value = profile.orcid || '';
+    // Phase 3d: fiche de publications OpenAlex memorisee (vide si jamais choisie)
+    document.getElementById('f_openalex').value = profile.openalex || '';
+    // Phase 3b: activer le bouton de suggestions si un ORCID est deja renseigne ;
+    // Phase 3d : afficher la fiche OpenAlex retenue, le cas echeant
+    if (window.orcidSuggest) window.orcidSuggest.refresh();
     document.getElementById('f_cv').value = profile.cv || '';
+    // Phase 3a: apercu de la photo actuelle (url Notion temporaire, 1 h)
+    if (window.photoCropper && profile.photoUrl) window.photoCropper.setExisting(profile.photoUrl);
     document.getElementById('f_consent').value = profile.consent || '';
 
     // Phase 2a: pre-remplir les radios statut + type d'adhesion
-    radioState.status = profile.statut || '';
+    // Ancien libelle encore present dans Notion jusqu'a la migration (cf. BACKLOG) : on preselectionne le nouveau
+    radioState.status = (profile.statut === "Coordination ou gestion d'équipe")
+      ? 'Personne en coordination ou gestion de la recherche' : (profile.statut || '');
     radioState.membership = profile.type || '';
     radioState.evaluateur = profile.evaluateur || '';
     rebuildRadios();
@@ -808,13 +1051,17 @@ async function save() {
     newInstitutions: instData.filter(function(i){ return i.needsAddress && i.address; }).map(function(i){ return { name: i.name, address: i.address }; }),
     statut: radioState.status,
     type: radioState.membership,
-    expertise: document.getElementById('f_expertise').value.trim(),
     themes: document.getElementById('f_themes').value.trim(),
     reseau: document.getElementById('f_reseau').value.trim(),
     projet: document.getElementById('f_projet').value.trim(),
     etudiants: document.getElementById('f_etudiants').value.trim(),
     orcid: document.getElementById('f_orcid').value.trim() || null,
+    // Phase 3d: fiche de publications OpenAlex retenue (« A… ») ; null = retiree
+    openalex: document.getElementById('f_openalex').value.trim() || null,
     cv: document.getElementById('f_cv').value.trim() || null,
+    // Phase 3a: nouvelle photo (data URL) et/ou retrait de l'actuelle
+    photo: (window.photoCropper && window.photoCropper.getDataUrl()) || undefined,
+    removePhoto: !!(window.photoCropper && window.photoCropper.isRemoved()),
     consent: document.getElementById('f_consent').value,
     axes: getChips('axes_group'),
     principes: getChips('principes_group'),
@@ -835,6 +1082,8 @@ async function save() {
       btn.disabled = false; btn.textContent = t('saveBtn');
       return;
     }
+    // Phase 3a: le profil est enregistre, mais la photo a pu echouer separement
+    const saveResult = await resp.json().catch(function(){ return {}; });
 
     // 2) Si email a change : declencher la demande de confirmation
     if (emailChanged) {
@@ -854,6 +1103,8 @@ async function save() {
       } catch (e) {
         showMsg(t('msg_email_error'), 'error');
       }
+    } else if (saveResult && saveResult.photoError) {
+      showMsg(t('msg_photo_error'), 'error');
     } else {
       showMsg(t('msg_success'), 'success');
     }

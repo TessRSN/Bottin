@@ -69,7 +69,7 @@ const STATUT_OPTIONS = [
   'Personne en stage postdoctoral',
   'Personnel de recherche',
   'Personnel de la santé',
-  "Coordination ou gestion d'équipe", // sans virgule pour eviter le split Notion select
+  'Personne en coordination ou gestion de la recherche', // libelle 2026-09-14 (ex-« Coordination ou gestion d'équipe », 34 fiches migrees le 2026-09-15)
   'Personne en milieu industriel ou gouvernemental',
   'Personne partenaire citoyenne',
   'Autre',
@@ -249,7 +249,7 @@ const STATUT_FIXES = {
   'Autres statuts de recherche (institution gouvernementale, secteur privé, praticien, artiste, contributeur individuel)': 'Autres statuts en recherche',
   'Professionnel de recherche': 'Personnel de recherche',
   'Stagiaire postdoctoral': 'Personne en stage postdoctoral',
-  'Direction ou gestion': "Coordination ou gestion d'équipe",
+  'Direction ou gestion': 'Personne en coordination ou gestion de la recherche',
   "Membre de l'industrie": 'Personne en milieu industriel ou gouvernemental',
   'Professionnel de la santé': 'Personnel de la santé',
 
@@ -260,7 +260,7 @@ const STATUT_FIXES = {
   'Professionnel·le de la recherche': 'Personnel de recherche',
   'Professionnel·le de la santé': 'Personnel de la santé',
   'Stagiaire postdoctoral·e': 'Personne en stage postdoctoral',
-  'Gestionnaire ou cadre': "Coordination ou gestion d'équipe",
+  'Gestionnaire ou cadre': 'Personne en coordination ou gestion de la recherche',
 
   // ─── Personnes aux etudes (point median ou termes alternatifs) → forme neutre
   'Etudiant·e au doctorat': 'Personne aux études au doctorat',
@@ -298,14 +298,14 @@ const STATUT_FIXES = {
   "Professionnelle de la santé inscrite au DESS en gestion - analyse d'affaires - TI": 'Personnel de la santé',
 
   // ─── Coordination ou gestion d'équipe
-  'Gestionnaire de projet en santé numerique': "Coordination ou gestion d'équipe",
-  'Coordonnatrice du Pôle': "Coordination ou gestion d'équipe",
-  'Coordonnatrice académique numérique de la santé': "Coordination ou gestion d'équipe",
-  'gestion de projets scientifiques': "Coordination ou gestion d'équipe",
-  'Member of the RSN gestion team :)': "Coordination ou gestion d'équipe",
-  'Chef de programmes santé publique - Direction de Santé Publique': "Coordination ou gestion d'équipe",
-  'Présidente du Prix Hippocrate': "Coordination ou gestion d'équipe",
-  'CNIO': "Coordination ou gestion d'équipe",
+  'Gestionnaire de projet en santé numerique': 'Personne en coordination ou gestion de la recherche',
+  'Coordonnatrice du Pôle': 'Personne en coordination ou gestion de la recherche',
+  'Coordonnatrice académique numérique de la santé': 'Personne en coordination ou gestion de la recherche',
+  'gestion de projets scientifiques': 'Personne en coordination ou gestion de la recherche',
+  'Member of the RSN gestion team :)': 'Personne en coordination ou gestion de la recherche',
+  'Chef de programmes santé publique - Direction de Santé Publique': 'Personne en coordination ou gestion de la recherche',
+  'Présidente du Prix Hippocrate': 'Personne en coordination ou gestion de la recherche',
+  'CNIO': 'Personne en coordination ou gestion de la recherche',
 
   // ─── Personnes partenaires citoyennes
   'patiente-partenaire': 'Personne partenaire citoyenne',

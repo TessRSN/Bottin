@@ -1,4 +1,8 @@
 # Data files (never commit personal data)
+*.xlsx
+*.xls
+membres_*.csv
+membres_*.json
 RSN_BD_AllMembers.xlsx
 all_members.csv
 new_all_members.csv

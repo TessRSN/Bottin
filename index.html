@@ -24,6 +24,8 @@
     <meta name="twitter:description" content="Cartographie et répertoire de la recherche en santé numérique au Québec.">
     <meta name="twitter:image" content="https://bottin.rsn.quebec/og-image.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Phase 2j (2026-05-04): vis-network pour la vue Connexions (graphe de proximite). -->
+    <link rel="stylesheet" href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
     <style>
@@ -84,7 +86,9 @@
         [data-theme="dark"] .upload-area { background: var(--rsn-card-bg); }
         [data-theme="dark"] .leaflet-popup-content-wrapper { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .leaflet-popup-tip { background: var(--rsn-card-bg); }
-        [data-theme="dark"] .card-link { color: var(--rsn-accent); }
+        /* Mode sombre : l'accent est clair, donc texte fonce sur fond plein, et inverse au survol */
+        [data-theme="dark"] .card-link { color: #0f172a; }
+        [data-theme="dark"] .card-link:hover { color: var(--rsn-accent); background: transparent; }
         [data-theme="dark"] .card-email a { color: var(--rsn-accent); }
         [data-theme="dark"] .ct { opacity: 0.9; }
 
@@ -225,7 +229,11 @@
         .member-card.type-etudiant { border-left-color: var(--rsn-tag-etudiant); }
         .member-card.type-partenaire { border-left-color: var(--rsn-tag-partenaire); }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.25rem; gap: 0.5rem; }
-        .card-name { font-size: 1.1rem; font-weight: 600; color: var(--rsn-accent); }
+        .card-name { font-size: 1.1rem; font-weight: 600; color: var(--rsn-accent); flex: 1; min-width: 0; }
+        /* Phase 3a: photo de profil ronde, nom en dessous (carte 64 px, fiche 112 px) ; rien si le membre n'en a pas */
+        .card-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; flex: 1; min-width: 0; }
+        .card-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--rsn-border); }
+        .card-photo-lg { width: 112px; height: 112px; }
         .card-tag { font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 50px; color: white; white-space: nowrap; flex-shrink: 0; }
         .tag-regulier { background: var(--rsn-tag-regulier); }
         .tag-etudiant { background: var(--rsn-tag-etudiant); }
@@ -244,8 +252,11 @@
         .principe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #fefcbf; color: #975a16; white-space: nowrap; }
         .action-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #c6f6d5; color: #276749; white-space: nowrap; }
         .card-links { display: flex; gap: 0.75rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--rsn-border); flex-wrap: wrap; }
-        .card-link { font-size: 0.78rem; color: var(--rsn-accent); text-decoration: none; display: flex; align-items: center; gap: 0.2rem; }
-        .card-link:hover { text-decoration: underline; }
+        /* Liens externes (ORCID, site web) : vrais boutons, cliquables au premier coup d'oeil */
+        .card-link { font-size: 0.78rem; font-weight: 600; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--rsn-accent); border-radius: 999px; background: var(--rsn-accent); line-height: 1.2; transition: background 0.15s, color 0.15s; }
+        .card-link::after { content: '\2197'; font-size: 0.8em; opacity: 0.85; }
+        /* Survol : le bouton s'inverse, fond transparent et texte de la couleur d'accent */
+        .card-link:hover { background: transparent; color: var(--rsn-accent); text-decoration: none; }
         .card-expand-btn { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0; margin-top: 0.3rem; }
         .card-expand-btn:hover { text-decoration: underline; }
         .card-extra { display: none; }
@@ -438,7 +449,7 @@
     <div class="search-box" id="searchBox">
         <div class="search-input-wrapper">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, expertise, projet...">
+            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, présentation...">
         </div>
     </div>
     <div class="filters-row" id="filtersRow">
@@ -457,6 +468,7 @@
             <button class="view-btn active" id="btnCards"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> <span data-i18n="view_cards">Profils</span></button>
             <button class="view-btn" id="btnTable"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> <span data-i18n="view_table">Tableau</span></button>
             <button class="view-btn" id="btnMap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg> <span data-i18n="view_map">Carte</span></button>
+            <button class="view-btn" id="btnConnexions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="8" y1="6" x2="16" y2="6"/></svg> <span data-i18n="view_connexions">Connexions</span></button>
         </div>
     </div>
 </div>
@@ -478,6 +490,36 @@
             <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-partenaire)"></div> <span data-i18n="partner">Partenaire</span></div>
             <span style="font-size:0.75rem;color:var(--rsn-muted);margin-left:auto;" id="mapCoverage">—</span>
         </div>
+    </div>
+    <!-- Phase 2j v3: vue Connexions plein ecran avec legende compacte en bas -->
+    <div id="connexionsContainer" class="hidden" style="background:var(--rsn-card-bg);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:600px">
+      <!-- Phase 2j v7: description du graphe + bouton "?" qui ouvre la fenetre d'explication de la methode -->
+      <div id="connexionsIntro" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;border-bottom:1.5px solid var(--rsn-border);font-size:0.82rem;line-height:1.45;color:var(--rsn-muted)">
+        <span data-i18n="connexions_intro">Chaque point est un membre. Un trait relie deux membres dont les profils partagent des mots-clés scientifiques distinctifs ; plus il est épais, plus la proximité est forte. Cliquez sur un point pour ouvrir la fiche, survolez un trait pour voir les mots communs.</span>
+        <button type="button" id="connexionsHelpBtn" class="reset-btn" data-i18n-title="connexions_help_btn" title="Comment sont calculées les connexions ?" aria-label="Comment sont calculées les connexions ?" onclick="openConnexionsHelp()" style="flex-shrink:0;width:28px;height:28px;padding:0;border-radius:50%;font-weight:700;font-size:0.95rem;cursor:pointer;color:var(--rsn-accent);border-color:var(--rsn-accent)">?</button>
+      </div>
+      <!-- vis-network vide le contenu de #connexionsGraph a la creation : les
+           messages superposes doivent etre des freres du graphe, pas des enfants. -->
+      <div style="position:relative;flex:1;min-height:0;display:flex">
+        <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0"></div>
+        <!-- Phase 2j v7: message pendant le calcul du placement (physique hors ecran) -->
+        <div id="connexionsStabilizing" class="hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:11;background:var(--rsn-card-bg);color:var(--rsn-muted);padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;box-shadow:var(--shadow-sm);pointer-events:none" data-i18n="connexions_loading">Calcul des connexions…</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
+        <!-- Pastilles : meme rendu que les noeuds du graphe (disque plein semi-transparent, sans bord) -->
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(43,108,176,0.6)"></span> <span data-i18n="regular">Régulier</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(214,158,46,0.6)"></span> <span data-i18n="student">Étudiant</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(56,161,105,0.6)"></span> <span data-i18n="partner">Partenaire</span></div>
+        <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
+        <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="4" max="15" step="1" value="4" style="width:110px;margin:0;cursor:pointer"></label>
+        <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
+        <span id="connexionsCount" style="color:var(--rsn-muted)">—</span>
+        <button id="connexionsExportBtn" class="reset-btn" style="cursor:pointer" data-i18n="connexions_export_png">Exporter en image</button>
+      </div>
+    </div>
+    <div id="connexionsLoading" class="hidden" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
+      <div style="font-size:2rem;margin-bottom:1rem">⏳</div>
+      <p style="font-size:1rem;font-weight:600" data-i18n="connexions_loading">Calcul des connexions…</p>
     </div>
     <div id="emptyState" class="empty-state hidden">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -522,6 +564,13 @@
     </div>
 </div>
 
+<!-- Phase 2j v7: fenetre "Comment sont calculees les connexions ?" (contenu construit par openConnexionsHelp, dans la langue courante) -->
+<div class="member-overlay" id="connexionsHelpOverlay" onclick="if(event.target===this)closeConnexionsHelp()" role="dialog" aria-modal="true" aria-labelledby="connexionsHelpTitle">
+    <div class="member-modal" id="connexionsHelpContent">
+        <button class="member-modal-close" onclick="closeConnexionsHelp()" aria-label="Fermer">&times;</button>
+    </div>
+</div>
+
 <script>
 const UPDATE_FORM_URL = '/magic-link.html';
 const JOIN_FORM_URL = '/join.html';
@@ -536,20 +585,56 @@ const I18N = {
         regular: 'Régulier', regular_pl: 'Réguliers',
         student: 'Étudiant', student_pl: 'Étudiants',
         partner: 'Partenaire', partner_pl: 'Partenaires',
-        search_placeholder: 'Rechercher par nom, institution, thème, expertise, projet...',
+        search_placeholder: 'Rechercher par nom, institution, thème, présentation...',
         filter_type: "Type d'adhésion", filter_region: 'Région',
         filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
-        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte',
+        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte', view_connexions: 'Connexions',
+        connexions_loading: 'Calcul des connexions…',
+        connexions_search_label: 'Rechercher',
+        connexions_search_placeholder: 'Rechercher un membre…',
+        connexions_legend_label: 'Légende',
+        connexions_count_legend: '{N} membres, {L} connexions affichées',
+        connexions_export_png: 'Exporter en image',
+        connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
+        connexions_pair_score: '{N} mots-clés en commun',
+        connexions_strength_strong: 'Proximité forte : plusieurs mots-clés rares en commun',
+        connexions_strength_medium: 'Proximité moyenne',
+        connexions_strength_weak: 'Proximité faible : mots-clés courants',
+        connexions_intro: "Chaque point est un membre. Un trait relie deux membres dont les profils partagent des mots-clés scientifiques distinctifs ; plus il est épais, plus la proximité est forte. Cliquez sur un point pour ouvrir la fiche, survolez un trait pour voir les mots communs.",
+        connexions_help_btn: 'Comment sont calculées les connexions ?',
+        connexions_help_title: 'Comment sont calculées les connexions ?',
+        connexions_help_lead: "Aucune intelligence artificielle : un calcul déterministe, refait dans votre navigateur à partir des textes des profils consentants.",
+        connexions_help_s1_h: "D'où viennent les mots",
+        connexions_help_s1_t: "Des deux champs libres du profil : thèmes de recherche ou d'intérêt, et présentation. Un dictionnaire de plus de 500 correspondances rapproche le français et l'anglais, pour qu'« apprentissage automatique » et « machine learning » comptent comme un même mot.",
+        connexions_help_s2_h: 'Quels mots comptent',
+        connexions_help_s2_t: "Les mots de liaison, le vocabulaire générique de la recherche et les noms d'institutions sont ignorés. Un mot présent dans plus de 20 % des profils ne distingue personne ; un mot présent dans un seul profil ne peut relier personne. Les expressions de deux mots, comme « inférence causale », sont reconnues comme un tout.",
+        connexions_help_s3_h: 'Comment se calcule la proximité',
+        connexions_help_s3_t: "Chaque mot partagé pèse selon sa rareté dans le réseau : « oncologie » vaut plus que « modèle ». Le score d'une paire est la somme de ces poids. Un seul mot partagé suffit s'il est rare ; sinon il en faut au moins deux.",
+        connexions_help_s4_h: 'Quels liens sont affichés',
+        connexions_help_s4_t: "Les liens au-dessus du seuil du curseur, puis les 4 voisins les plus proches de chaque membre, avec un maximum de 10 liens par membre pour éviter les étoiles illisibles. L'épaisseur du trait suit le score.",
+        connexions_help_s5_h: 'Les ●●● dans « Profils proches »',
+        connexions_help_s5_t: "●●● proximité forte, plusieurs mots rares en commun. ●●○ moyenne. ●○○ faible, mots courants seulement. Le classement suit le score, pas le nombre de mots : cinq mots rares valent plus que six mots courants. Les mots communs sont listés du plus rare au plus courant.",
+        connexions_help_s6_h: 'Limites',
+        connexions_help_s6_t: "Un profil court ou rédigé en termes généraux aura peu de liens : la qualité du graphe dépend de la richesse des textes. Les mots communs sont affichés dans leur forme anglaise, forme pivot du rapprochement français-anglais.",
+        connexions_density_label: 'Liens : tous ↔ les plus forts',
+        connexions_hide_isolated: 'Masquer les membres sans lien',
+        similar_profiles_title: 'Profils proches',
+        similar_profiles_show_criteria: 'Voir les mots-clés communs',
+        similar_profiles_btn: 'Voir les profils proches',
+        lbl_axis_short: 'Axes',
+        lbl_principle_short: 'Principes',
+        lbl_action_short: "Champs d'action",
+        lbl_keywords: 'Mots-clés',
         no_results: 'Aucun membre trouvé',
         no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
         upload_title: 'Mettre à jour les données :',
         upload_hint: 'glissez un fichier CSV ici ou cliquez pour sélectionner',
         upload_format: 'Format attendu : CSV exporté de la BD membres (encodage UTF-8)',
         // Card / table labels
-        lbl_status: 'Statut', lbl_expertise: 'Expertise', lbl_network: 'Réseau',
-        lbl_project: 'Projet', lbl_students: 'Étudiants',
+        lbl_status: 'Statut', lbl_expertise: 'Thèmes', lbl_network: 'Réseau',
+        lbl_project: 'Présentation', lbl_students: 'Étudiants',
         lbl_other_axes: 'Autres axes', lbl_other_principles: 'Autres principes',
         lbl_other_actions: 'Autres actions',
         lbl_see_more: 'Voir plus', lbl_see_less: 'Voir moins',
@@ -558,7 +643,8 @@ const I18N = {
         th_name: 'Nom', th_institution: 'Institution', th_email: 'Email',
         th_status: 'Statut', th_type: 'Type', th_axis: 'Axe prioritaire',
         th_principle: 'Principe', th_action: "Champ d'action",
-        th_expertise: 'Expertise', th_links: 'Liens',
+        th_expertise: 'Thèmes', th_links: 'Liens',
+        lbl_website: 'Site web',
         // Map
         map_geolocated: 'membres géolocalisés',
         map_coverage: 'Couverture',
@@ -584,19 +670,55 @@ const I18N = {
         regular: 'Regular', regular_pl: 'Regular',
         student: 'Student', student_pl: 'Students',
         partner: 'Partner', partner_pl: 'Partners',
-        search_placeholder: 'Search by name, institution, theme, expertise, project...',
+        search_placeholder: 'Search by name, institution, theme, presentation...',
         filter_type: 'Membership type', filter_region: 'Region',
         filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
-        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map',
+        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map', view_connexions: 'Connections',
+        connexions_loading: 'Computing connections…',
+        connexions_search_label: 'Search',
+        connexions_search_placeholder: 'Search a member…',
+        connexions_legend_label: 'Legend',
+        connexions_count_legend: '{N} members, {L} connections shown',
+        connexions_export_png: 'Export as image',
+        connexions_insights_title: 'High-potential cross-institution pairs',
+        connexions_pair_score: '{N} keywords in common',
+        connexions_strength_strong: 'Strong match: several rare keywords in common',
+        connexions_strength_medium: 'Medium match',
+        connexions_strength_weak: 'Weak match: common keywords only',
+        connexions_intro: 'Each dot is a member. A line connects two members whose profiles share distinctive scientific keywords; the thicker the line, the closer the match. Click a dot to open the profile, hover a line to see the shared keywords.',
+        connexions_help_btn: 'How are connections computed?',
+        connexions_help_title: 'How are connections computed?',
+        connexions_help_lead: 'No artificial intelligence: a deterministic computation, run in your browser from the text of consenting members\' profiles.',
+        connexions_help_s1_h: 'Where the words come from',
+        connexions_help_s1_t: 'From the two free-text fields of the profile: research or interest themes, and the "About your work" text. A dictionary of over 500 entries bridges French and English, so that "apprentissage automatique" and "machine learning" count as the same word.',
+        connexions_help_s2_h: 'Which words count',
+        connexions_help_s2_t: 'Function words, generic research vocabulary and institution names are ignored. A word found in more than 20% of profiles distinguishes no one; a word found in a single profile can connect no one. Two-word expressions such as "causal inference" are recognised as a whole.',
+        connexions_help_s3_h: 'How closeness is scored',
+        connexions_help_s3_t: 'Each shared word is weighted by its rarity across the network: "oncology" is worth more than "model". The score of a pair is the sum of these weights. A single shared word is enough if it is rare; otherwise at least two are needed.',
+        connexions_help_s4_h: 'Which links are shown',
+        connexions_help_s4_t: 'Links above the slider threshold, then the 4 nearest neighbours of each member, with at most 10 links per member to avoid unreadable stars. Line thickness follows the score.',
+        connexions_help_s5_h: 'The ●●● in "Similar profiles"',
+        connexions_help_s5_t: '●●● strong match, several rare words in common. ●●○ medium. ●○○ weak, common words only. The ranking follows the score, not the number of words: five rare words outweigh six common ones. Shared words are listed from rarest to most common.',
+        connexions_help_s6_h: 'Limitations',
+        connexions_help_s6_t: 'A short profile, or one written in general terms, will have few links: the graph is only as good as the profile texts. Shared words are shown in their English form, the pivot used to bridge French and English.',
+        connexions_density_label: 'Links: all ↔ strongest',
+        connexions_hide_isolated: 'Hide members without links',
+        similar_profiles_title: 'Similar profiles',
+        similar_profiles_show_criteria: 'View shared keywords',
+        similar_profiles_btn: 'View similar profiles',
+        lbl_axis_short: 'Axes',
+        lbl_principle_short: 'Principles',
+        lbl_action_short: 'Action fields',
+        lbl_keywords: 'Keywords',
         no_results: 'No members found',
         no_results_hint: 'Try adjusting your search criteria or filters.',
         upload_title: 'Update data:',
         upload_hint: 'drag a CSV file here or click to select',
         upload_format: 'Expected format: CSV exported from the members database (UTF-8 encoding)',
-        lbl_status: 'Status', lbl_expertise: 'Expertise', lbl_network: 'Network',
-        lbl_project: 'Project', lbl_students: 'Students',
+        lbl_status: 'Status', lbl_expertise: 'Themes', lbl_network: 'Network',
+        lbl_project: 'About', lbl_students: 'Students',
         lbl_other_axes: 'Other axes', lbl_other_principles: 'Other principles',
         lbl_other_actions: 'Other actions',
         lbl_see_more: 'See more', lbl_see_less: 'See less',
@@ -604,7 +726,8 @@ const I18N = {
         th_name: 'Name', th_institution: 'Institution', th_email: 'Email',
         th_status: 'Status', th_type: 'Type', th_axis: 'Primary axis',
         th_principle: 'Principle', th_action: 'Field of action',
-        th_expertise: 'Expertise', th_links: 'Links',
+        th_expertise: 'Themes', th_links: 'Links',
+        lbl_website: 'Website',
         map_geolocated: 'geolocated members',
         map_coverage: 'Coverage',
         map_institutions_on: 'institutions out of',
@@ -667,7 +790,7 @@ function openQrModal(type) {
 function closeQrModal() {
     document.getElementById('qrOverlay').classList.remove('active');
 }
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeQrModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') { closeQrModal(); if (typeof closeConnexionsHelp === 'function') closeConnexionsHelp(); } });
 
 function applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -676,6 +799,12 @@ function applyI18n() {
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         el.placeholder = tr(el.getAttribute('data-i18n-placeholder'));
+    });
+    // Infobulles et libelles d'accessibilite traduits (ex. bouton "?" des connexions)
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const txt = tr(el.getAttribute('data-i18n-title'));
+        el.title = txt;
+        el.setAttribute('aria-label', txt);
     });
     document.getElementById('langLabel').textContent = currentLang === 'fr' ? 'EN' : 'FR';
     document.documentElement.lang = currentLang;
@@ -761,18 +890,19 @@ const CONFIG = {
         email: 'E-mail / Courriel', email2: 'Autre courriel',
         statut: 'Statut actuel', institution: 'Institution / organisation 1',
         type: "Type d'adhesion", reseau: 'Réseau 1',
-        expertise: 'Expertise', themes: "Thèmes d'intérêt",
+        themes: "Thèmes de recherche ou d'intérêt", // colonne renommee le 2026-09-15 (ex-« Thèmes d'intérêt » ; Expertise fusionnee le 2026-09-14)
         axe1: "1e Axe d'intérêt", axe2: "2e Axe d'intérêt",
         axe3: "3e Axe d'intérêt", axe4: "4e Axe d'intérêt",
         pf1: "1è Principles fondateurs", pf2: "2è Principles fondateurs",
         pf3: "3è Principles fondateurs", pf4: "4è Principles fondateurs",
         pf5: "5è Principles fondateurs",
         ca1: "1è Champs d'action", ca2: "2è Champs d'action", ca3: "3è Champs d'action",
-        projet: 'Projet de recherche', etudiants: 'Étudiant.e.s',
+        projet: 'Présentation', etudiants: 'Étudiant.e.s', // « Présentation » : colonne renommee le 2026-09-15 (ex-« Projet de recherche »)
         refere: 'Référée par', droitVote: 'Droit de vote',
         orcid: 'ORCID', cv: 'CV / LinkedIn',
         evaluateur: 'Évaluateur du RSN - nouv. formulaire',
-        profilPublic: 'Autorisez-vous le RSN à vous créer un profil de membre public'
+        profilPublic: 'Autorisez-vous le RSN à vous créer un profil de membre public',
+        photo: 'Photo' // Phase 3a: adresse du relais /api/photo (vide si pas de photo)
     }
 };
 
@@ -838,8 +968,15 @@ function regionFromCoords(lat, lng) {
         const b = r.box;
         if (lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3]) return r.name;
     }
-    return 'Hors Québec';
+    // Phase 2m (2026-09-15): hors Québec, on distingue le reste du Canada de
+    // l'international (avant : une seule valeur « Hors Québec »).
+    if (lat >= 41.6 && lat <= 83.2 && lng >= -141.1 && lng <= -52.5) return 'Canada hors Québec';
+    return 'International';
 }
+// Ces deux entrees sont placees en fin du filtre Region, apres les regions du
+// Québec triees par nombre de membres.
+const REGION_LAST = ['Canada hors Québec', 'International'];
+const REGION_FR_TO_EN = { 'Canada hors Québec': 'Canada outside Quebec', 'International': 'International' };
 // getRegion(inst) retourne un ARRAY de regions (une par institution
 // affiliee). Si le membre a plusieurs institutions (separees par ';'),
 // chacune est lookup dans GEOCODE et sa region calculee. Le filtre
@@ -885,10 +1022,15 @@ const STATUT_GROUP_MAP = {
     'Personnel de recherche': 'Personnel de recherche',
     'Personnel de la santé': 'Personnel de la santé',
     "Coordination ou gestion d'équipe": 'Direction ou coordination',
+    // Phase 3c (2026-09-14) : nouveau libelle epicene ; l'ancien reste tolere
+    // jusqu'a la migration des fiches (cf. BACKLOG).
+    'Personne en coordination ou gestion de la recherche': 'Direction ou coordination',
     'Personne en milieu industriel ou gouvernemental': 'Partenaire ou autre',
     'Personne partenaire citoyenne': 'Partenaire ou autre',
     'Autre': 'Partenaire ou autre',
 };
+// Ordre d'affichage des regroupements dans le filtre Statut (Phase 2m)
+const STATUT_GROUP_ORDER = ['Chercheur·e', 'Étudiant·e', 'Personnel de recherche', 'Personnel de la santé', 'Direction ou coordination', 'Partenaire ou autre'];
 function groupStatut(raw) {
     if (!raw) return '';
     // Match exact contre la nouvelle taxonomie (cas normal post-Phase 1).
@@ -957,17 +1099,18 @@ function loadMembers(data) {
             type: typeRaw, typeNorm,
             consent, formComplete,
             themes: (m[C.themes]||'').trim(),
-            expertise: (m[C.expertise]||'').trim(),
             axes, principes, champsAction,
             projet: (m[C.projet]||'').trim(),
             orcid: (m[C.orcid]||'').trim(),
             cv: (m[C.cv]||'').trim(),
+            photo: (m[C.photo]||'').trim(),
             reseau: (m[C.reseau]||'').trim(),
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
+            // Phase 2l (2026-09-15): toutes les selections (avant : la premiere seulement)
             _search: [name, email, institution, statut, typeRaw,
-                m[C.themes], m[C.expertise], m[C.projet], axes[0], principes[0],
-                champsAction[0], m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
+                m[C.themes], m[C.projet], axes.join(' '), principes.join(' '),
+                champsAction.join(' '), m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
         });
     });
     // Tri alphabétique par nom de famille par défaut
@@ -1006,7 +1149,7 @@ function buildMS(id, items, allLabel) {
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value;
         // Phase 2k : on affiche le label traduit (selon currentLang) mais on
         // garde la value FR comme valeur de comparaison interne (msState +
-        // filtres ci-dessous comparent sur m.statutGroup / m.axes[0] qui
+        // filtres ci-dessous comparent sur m.statutGroup / m.axes (toutes les valeurs) qui
         // restent en FR cote donnees).
         const lbl = document.createElement('label'); lbl.textContent = translateFilterValue(id, value);
         const cnt = document.createElement('span'); cnt.className = 'ms-item-count'; cnt.textContent = count;
@@ -1052,13 +1195,29 @@ function populateFilters() {
     };
 
     buildMS('filterType', countMap(allMembers.map(m=>m.type)), tr('all_m'));
-    buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), tr('all_f'));
-    buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), tr('all_m'));
+    // Phase 2m (2026-09-15): regions du Québec par nombre de membres, puis
+    // « Canada hors Québec » et « International » en fin de liste.
+    const regionItems = countMap(allMembers.map(m=>m.region));
+    const regionSorted = regionItems.filter(it => !REGION_LAST.includes(it.value))
+        .concat(REGION_LAST.map(v => regionItems.find(it => it.value === v)).filter(Boolean));
+    buildMS('filterRegion', regionSorted, tr('all_f'));
+    // Phase 2m : les 6 regroupements deviennent des en-tetes et les 14 statuts
+    // sont listes dessous ; le filtre porte sur le statut lui-meme (avant : sur
+    // le regroupement seulement, ce qui « cachait » des statuts).
+    const statutCounts = countMap(allMembers.filter(m => m.statut && m.statutGroup).map(m => m.statut));
+    const statutItems = [];
+    STATUT_GROUP_ORDER.forEach(g => {
+        const inGroup = statutCounts.filter(it => groupStatut(it.value) === g);
+        if (inGroup.length) { statutItems.push({ group: trStatutGroup(g) }); statutItems.push(...inGroup); }
+    });
+    buildMS('filterStatut', statutItems, tr('all_m'));
 
-    // Focus filter: axes first, then principes, then champs — with group labels
-    const axeItems = countMap(allMembers.map(m=>m.axes[0]));
-    const principeItems = countMap(allMembers.map(m=>m.principes[0]));
-    const champItems = countMap(allMembers.map(m=>m.champsAction[0]));
+    // Focus filter: axes first, then principes, then champs — with group labels.
+    // Phase 2l (2026-09-15): on compte toutes les selections de chaque membre
+    // (avant : la premiere seulement, regle heritee des imports ou tout etait coche).
+    const axeItems = countMap(allMembers.flatMap(m=>m.axes));
+    const principeItems = countMap(allMembers.flatMap(m=>m.principes));
+    const champItems = countMap(allMembers.flatMap(m=>m.champsAction));
     const focusItems = [];
     if (axeItems.length) { focusItems.push({group: tr('th_axis')}); focusItems.push(...axeItems); }
     if (principeItems.length) { focusItems.push({group: tr('th_principle')}); focusItems.push(...principeItems); }
@@ -1086,6 +1245,7 @@ const STATUT_FR_TO_EN = {
     'Personnel de recherche': 'Research staff',
     'Personnel de la santé': 'Health professional',
     "Coordination ou gestion d'équipe": 'Team coordination or management',
+    'Personne en coordination ou gestion de la recherche': 'Research coordinator or manager', // meme libelle EN que le formulaire
     'Personne en milieu industriel ou gouvernemental': 'Industry or government professional',
     'Personne partenaire citoyenne': 'Citizen partner',
     'Autre': 'Other',
@@ -1141,10 +1301,11 @@ function trChamp(v)       { if (!v || currentLang === 'fr') return v; return CHA
 // originale si pas de mapping. Utilise par buildMS / updateMS.
 function translateFilterValue(filterId, value) {
     if (!value || currentLang === 'fr') return value;
-    if (filterId === 'filterStatut') return STATUT_GROUP_FR_TO_EN[value] || value;
+    if (filterId === 'filterStatut') return STATUT_FR_TO_EN[value] || value; // Phase 2m : statuts, plus regroupements
     if (filterId === 'filterType')   return TYPE_FR_TO_EN[value] || value;
     if (filterId === 'filterFocus')  return AXES_FR_TO_EN[value] || PRINCIPES_FR_TO_EN[value] || CHAMPS_FR_TO_EN[value] || value;
-    return value; // filterRegion : pas de traduction
+    if (filterId === 'filterRegion') return REGION_FR_TO_EN[value] || value; // noms de regions inchanges, sauf hors Québec
+    return value;
 }
 
 // Phase 2k (2026-05-12) — pont linguistique FR↔EN pour la barre de recherche.
@@ -1383,6 +1544,73 @@ const FR_TO_EN_DICT = {
   'family': 'family', 'famille': 'family', 'familles': 'family',
   'familial': 'family', 'familiale': 'family',
   'vieillissement': 'aging', 'aine': 'elderly', 'aines': 'elderly',
+  // Ajouts v7 (2026-09-14) : parite FR/EN du vocabulaire scientifique, pour
+  // que les profils francais et anglais se relient sur les memes concepts
+  // (connexions) et se trouvent avec les memes mots (recherche).
+  'telesante': 'telehealth', 'telemedecine': 'telemedicine',
+  'teleconsultation': 'telehealth', 'teleconsultations': 'telehealth',
+  'telereadaptation': 'telerehabilitation', 'telesurveillance': 'monitoring',
+  'neuroimagerie': 'neuroimaging', 'radiologie': 'radiology', 'tomographie': 'tomography',
+  'irm': 'mri', 'tep': 'pet', 'avc': 'stroke', 'asthme': 'asthma', 'epilepsie': 'epilepsy',
+  'cardiovasculaires': 'cardiovascular', 'vasculaire': 'vascular', 'vasculaires': 'vascular',
+  'pulmonaire': 'pulmonary', 'pulmonaires': 'pulmonary', 'intestinal': 'intestinal',
+  'intestinales': 'intestinal', 'perinatalite': 'perinatal', 'perinatal': 'perinatal',
+  'gerontologie': 'gerontology', 'geriatrie': 'geriatrics', 'geriatrique': 'geriatric',
+  'pediatriques': 'pediatric', 'pediatriques': 'pediatric',
+  'radiotherapie': 'radiotherapy', 'chimiotherapie': 'chemotherapy',
+  'infirmier': 'nursing', 'infirmiers': 'nursing', 'infirmiere': 'nursing', 'infirmieres': 'nursing',
+  'nurse': 'nursing', 'nurses': 'nursing',
+  'medecin': 'physicians', 'medecins': 'physicians', 'physician': 'physicians',
+  'clinicien': 'clinicians', 'cliniciens': 'clinicians', 'clinician': 'clinicians',
+  'professionnel': 'professionals', 'professionnels': 'professionals',
+  'professionnelle': 'professionals', 'professionnelles': 'professionals',
+  'genetiques': 'genetic', 'cerebral': 'brain', 'cerebrale': 'brain', 'cerebrales': 'brain',
+  'cognitif': 'cognitive', 'cognitifs': 'cognitive', 'cognitives': 'cognitive',
+  'chirurgical': 'surgical', 'chirurgicale': 'surgical', 'chirurgicaux': 'surgical',
+  'neurologiques': 'neurologic', 'physiologique': 'physiological', 'physiologiques': 'physiological',
+  'trouble': 'disorder', 'troubles': 'disorders', 'symptome': 'symptoms', 'symptomes': 'symptoms',
+  'biomarqueur': 'biomarkers', 'biomarqueurs': 'biomarkers', 'biomarker': 'biomarkers',
+  'agee': 'elderly', 'agees': 'elderly', 'ainee': 'elderly', 'ainees': 'elderly', 'older': 'elderly',
+  'domicile': 'home', 'physiotherapie': 'physiotherapy', 'ergotherapie': 'occupational',
+  'handicap': 'disability', 'handicaps': 'disability', 'autonomie': 'autonomy',
+  'mobilite': 'mobility', 'mouvement': 'movement', 'mouvements': 'movement',
+  'visuel': 'visual', 'visuelle': 'visual', 'visuels': 'visual', 'visuelles': 'visual',
+  'deficience': 'impairment', 'deficiences': 'impairment', 'parole': 'speech',
+  'capteur': 'sensors', 'capteurs': 'sensors', 'sensor': 'sensors',
+  'logiciel': 'software', 'logiciels': 'software', 'ordinateur': 'computer',
+  'graphe': 'graph', 'graphes': 'graph', 'graphs': 'graph', 'langage': 'language',
+  'serieux': 'serious', 'jeu': 'games', 'jeux': 'games', 'game': 'games',
+  'apprentissages': 'learning', 'renforcement': 'reinforcement',
+  'supervise': 'supervised', 'supervisee': 'supervised', 'neurone': 'neural', 'neurones': 'neural',
+  'generatif': 'generative', 'generatifs': 'generative', 'generatives': 'generative',
+  'conversationnel': 'conversational', 'conversationnels': 'conversational',
+  'conversationnelle': 'conversational', 'signaux': 'signal', 'signals': 'signal',
+  'prediction': 'prediction', 'predire': 'prediction', 'predictions': 'prediction',
+  'predictif': 'predictive', 'predictifs': 'predictive', 'predictives': 'predictive',
+  'cohorte': 'cohort', 'cohortes': 'cohort', 'cohorts': 'cohort',
+  'essai': 'trials', 'essais': 'trials', 'trial': 'trials',
+  'longitudinale': 'longitudinal', 'longitudinales': 'longitudinal',
+  'observationnelle': 'observational', 'observationnel': 'observational',
+  'registre': 'registry', 'registres': 'registry', 'biobanque': 'biobank',
+  'populationnelle': 'population', 'populations': 'population',
+  'communautaire': 'community', 'communautaires': 'community',
+  'participative': 'participatory', 'participatif': 'participatory', 'participatifs': 'participatory',
+  'aidance': 'caregivers', 'aidant': 'caregivers', 'aidants': 'caregivers',
+  'aidante': 'caregivers', 'aidantes': 'caregivers', 'caregiver': 'caregivers',
+  'lois': 'law', 'juridique': 'legal', 'juridiques': 'legal',
+  'biostatistique': 'biostatistics', 'biostatistiques': 'biostatistics',
+  'mathematique': 'mathematical', 'mathematiques': 'mathematical', 'mathematics': 'mathematical',
+  'proteomique': 'proteomics', 'pharmacogenomique': 'pharmacogenomics',
+  'psychologie': 'psychology', 'psychologique': 'psychological', 'psychologiques': 'psychological',
+  'psychosocial': 'psychosocial', 'psychosociale': 'psychosocial', 'psychosociaux': 'psychosocial',
+  'musculosquelettique': 'musculoskeletal', 'musculosquelettiques': 'musculoskeletal',
+  'dossier': 'records', 'dossiers': 'records', 'electronique': 'electronic', 'electroniques': 'electronic',
+  'interoperabilite': 'interoperability', 'nuage': 'cloud', 'infonuagique': 'cloud',
+  'segmentation': 'segmentation', 'classification': 'classification', 'simulation': 'simulation',
+  'simulations': 'simulation', 'diseases': 'disease', 'maladies': 'disease', 'maladie': 'disease',
+  'models': 'model', 'modeles': 'model', 'modele': 'model', 'modelling': 'modeling',
+  'interventions': 'intervention', 'treatments': 'treatment', 'traitements': 'treatment',
+  'images': 'imaging', 'image': 'imaging',
 };
 
 function canonicalizeToken(t) {
@@ -1397,28 +1625,22 @@ function searchTokenize(text) {
     .map(canonicalizeToken);
 }
 
-// Canonicalise une query saisie par l'utilisateur en remplaçant chaque mot
-// present dans FR_TO_EN_DICT par sa version EN. Les mots inconnus du dico
-// sont laisses tels quels.
-function canonicalizeQuery(q) {
-  if (!q) return q;
-  return q.split(/\s+/).map(function(token) {
-    const folded = fold(token);
-    return FR_TO_EN_DICT[folded] || token;
-  }).join(' ');
-}
-
 // Construit un document Fuse pour un membre (avec champs normalises FR + EN).
 function buildFuseDoc(m) {
-    // Concatenation de tous les champs textuels, tokenises + canonicalises
-    // FR→EN, pour permettre la recherche cross-lingual.
+    // Pont FR<->EN sur la barre de recherche : on concatene tous les champs
+    // textuels et on les passe par connexionsTokenize() (alias searchTokenize)
+    // qui applique fold + stopwords + FR_TO_EN_DICT. Le champ tokensCanon
+    // contient la version EN canonicalisee, permettant a "machine learning"
+    // de matcher un profil qui ecrit "apprentissage automatique".
     const allText = [
-        m.expertise, m.themes, m.projet, m.refere, m.reseau,
+        m.themes, m.projet, m.refere, m.reseau,
         (m.axes || []).join(' '),
         (m.principes || []).join(' '),
         (m.champsAction || []).join(' ')
     ].filter(Boolean).join(' ');
-    const tokensCanon = searchTokenize(allText).join(' ');
+    const tokensCanon = (typeof searchTokenize === 'function')
+        ? searchTokenize(allText).join(' ')
+        : (typeof connexionsTokenize === 'function' ? connexionsTokenize(allText).join(' ') : '');
     return {
         _ref: m, // pour retrouver l'original apres search
         name: fold([m.prenom, m.nom].filter(Boolean).join(' ')),
@@ -1428,7 +1650,6 @@ function buildFuseDoc(m) {
         statutEN: fold(STATUT_FR_TO_EN[m.statut] || ''),
         typeFR: fold(m.type || ''),
         typeEN: fold(TYPE_FR_TO_EN[m.type] || ''),
-        expertise: fold(m.expertise || ''),
         themes: fold(m.themes || ''),
         projet: fold(m.projet || ''),
         axes: fold((m.axes || []).join(' ')),
@@ -1437,6 +1658,27 @@ function buildFuseDoc(m) {
         reseau: fold(m.reseau || ''),
         tokensCanon: tokensCanon,
     };
+}
+
+// Phase 2j v7.2 : canonicalise une query saisie par l'utilisateur en
+// remplaçant chaque mot present dans FR_TO_EN_DICT par sa version EN.
+// Les mots inconnus du dico sont laisses tels quels.
+function canonicalizeQuery(q) {
+    if (!q || typeof FR_TO_EN_DICT === 'undefined') return q;
+    return q.split(/\s+/).map(function(token) {
+        const folded = fold(token);
+        return FR_TO_EN_DICT[folded] || token;
+    }).join(' ');
+}
+
+// Phase 2k v3 : un mot du nom (prenom ou nom) commence-t-il par `prefix` ?
+// Sert aux jetons trop courts pour Fuse, c.-a-d. l'initiale d'un nom
+// (« philippe d »). On ne regarde ni les institutions (« de », « du »), ni
+// les themes ni la presentation : presque toutes les fiches y ont un mot
+// commencant par n'importe quelle lettre, et l'initiale ne filtrerait rien.
+const FUSE_PREFIX_FIELDS = ['name'];
+function fuseDocHasWordPrefix(doc, prefix) {
+    return FUSE_PREFIX_FIELDS.some(f => (doc[f] || '').split(/[^a-z0-9]+/).some(w => w && w.indexOf(prefix) === 0));
 }
 
 const FUSE_OPTIONS = {
@@ -1456,7 +1698,6 @@ const FUSE_OPTIONS = {
     keys: [
         { name: 'name',         weight: 4.0 },
         { name: 'institutions', weight: 3.5 },
-        { name: 'expertise',    weight: 4.0 },
         { name: 'themes',       weight: 4.0 },
         { name: 'projet',       weight: 4.0 },
         { name: 'statutFR',     weight: 2.0 },
@@ -1492,23 +1733,38 @@ function applyFilters() {
             const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
             if (!fr.some(f => memberRegions.includes(f))) return false;
         }
-        if (fs.length && !fs.includes(m.statutGroup)) return false;
-        if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
+        if (fs.length && !fs.includes(m.statut)) return false; // Phase 2m : filtre sur le statut
+        if (fa.length && !memberHasFocus(m, fa)) return false;
         return true;
     });
+    // Phase 2j v10 (2026-09-15): la vue Connexions masque les membres hors
+    // filtres et estompe seulement ceux hors recherche ; elle a donc besoin
+    // du pool « filtres seuls », avant la recherche.
+    applyFilters._pool = pool;
+    applyFilters._filtersActive = !!(ft.length || fr.length || fs.length || fa.length);
 
     // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
     if (queryNorm && typeof Fuse !== 'undefined') {
         applyFilters._lastRanWithoutFuse = false;
         const docs = pool.map(buildFuseDoc);
         const fuse = new Fuse(docs, FUSE_OPTIONS);
-        // Phase 2k : query canonicalisee FR→EN pour matcher le champ
+        // Phase 2k : query canonicalisee FR↔EN pour matcher le champ
         // tokensCanon des profils dans l'autre langue. Les recherches dans la
         // meme langue continuent de fonctionner via les champs bruts.
         const queryCanon = canonicalizeQuery(queryNorm);
-        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
-        const results = fuse.search(queryCanon);
-        filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
+        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut).
+        // Phase 2k v3 (2026-09-15) : un jeton d'une seule lettre (« Philippe D »)
+        // tombe sous minMatchCharLength et faisait echouer toute la requete
+        // (0 resultat jusqu'a la 2e lettre). On le retire de la requete Fuse et
+        // on exige a la place qu'un mot d'un champ indexe commence par cette
+        // lettre : « philippe d » = les Philippe dont un mot commence par d.
+        const tokens = queryCanon.split(/\s+/).filter(Boolean);
+        const minLen = FUSE_OPTIONS.minMatchCharLength || 1;
+        const initials = tokens.filter(t => t.length < minLen);
+        const fuseQuery = tokens.filter(t => t.length >= minLen).join(' ');
+        let hits = fuseQuery ? fuse.search(fuseQuery).map(r => r.item) : docs; // ordre = score (meilleurs en haut)
+        if (initials.length) hits = hits.filter(d => initials.every(t => fuseDocHasWordPrefix(d, t)));
+        filteredMembers = hits.map(d => d._ref);
     } else if (queryNorm) {
         // Fallback (Fuse non charge — CDN down OU script en bas de page pas
         // encore execute lors d'un reload avec ?q= dans le hash) : recherche
@@ -1532,21 +1788,890 @@ function applyFilters() {
     currentPage = 1;
     document.getElementById('filteredCount').textContent = filteredMembers.length;
     render();
+    // Phase 2j v2: si la vue Connexions est active, appliquer les filtres
+    // au graphe (estompage des non-matchants). On laisse la fonction safe
+    // si la vue n'est pas encore initialisee.
+    if (currentView === 'connexions' && typeof applyConnexionsFiltersToGraph === 'function') {
+        applyConnexionsFiltersToGraph();
+    }
+}
+
+// ─── Vue Connexions (Phase 2j, 2026-05-04) ───
+// Graphe de proximite entre membres (force-directed via vis-network).
+// Cf. spec : docs/superpowers/specs/2026-05-04-connexions-design.md
+
+
+function connexionsTokenize(text) {
+  if (!text) return [];
+  return fold(text)
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 3 && !CONNEXIONS_STOPWORDS.has(t))
+    .map(canonicalizeToken);
+}
+
+// Note : searchTokenize est defini plus haut (section recherche FR<->EN).
+// Il fait fonctionnellement la meme chose que connexionsTokenize.
+
+// Phase 2j v7 (2026-09-14): mots vides supplementaires, utilises UNIQUEMENT
+// par les connexions (graphe + "Profils proches"), jamais par la recherche
+// (qui a besoin de "sante", "health"... pour le pont FR<->EN).
+// Quatre familles, formes sans accents (fold) :
+//  1. mots de liaison / generiques FR oublies ("afin", "vise", "cadre"...)
+//  2. vocabulaire generique de la recherche, FR et EN ("projet", "approach",
+//     "tools", "improve"...) — le dictionnaire FR->EN renvoie vers ces formes EN
+//  3. vocabulaire commun a tout le reseau, qui ne distingue personne
+//     ("sante", "numerique", "donnees", "clinique", "patient"...)
+//  4. noms d'institutions et de lieux : l'affinite doit venir de
+//     l'expertise, pas de l'employeur (deja visible ailleurs).
+const CONNEXIONS_EXTRA_STOPWORDS = new Set([
+  // 1. liaison / generiques FR
+  'afin','vise','visent','viser','visant','lors','cadre','ete','etant','permet',
+  'permettre','permettant','permettent','mettre','mise','place','but','buts',
+  'objectif','objectifs','actuellement','egalement','maniere','facon','niveau',
+  'partie','grace','travers','tant','bien','ceci','cela','comment','pourquoi','quand',
+  'domaine','domaines','interet','interets','travail','travaux','etude','etudes',
+  'etudier','projet','projets','demarche','demarches','matiere','meilleur','meilleure',
+  'meilleurs','meilleures','futur','future','futurs','futures','strategique',
+  'strategiques','principal','principale','principaux','principalement','particulier',
+  'particuliere','general','generale','generaux','nouveau','nouvelle','nouveaux',
+  'nouvelles','different','differente','differents','differentes','grand','grande',
+  'grands','grandes','partir','integrant','integrer','integre','integree','generees',
+  'regrouper','suis','axe','axes','compte','cherche','cherchons','chercher','milieu',
+  'milieux','vie','reel','reelle','reels','reelles','multi','comprendre','mieux',
+  'portent','porte','porter','soutenir','doctoral','doctorat','etudiant','etudiante',
+  'etudiants','etudiantes','perspective','perspectives','source','sources','membre',
+  'membres','equipe','equipes','laboratoire','chaire','professeur','professeure',
+  'titulaire','adjoint','adjointe','agrege','agregee','candidat','candidate',
+  'postdoctoral','postdoctorale','maitrise','these','personne','personnes',
+  'inscrivent','inscrit','inscrite','temps','charge','optimiser','innovant',
+  'innovante','innovants','innovantes','publie','publiee','publies','publication',
+  'publications','revue','revues','article','articles','contexte','contextes',
+  'utilise','utilisent','utiliser','utilisation','permettra','contribuer',
+  'contribution','contributions','realisation','realiser','implantation',
+  'implementation','collaboration','collaborations','participation','processus',
+  'besoin','besoins','enjeu','enjeux','question','questions','experience',
+  'experiences','competence','competences','formation','formations','service',
+  'services','modele','modeles','interesse','interessent','interesser','portant',
+  'concernant','concerne','essentiellement','actuel','actuelle','actuels','actuelles',
+  'resultat','resultats','programme','programmes','identifier','identifiant','base','bases',
+  // 2. generiques de la recherche, EN (cibles du dictionnaire FR->EN)
+  'context','contexts','used','real','contribute','contributes','contributing',
+  'achieve','achieved','achievement','realization','implement','implemented',
+  'implementing','collaborate','collaborative','participate','participating',
+  'issue','issues','challenge','challenges','skill','skills','competencies',
+  'interest','interests','interested','concerning','concerned','regarding',
+  'essentially','mainly','primarily','actual','result','results','program','programs',
+  'faciliter','facilite','aupres','how','goal','goals','change','changes','impact',
+  'impacts','world',
+  // Balayage complet du vocabulaire retenu (2026-09-14, 1232 mots) : verbes,
+  // adverbes, quantites, mots d'organisation et de discours, FR puis EN.
+  'repondre','repond','reponse','favorisant','favoriser','favorise','structure',
+  'structures','deux','trois','cinq','usage','travaille','travailler','responsable',
+  'consiste','combinant','combine','combiner','activite','activites','public',
+  'publique','valorisation','complexe','complexes','complexite','expertise','vue',
+  'risque','risques','initiative','initiatives','conception','tests','test','teste',
+  'face','phase','phases','peut','peuvent','pourrait','propose','proposons','sera',
+  'serait','seront','appliquee','appliquees','applique','influence','creation',
+  'creer','cree','lien','liens','lies','liees','efficacite','efficience','participants',
+  'participant','avancee','avancees','avances','pre','post','pas','ressources','etat',
+  'chaque','validation','valider','valide','accessible','accessibles','integres',
+  'integrees','essentielle','essentiels','apres','avant','important','importante',
+  'importantes','importants','importance','coordination','transformer','echelle',
+  'potentiel','potentiellement','niveaux','terme','utilisant','utilisee','utilisees',
+  'utilisons','valeur','point','contribue','contribuent','contribuant','mecanismes',
+  'principes','type','types','evolution','evoluer','uvre','elements','souvent',
+  'largement','mesurer','mesure','mesures','mesuree','incluant','inclure','strategies',
+  'strategie','utiles','generer','generent','faisabilite','techniques','technique',
+  'aspect','problematique','problematiques','guide','guider','telles','fondation',
+  'effet','effets','cours','concue','concus','concevoir','mixte','mixtes','unite',
+  'consensus','organisation','organisations','organisationnelle','organisationnelles',
+  'organisationnels','specifiquement','offrir','offre','offrant','offrent','promotion',
+  'promouvoir','demeure','demeurent','acteurs','precisement','renforcer','utilisateur',
+  'utilisateurs','terrain','ultimement','existantes','existe','entrainer','determiner',
+  'capacites','accelerer','pertinentes','pertinent','pertinence','partage','partager',
+  'partagee','evenements','evenement','semi','repose','haute','accent','controle',
+  'confiance','transition','directeur','dirige','diriges','codirige','plan','plans',
+  'fournir','analysant','deploiement','indicateurs','parcours','secteur','sein',
+  'assurant','reduit','reduire','reduisant','basee','basees','fondee','fonde',
+  'robustes','robuste','robustesse','produire','cas','hypothese','enfin','celles',
+  'constituent','avons','abord','collecte','realiste','realistes','pilote','concentre',
+  'titre','dimensions','mobilisant','mobilise','cadres','estimation','examiner',
+  'parfois','prendre','preferences','bon','fonction','rendre','ayant','poursuivre',
+  'critiques','rapport','rapidement','rapide','effectuer','theorie','theorique',
+  'ensemble','ensembles','monde','implique','impliquant','composantes','augmenter',
+  'raison','situations','centree','pleinement','developpons','developpant','provenant',
+  'traiter','consequences','issus','limitee','limites','exemple','groupes','capable',
+  'mode','recommandations','mission','representant','represente','etendu','etendue',
+  'garantir','ont','realise','ajuster','calcul','automatiquement','demontre','lorsqu',
+  'lorsque','benefices','attendus','dela','construction','aimerais','presentant',
+  'presentent','presentement','eclairees','eclairee','eclaire','stage','etroite',
+  'tableau','bord','expliquer','percue','methodologique','reliant','constante',
+  'rigoureuses','rigoureux','rigoureuse','doivent','destines','destine','portee',
+  'fins','profil','moment','adaptees','vivant','activement','hybrides','modalites',
+  'binaires','reference','variabilite','compris','presence','reste','allons','soit',
+  'suivant','entourant','manque','manquent','financement','faute','obtenir','facons',
+  'intitule','survenue','observation','option','discussion','preparer','restant',
+  'champ','anticiper','invitees','soutiennent','soutient','soutien','collectif',
+  'experts','inter','extension','documentation','forme','pouvant','concernent',
+  'souhaitons','nombreux','nombreuses','comite','adopte','legitime','prenant','axee',
+  'comprend','allant','font','operationnels','concept','notions','heterogenes',
+  'preuves','probantes','ameliorant','coordonnateur','fais','ere','agit','apprenant',
+  'variees','note','regimes','canadiens','informationnel','caracteristiques',
+  'personnel','participe','elaboration','appui','national','plein','porteur',
+  'specifiques','collabore','quantifier','federe','flux','fraction','sorte',
+  'concretement','mis','echantillons','appele','pole','commune','acquises','optimisation',
+  'performance','performances','optimale','optimal','optimaux','securise','securisee',
+  'conseiller','conseillere','accompagnement','accompagner','comparer','identification',
+  'partenaires','partenaire','administratives','administrative','fonctionnel',
+  'fonctionnelle','fonctionnelles','fonctionnels','individus','individu','prototype',
+  'prototypes','inverse','foundation','mostly','utility','compare','individuals',
+  'individual','administrative','design','designs','communication','open','adapted',
+  'analyze','analyzing','innovative','transfer','engagement','adaptation','facteurs',
+  'facteur','factors','factor','massives','interaction','interactions','infrastructure',
+  'infrastructures','progression','outcomes','outcome','evidence','personnalisee',
+  'personnalise','personnalises','personalized','discovery','computer','computers',
+  'universitaire','universitaires','perennisation','mandat','mandats','microprogramme',
+  'chercheur','chercheurs','chercheuse','chercheuses','societe','society','usager',
+  'usagers','analytique','analytiques','intelligent','intelligente','intelligents',
+  'intelligentes','primary','primaire','primaires','app','apps','audit','protection',
+  'biais','bias','risk','risks','trajectoire','trajectoires','defi','defis','appuyant',
+  'ponderation','reproducible','quantitative','quantitatives','qualitative',
+  'qualitatives','interactive','interactif','sensitive','states','workflows','workflow',
+  'flow','questionnaire','questionnaires','combine','combines','combined','combining','assumption','assumptions',
+  // EN
+  'enhance','enhancing','relevant','scale','scalable','advanced','advances',
+  'advancing','advance','driven','validated','valid','integrated','integrating',
+  'integrate','integrates','essential','building','aligns','frameworks','framework',
+  'making','where','which','about','now','directly','effective','effectiveness',
+  'efficacy','enable','enabling','assess','assessment','assessments','specifically',
+  'explore','exploration','promote','ultimately','ultimate','existing','assist','self',
+  'determine','capacity','life','cycle','accelerate','sharing','feedback','occur',
+  'objective','deployment','key','intersection','practical','domains','standardized',
+  'standard','ensuring','reducing','reduction','robust','together','informed','axis',
+  'action','examine','critical','multiple','comprehensive','insights','completed',
+  'other','lead','leading','reported','emphasis','barriers','living','component',
+  'facilitate','interface','interfaces','routine','routines','centered','centred',
+  'leverage','leveraging','both','taking','attention','providing','limited',
+  'addressing','cannot','patterns','group','long','leadership','global','identifying',
+  'representation','looking','refined','ahead','ranging','selection','score','scores',
+  'package','findings','clients','concise','rich','all','providers','quantify',
+  'quantification','investigating','supporting','account','versus','associations',
+  'association','inclusion','core','settings','ongoing','characterized','features',
+  'only','establishing','strong','reliable','ability','interpretation','step',
+  'previous','perform','further','responsible','award','met','linking','funded',
+  'holds','his','form','yet','arise','like','following','what','when','lack',
+  'bridges','internationally','preserving','fair','affects','actionable','synthesis',
+  'active','continuously','engaging','delivery','especially','called','focusing',
+  'construct','update','great','uncover','differences','continuous','benefits',
+  'minimal','thesis','value','option','plan','plans','review','tests','test','testing',
+  'creating','generate','generating','generation','measure','measures','include',
+  'strategy','strategies','structured','mixed','organization','importance','present',
+  'stage','function','function','mode','concept','national','early','valid','rapid',
+  // sigles et noms propres restants
+  'jean','lac','muhc','douglas','iucpq','chus','rsss','dsn','saguenay','medomicslab',
+  'unagi','3drespiview','desiir','com','2016','2023','2024','2025','000',
+  'high','low','understanding','understand','condition','conditions','planning',
+  'precise','optimize','optimization','nature','communications','journal',
+  'published','profile','profiles',
+  'project','projects','approach','approaches','method','methods','tool','tools',
+  'use','uses','user','users','improve','improving','improvement','improvements',
+  'improved','develop','developing','developed','development','help','helping',
+  'science','sciences','scientific','knowledge','information','practice','practices',
+  'access','quality','management','system','systems','platform','platforms',
+  'integration','innovation','innovations','technology','technologies','solution',
+  'solutions','process','processes','application','applications','field','fields',
+  'current','currently','main','new','novel','different','various','specific',
+  'general','related','role','roles','level','levels','order','well','particular',
+  'particularly','area','areas','research','researcher','researchers','study',
+  'studies','analysis','analyses','evaluation','evaluate','evaluating','large',
+  'complex','better','best','working','student','students','professor','associate',
+  'assistant','candidate','phd','postdoc','postdoctoral','lab','laboratory','team',
+  'chair','member','members','person','persons',
+  // 3. commun a tout le reseau (FR + EN). NB : "sante", "numerique", "donnees",
+  //    "soins", "clinique", "medical" ne sont volontairement PAS ici : comme mots
+  //    seuls, le plafond DF (20 %) les elimine deja ; mais ils doivent rester
+  //    disponibles pour les bigrammes ("sante mentale", "soins intensifs",
+  //    "sante publique", "decision clinique"), qui, eux, sont distinctifs.
+  'patient','patiente','patients','patientes','rsn','reseau',
+  'reseaux','network','networks','healthcare','transformation','transformations',
+  // 4. institutions et lieux
+  'universite','university','montreal','quebec','canada','canadian','canadien',
+  'canadienne','quebecois','quebecoise','sainte','justine','chu','chum','crchum',
+  'mcgill','laval','sherbrooke','udem','uqam','concordia','ciusss','cisss','ssss',
+  'institut','institute','centre','center','hospital','hopital','hospitalier',
+  'faculte','faculty','departement','department','ecole','school','polytechnique',
+  'hec','ets','inrs','mila','ivado','fonds','frq','frqs','cihr','irsc'
+]);
+
+// Parametres du calcul de proximite. Calibres le 2026-09-14 sur les 277
+// profils consentants (cf. scratch connexions_analysis3.py) : 1158 liens
+// avant (hub a 55 liens) -> ~510 liens au seuil par defaut, max 8 par membre.
+const CONNEXIONS_PARAMS = {
+  DF_MIN: 2,             // un item present dans 1 seul profil ne peut relier personne
+  DF_MAX_RATIO: 0.20,    // un item present dans > 20 % des profils n'est pas distinctif
+  WEIGHT_CAP: 4.0,       // plafond du poids idf (un item ultra-rare ne domine pas)
+  BIGRAM_BOOST: 1.25,    // une expression de 2 mots partagee vaut un peu plus qu'un mot
+  SINGLE_MIN_WEIGHT: 3.5,// un seul mot partage suffit s'il est rare (df <= ~3 % des profils)
+  MIN_SCORE_DEFAULT: 4,  // seuil par defaut du curseur "Liens" (= min du curseur)
+  TOP_K: 4,              // voisins les plus proches conserves par membre
+  DEGREE_CAP: 10,        // nombre max de liens par membre (anti-hub)
+};
+
+// Tokens en position (null = mot vide ou trop court), pour ne former des
+// bigrammes qu'entre mots reellement adjacents dans le texte.
+// Le filtre s'applique a la forme brute ET a la forme canonique EN
+// ("recherche" -> "research" doit etre exclu comme "research").
+function connexionsTokenizePos(text) {
+  if (!text) return [];
+  return fold(text).split(/[^a-z0-9]+/).map(t => {
+    if (t.length < 3 || CONNEXIONS_STOPWORDS.has(t) || CONNEXIONS_EXTRA_STOPWORDS.has(t)) return null;
+    const c = canonicalizeToken(t);
+    return CONNEXIONS_EXTRA_STOPWORDS.has(c) ? null : c;
+  });
+}
+
+// Items d'un membre : unigrammes + bigrammes adjacents. La cle du bigramme
+// est triee, donc "intelligence artificielle" (-> intelligence, artificial)
+// et "artificial intelligence" donnent la meme cle "artificial+intelligence".
+function connexionsItemsOf(m) {
+  const items = new Set();
+  for (const text of [m.themes, m.projet]) {
+    const pos = connexionsTokenizePos(text);
+    for (let i = 0; i < pos.length; i++) {
+      const a = pos[i];
+      if (!a) continue;
+      items.add(a);
+      const b = pos[i + 1];
+      if (b && b !== a) items.add(a < b ? a + '+' + b : b + '+' + a);
+    }
+  }
+  return items;
+}
+
+// Index partage par le graphe et par le bloc "Profils proches" de la modal :
+// membres consentants, items distinctifs par membre (fenetre DF), poids idf.
+// Invalide automatiquement quand allMembers change de reference.
+let _connexionsIndex = null;
+function ensureConnexionsIndex() {
+  if (_connexionsIndex && _connexionsIndex.signature === allMembers) return _connexionsIndex;
+  const P = CONNEXIONS_PARAMS;
+  const eligible = allMembers.filter(m => m.consent === 'oui');
+  const N = eligible.length;
+  const DF_MAX = Math.max(P.DF_MIN + 1, Math.floor(N * P.DF_MAX_RATIO));
+  const raw = new Map();
+  const docFreq = new Map();
+  for (const m of eligible) {
+    const set = connexionsItemsOf(m);
+    raw.set(m, set);
+    for (const t of set) docFreq.set(t, (docFreq.get(t) || 0) + 1);
+  }
+  const itemsByMember = new Map();
+  const weights = new Map();
+  for (const m of eligible) {
+    const kept = new Set();
+    for (const t of raw.get(m)) {
+      const df = docFreq.get(t);
+      if (df < P.DF_MIN || df > DF_MAX) continue;
+      kept.add(t);
+      if (!weights.has(t)) {
+        const w = Math.min(Math.log(N / df), P.WEIGHT_CAP);
+        weights.set(t, t.includes('+') ? w * P.BIGRAM_BOOST : w);
+      }
+    }
+    itemsByMember.set(m, kept);
+  }
+  console.log(`[Connexions] index: ${N} membres, DF in [${P.DF_MIN}, ${DF_MAX}], ${weights.size} items distinctifs`);
+  _connexionsIndex = { eligible, itemsByMember, weights, signature: allMembers };
+  return _connexionsIndex;
+}
+
+function connexionsSimilarity(a, b, index) {
+  return connexionsSimilarityDetail(a, b, index).score;
+}
+
+// Score = somme des poids idf des items partages. Un bigramme partage
+// absorbe ses deux mots (pas de triple compte "intelligence" + "artificial"
+// + "artificial intelligence"). Il faut au moins 2 items partages, ou
+// 1 bigramme, pour qu'un lien existe : un seul mot commun n'est pas un signal.
+// sharedTokens est pret a l'affichage (bigramme rendu "mot1 mot2").
+function connexionsSimilarityDetail(a, b, index) {
+  const empty = { score: 0, sharedTokens: [], sharedAxes: [], sharedPrinc: [], sharedChamps: [] };
+  if (!a || !b || a === b) return empty;
+  const ia = index.itemsByMember.get(a), ib = index.itemsByMember.get(b);
+  if (!ia || !ib) return empty;
+  const small = ia.size <= ib.size ? ia : ib;
+  const large = small === ia ? ib : ia;
+  const bigrams = [], unigrams = [];
+  for (const t of small) if (large.has(t)) (t.includes('+') ? bigrams : unigrams).push(t);
+  const covered = new Set();
+  for (const bg of bigrams) for (const w of bg.split('+')) covered.add(w);
+  const items = bigrams.concat(unigrams.filter(t => !covered.has(t)));
+  if (items.length === 0) return empty;
+  // Un seul mot partage n'est un signal que s'il est rare ("telehealth",
+  // "amblyopia"), pas s'il est courant ("learning").
+  if (items.length === 1 && bigrams.length === 0
+      && (index.weights.get(items[0]) || 0) < CONNEXIONS_PARAMS.SINGLE_MIN_WEIGHT) return empty;
+  let score = 0;
+  for (const t of items) score += index.weights.get(t) || 0;
+  return {
+    score,
+    // Du plus rare au plus courant : le premier mot affiche explique le classement.
+    sharedTokens: items
+      .slice().sort((a, b) => (index.weights.get(b) || 0) - (index.weights.get(a) || 0))
+      .map(t => t.replace('+', ' ')),
+    sharedAxes: [], sharedPrinc: [], sharedChamps: [],
+  };
+}
+
+// Selection des liens a afficher : seuil de score (curseur), puis top-K
+// voisins par membre (union), puis plafond de degre en traitant les liens
+// du plus fort au plus faible (plus de hub a 50 liens).
+function selectConnexionsEdges(pairScores, N, minScore) {
+  const P = CONNEXIONS_PARAMS;
+  const neighbors = Array.from({ length: N }, () => []);
+  for (const p of pairScores) {
+    if (p.score < minScore) continue;
+    neighbors[p.from].push(p);
+    neighbors[p.to].push(p);
+  }
+  const candidates = new Map();
+  for (let i = 0; i < N; i++) {
+    neighbors[i].sort((a, b) => b.score - a.score);
+    for (const p of neighbors[i].slice(0, P.TOP_K)) candidates.set(p.key, p);
+  }
+  const degree = new Array(N).fill(0);
+  const edgeSet = new Map();
+  const ordered = Array.from(candidates.values()).sort((a, b) => b.score - a.score);
+  for (const p of ordered) {
+    if (degree[p.from] >= P.DEGREE_CAP || degree[p.to] >= P.DEGREE_CAP) continue;
+    edgeSet.set(p.key, p);
+    degree[p.from]++; degree[p.to]++;
+  }
+  return edgeSet;
+}
+
+function getConnexionsMinScore() {
+  const el = document.getElementById('connexionsMinScore');
+  const v = el ? parseFloat(el.value) : NaN;
+  return isNaN(v) ? CONNEXIONS_PARAMS.MIN_SCORE_DEFAULT : v;
+}
+
+// Phase 2j v9 (2026-09-15): rayon de 12 a 34 px selon le nombre de liens
+// (avant : 8 a 28). Les membres avec photo sont ~30 % plus grands pour que le
+// visage reste reconnaissable ; l'espacement de la physique suit (springLength,
+// avoidOverlap).
+function connexionsNodeSize(degree, hasPhoto) {
+  const r = Math.min(Math.max(12 + Math.sqrt(degree) * 3.5, 10), 34);
+  return hasPhoto ? Math.round(r * 1.3) : r;
+}
+// Image transparente 1x1 : si la photo ne charge pas, le noeud reste un disque
+// de la couleur du type avec son contour, comme un membre sans photo.
+const CONNEXIONS_BLANK_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+// Couleur des traits : assez contrastee sur fond blanc (mode clair) comme sur
+// fond sombre. Avant v7 : rgba(120,120,140,0.35), quasi invisible en clair.
+function connexionsEdgeColor(isDark) {
+  return isDark ? 'rgba(203,213,225,0.45)' : 'rgba(71,85,105,0.55)';
+}
+
+// '#2b6cb0' + alpha -> 'rgba(43,108,176,alpha)'
+function connexionsRgba(hex, alpha) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+function connexionsMakeEdge(e, edgeColor) {
+  return {
+    id: e.key,
+    from: e.from, to: e.to, value: e.score,
+    title: e.shared.join(' · '),
+    color: { color: edgeColor, highlight: '#a855f7', hover: '#a855f7' },
+    width: Math.min(0.5 + e.score / 6, 4),
+  };
+}
+
+// Deux regimes de physique :
+//  - FAST : pendant les calculs hors ecran (stabilisation), vitesse par defaut ;
+//  - CALM : a l'ecran, vitesse plafonnee tres bas et seuil d'arret quasi nul,
+//    pour que le graphe respire lentement sans jamais courir.
+//    Calibre par mesure (2026-09-14, 277 membres) : maxVelocity 0.8 et timestep
+//    0.15 donnent ~3 px/s au zoom habituel apres chargement, ~7 px/s juste apres
+//    un changement de curseur, puis ca decroit. Le pas de temps adaptatif est
+//    coupe en regime calme : sinon la bibliotheque accelere d'elle-meme la
+//    simulation des qu'elle est loin de l'equilibre et le plafond ne tient plus.
+const CONNEXIONS_PHYSICS_FAST = { enabled: true, maxVelocity: 50, minVelocity: 0.75, timestep: 0.25, adaptiveTimestep: true };
+const CONNEXIONS_PHYSICS_CALM = { enabled: true, maxVelocity: 0.8, minVelocity: 0.05, timestep: 0.15, adaptiveTimestep: false };
+// Le plafond est en unites du graphe ; a l'ecran, le zoom le multiplie. On le
+// recalcule donc a chaque zoom pour garder ~4 px/s quel que soit le niveau
+// (au zoom par defaut ~0.19, maxVelocity 0.8 mesure ~4 px/s ; d'ou la constante).
+const CONNEXIONS_CALM_PX_PER_S = 4;
+let _connexionsCalm = false; // true quand le graphe est en regime calme (pas pendant un calcul hors ecran)
+function connexionsApplyCalm() {
+  const net = _connexionsNetwork;
+  if (!net) return;
+  const scale = Math.max(0.05, net.getScale() || 0.19);
+  const maxVelocity = Math.max(0.04, Math.min(0.8, CONNEXIONS_CALM_PX_PER_S / (26 * scale)));
+  net.setOptions({ physics: Object.assign({}, CONNEXIONS_PHYSICS_CALM, { maxVelocity: maxVelocity }) });
+  _connexionsCalm = true;
+}
+let _connexionsZoomTimer = null;
+function connexionsOnZoom() {
+  if (!_connexionsCalm) return;
+  clearTimeout(_connexionsZoomTimer);
+  _connexionsZoomTimer = setTimeout(connexionsApplyCalm, 150);
+}
+
+// Recalcule le placement hors ecran puis repasse en regime calme.
+// vis-network ne redessine pas pendant la stabilisation : les points passent
+// directement a leur nouvelle position, sans course visible.
+function connexionsRelayout(iterations) {
+  const net = _connexionsNetwork;
+  if (!net) return;
+  const stabilizingEl = document.getElementById('connexionsStabilizing');
+  if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  _connexionsCalm = false;
+  net.setOptions({ physics: CONNEXIONS_PHYSICS_FAST });
+  net.once('stabilizationIterationsDone', function () {
+    if (!_connexionsNetwork) return;
+    connexionsApplyCalm();
+    if (stabilizingEl) stabilizingEl.classList.add('hidden');
+  });
+  net.stabilize(iterations || 200);
+}
+
+// Curseur "Liens" + case "masquer les membres sans lien" : on rejoue la
+// selection sur les scores deja calcules, sans reconstruire le graphe.
+function applyConnexionsDensity() {
+  const st = _connexionsState;
+  if (!st || !_connexionsNetwork || !st.pairScores) return;
+  const edgeSet = selectConnexionsEdges(st.pairScores, st.N, getConnexionsMinScore());
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const edgeColor = connexionsEdgeColor(isDark);
+  const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
+  st.edgesDS.clear();
+  st.edgesDS.add(edges);
+  st.edges = edges; st.edgeSet = edgeSet;
+  // Nouveau jeu de liens = nouvelles forces : on recalcule le placement hors
+  // ecran (physique reactivee le temps de la stabilisation, puis coupee),
+  // plutot que de laisser les points courir a l'ecran.
+  connexionsRelayout(200);
+  const degree = new Array(st.N).fill(0);
+  for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
+  const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
+  st.degree = degree;
+  st.nodesDS.update(st.nodes.map((n, i) => ({
+    id: n.id,
+    size: connexionsNodeSize(degree[i], !!(n._ref && n._ref.photo)),
+  })));
+  // Phase 2j v10 : le masquage (isoles + filtres) est centralise dans
+  // applyConnexionsFiltersToGraph, qui lit st.degree et la case a cocher.
+  applyConnexionsFiltersToGraph();
+  const shown = hideIsolated ? degree.filter(d => d > 0).length : st.nodes.length;
+  const countEl = document.getElementById('connexionsCount');
+  if (countEl) {
+    countEl.textContent = tr('connexions_count_legend').replace('{N}', shown).replace('{L}', edges.length);
+  }
+}
+
+let _connexionsCache = null;
+let _connexionsNetwork = null;
+let _connexionsState = null; // { nodesDS, edgesDS, nodes, edges, edgeSet, eligible }
+
+// Phase 2j v2: applique les filtres existants (Type/Region/Statut/Focus) +
+// la barre de recherche principale au graphe. Les noeuds qui ne matchent
+// pas sont estompes (opacity faible) mais restent affiches pour preserver
+// la structure du graphe (style Obsidian).
+function applyConnexionsFiltersToGraph() {
+  if (!_connexionsNetwork || !_connexionsState) return;
+  const ft = msState.filterType, fr = msState.filterRegion;
+  const fs = msState.filterStatut, fa = msState.filterFocus;
+  const queryRaw = (document.getElementById('searchInput') || {}).value || '';
+  const queryNorm = fold(queryRaw.trim());
+
+  const isMatch = (m) => {
+    if (m.consent !== 'oui') return false;
+    if (ft.length && !ft.includes(m.type)) return false;
+    if (fr.length) {
+      const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
+      if (!fr.some(f => memberRegions.includes(f))) return false;
+    }
+    if (fs.length && !fs.includes(m.statut)) return false; // Phase 2m : filtre sur le statut
+    if (fa.length && !memberHasFocus(m, fa)) return false;
+    if (queryNorm) {
+      const haystack = fold(`${m.prenom||''} ${m.nom||''} ${m.institution||''} ${m.themes||''} ${m.projet||''}`);
+      if (!haystack.includes(queryNorm)) return false;
+    }
+    return true;
+  };
+
+  // Phase 2j v8 (2026-09-15): memes resultats que les vues Profils/Tableau/
+  // Carte. filteredMembers est la sortie de applyFilters (filtres exacts +
+  // recherche Fuse, classee par pertinence) ; isMatch ne sert plus que de
+  // secours si elle n'est pas disponible. Avant, la vue Connexions refaisait
+  // sa propre recherche par sous-chaine, qui ne trouvait pas la meme chose
+  // (« marie p » vs « Marie-Pierre ») et centrait le premier noeud dans
+  // l'ordre du graphe au lieu du meilleur resultat.
+  const nodeIdByMember = new Map(_connexionsState.nodes.map(n => [n._ref, n.id]));
+  const ranked = Array.isArray(filteredMembers) ? filteredMembers : null;
+  const matchedIds = new Set();
+  if (ranked) {
+    ranked.forEach((m) => { const id = nodeIdByMember.get(m); if (id !== undefined) matchedIds.add(id); });
+  } else {
+    _connexionsState.nodes.forEach((n) => { if (isMatch(n._ref)) matchedIds.add(n.id); });
+  }
+
+  // Phase 2j v10 (2026-09-15): les filtres (type, region, statut, axe /
+  // principe / champ) MASQUENT les membres qui n'en font pas partie — choisir
+  // « Outaouais » ne laisse que l'Outaouais. La recherche, elle, estompe les
+  // non-resultats (0,35) et centre le meilleur. La case « masquer les membres
+  // sans lien » se combine avec les filtres.
+  const filtersActive = !!(ft.length || fr.length || fs.length || fa.length);
+  const pool = Array.isArray(applyFilters._pool) ? applyFilters._pool : null;
+  const inPool = new Set();
+  if (pool) pool.forEach((m) => { const id = nodeIdByMember.get(m); if (id !== undefined) inPool.add(id); });
+  const passesFilters = (m) => {
+    if (ft.length && !ft.includes(m.type)) return false;
+    if (fr.length) {
+      const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
+      if (!fr.some(f => memberRegions.includes(f))) return false;
+    }
+    if (fs.length && !fs.includes(m.statut)) return false;
+    if (fa.length && !memberHasFocus(m, fa)) return false;
+    return true;
+  };
+  const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
+  const degree = _connexionsState.degree || null;
+  const updates = _connexionsState.nodes.map((n, i) => {
+    const hiddenByFilter = filtersActive && (pool ? !inPool.has(n.id) : !passesFilters(n._ref));
+    const hiddenByDensity = !!(hideIsolated && degree && degree[i] === 0);
+    return {
+      id: n.id,
+      hidden: hiddenByFilter || hiddenByDensity,
+      // Phase 2j v9 : estompage a 0,35 (avant 0,12) — les photos des non-resultats
+      // restaient trop transparentes, on veut encore reconnaitre les visages.
+      opacity: queryNorm ? (matchedIds.has(n.id) ? 1 : 0.35) : 1,
+    };
+  });
+  _connexionsState.nodesDS.update(updates);
+  const visibleIds = updates.filter(u => !u.hidden).map(u => u.id);
+  // (Le message « Tous les membres affichés… » a ete retire le 2026-09-14 :
+  //  le bandeau d'introduction et le bouton « ? » suffisent.)
+
+  // Signature filtres + recherche : quand elle change sans recherche active,
+  // on recadre sur les membres visibles (ou sur tout le graphe si plus rien
+  // n'est filtre).
+  const key = queryNorm + '|' + (filtersActive ? [ft, fr, fs, fa].map(a => a.join(',')).join(';') : '');
+  const lastKey = applyConnexionsFiltersToGraph._lastKey;
+  const changed = (lastKey === undefined) ? filtersActive : (lastKey !== key);
+
+  // Si recherche dans la barre principale, zoom sur le meilleur resultat.
+  // Pendant le calcul du placement (stabilisation), on ne centre pas : le fit
+  // de fin de stabilisation annulerait le zoom ; le gestionnaire
+  // stabilizationIterationsDone rappelle cette fonction une fois le graphe pose.
+  if (queryNorm && _connexionsNetwork && _connexionsCalm) {
+    let foundId;
+    if (ranked) {
+      for (const m of ranked) { const id = nodeIdByMember.get(m); if (id !== undefined) { foundId = id; break; } }
+    } else {
+      const found = _connexionsState.nodes.find(n => matchedIds.has(n.id));
+      if (found) foundId = found.id;
+    }
+    if (foundId !== undefined) {
+      // Le zoom programme (focus) n'emet pas l'evenement 'zoom' : on readapte
+      // le plafond de vitesse a la fin de l'animation.
+      _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
+      _connexionsNetwork.focus(foundId, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
+      _connexionsNetwork.selectNodes([foundId]);
+    }
+  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && changed && visibleIds.length) {
+    // Recherche effacee ou filtres changes : on deselectionne et on recadre
+    // sur les membres visibles (tout le graphe si aucun filtre).
+    _connexionsNetwork.unselectAll();
+    _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
+    const fitOpts = { animation: { duration: 500, easingFunction: 'easeInOutCubic' } };
+    if (filtersActive) fitOpts.nodes = visibleIds;
+    _connexionsNetwork.fit(fitOpts);
+  }
+  applyConnexionsFiltersToGraph._lastKey = key;
+}
+
+function renderConnexions() {
+  const container = document.getElementById('connexionsContainer');
+  const loading = document.getElementById('connexionsLoading');
+  if (!container || !loading) return;
+
+  // Phase 2j v5 fix: si vis-network n'est pas encore charge (premier acces
+  // direct via #v=connexions ou clic sur l'onglet avant que le script CDN
+  // ne soit pret), on attend qu'il soit dispo avant de rendre. Polling
+  // toutes les 100ms, max 5s.
+  if (typeof vis === 'undefined' || !vis.Network) {
+    loading.classList.remove('hidden');
+    loading.textContent = tr('connexions_loading');
+    container.classList.add('hidden');
+    let attempts = 0;
+    const maxAttempts = 50;
+    const checkInterval = setInterval(function() {
+      attempts++;
+      if (typeof vis !== 'undefined' && vis.Network) {
+        clearInterval(checkInterval);
+        renderConnexions(); // retry maintenant que vis est dispo
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        loading.textContent = 'vis-network non chargé après 5s — vérifiez votre connexion.';
+      }
+    }, 100);
+    return;
+  }
+
+  loading.classList.remove('hidden');
+  container.classList.add('hidden');
+  const schedule = window.requestIdleCallback || function(cb){ return setTimeout(cb, 50); };
+  schedule(function(){
+    loading.classList.add('hidden');
+    container.classList.remove('hidden');
+    requestAnimationFrame(function(){ requestAnimationFrame(buildAndShowConnexionsGraph); });
+  });
+}
+
+function buildAndShowConnexionsGraph() {
+  if (_connexionsCache && _connexionsCache.members === allMembers && _connexionsNetwork) {
+    _connexionsNetwork.fit({ animation: false });
+    applyConnexionsFiltersToGraph(); // reapplique les filtres au cas ou ils ont change
+    return;
+  }
+  // Phase 2j v7: index partage (items distinctifs + poids idf), toutes les
+  // paires candidates calculees une fois, puis selection des liens
+  // (seuil du curseur, top-K, plafond de degre) rejouable a la volee.
+  const index = ensureConnexionsIndex();
+  const eligible = index.eligible;
+  const N = eligible.length;
+  const pairScores = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const d = connexionsSimilarityDetail(eligible[i], eligible[j], index);
+      if (d.score > 0) pairScores.push({ key: `${i}-${j}`, from: i, to: j, score: d.score, shared: d.sharedTokens });
+    }
+  }
+  const edgeSet = selectConnexionsEdges(pairScores, N, getConnexionsMinScore());
+  const degree = new Array(N).fill(0);
+  for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
+  // Phase 2j v3: detection theme pour la couleur des labels (lisible en dark mode).
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  // Phase 2j v7: disques pleins semi-transparents, sans bord, dans la couleur
+  // du type de membre (--rsn-tag-*). Un peu plus opaques en mode sombre.
+  // Survol / selection : le disque devient (presque) opaque.
+  const FILL_A = isDark ? 0.65 : 0.55;
+  const typeColor = (hex) => ({
+    background: connexionsRgba(hex, FILL_A), border: connexionsRgba(hex, FILL_A),
+    highlight: { background: hex, border: hex },
+    hover: { background: connexionsRgba(hex, 0.85), border: connexionsRgba(hex, 0.85) },
+  });
+  const TYPE_HEX = { 'Régulier': '#2b6cb0', 'Étudiant': '#d69e2e', 'Partenaire': '#38a169' };
+  const DEFAULT_HEX = '#718096';
+  const nodeFontColor = isDark ? '#f1f5f9' : '#1a202c';
+  const nodeFontStrokeColor = isDark ? '#0f172a' : '#ffffff';
+  const nodes = eligible.map((m, i) => {
+    const t = (m.type || '').trim();
+    const hex = TYPE_HEX[t] || DEFAULT_HEX;
+    const photo = (m.photo || '').trim();
+    const stripped = `${m.prenom || ''} ${m.nom || ''}`.trim() || (m.email || '?');
+    const node = {
+      id: i,
+      label: stripped,
+      title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
+      size: connexionsNodeSize(degree[i], !!photo),
+      font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
+      _ref: m,
+    };
+    if (photo) {
+      // Phase 2j v9 (2026-09-15): photo de profil dans un cercle, contour de
+      // 3 px dans la couleur du type de membre (5 px et couleur pleine quand
+      // le noeud est selectionne). L'image vient du relais /api/photo, deja
+      // en cache ; si elle ne charge pas, le disque colore reste visible.
+      node.shape = 'circularImage';
+      node.image = photo;
+      node.brokenImage = CONNEXIONS_BLANK_IMG;
+      node.borderWidth = 3;
+      node.borderWidthSelected = 5;
+      node.color = {
+        background: connexionsRgba(hex, FILL_A), border: hex,
+        highlight: { background: hex, border: hex },
+        hover: { background: connexionsRgba(hex, 0.85), border: hex },
+      };
+    } else {
+      node.shape = 'dot';
+      node.color = typeColor(hex);
+      node.borderWidth = 0;
+    }
+    return node;
+  });
+  // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
+  const edgeColor = connexionsEdgeColor(isDark);
+  const edges = Array.from(edgeSet.values()).map(e => connexionsMakeEdge(e, edgeColor));
+  const countEl = document.getElementById('connexionsCount');
+  if (countEl) {
+    countEl.textContent = tr('connexions_count_legend')
+      .replace('{N}', nodes.length).replace('{L}', edges.length);
+  }
+  if (_connexionsNetwork) { try { _connexionsNetwork.destroy(); } catch (e) {} _connexionsNetwork = null; }
+  const graphEl = document.getElementById('connexionsGraph');
+  const nodesDS = new vis.DataSet(nodes);
+  const edgesDS = new vis.DataSet(edges);
+  const data = { nodes: nodesDS, edges: edgesDS };
+  const options = {
+    nodes: { shape: 'dot', borderWidth: 0, borderWidthSelected: 0 },
+    edges: { smooth: { type: 'continuous', roundness: 0.2 }, scaling: { min: 0.5, max: 4 } },
+    physics: {
+      // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
+      // pas une fixation totale. Garde un effet "vivant" sans deriver loin.
+      // Phase 2j v9: noeuds plus gros (photos) -> ressorts plus longs (110 -> 150)
+      // et evitement des chevauchements, pour que les pastilles ne se recouvrent pas.
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 150, springConstant: 0.05, damping: 0.95, avoidOverlap: 0.6 },
+      solver: 'forceAtlas2Based',
+      // Phase 2j v7 (2026-09-14): le placement se calcule hors ecran (400
+      // iterations, ~3 s pour 277 membres) a pleine vitesse, puis la physique
+      // passe en mode "calme" (CONNEXIONS_PHYSICS_CALM, voir
+      // stabilizationIterationsDone plus bas) : le graphe apparait pose et
+      // continue de respirer tres lentement, sans jamais courir.
+      stabilization: { iterations: 400, fit: true, updateInterval: 50 },
+      maxVelocity: 50,
+      minVelocity: 0.75,
+      timestep: 0.25,
+      adaptiveTimestep: true,
+    },
+    interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragNodes: true },
+  };
+  _connexionsNetwork = new vis.Network(graphEl, data, options);
+  // Phase 2j v7: le placement se calcule hors ecran (stabilisation), puis la
+  // physique est coupee : plus aucun point ne bouge tout seul. Un message
+  // couvre le temps de calcul.
+  const stabilizingEl = document.getElementById('connexionsStabilizing');
+  if (stabilizingEl) stabilizingEl.classList.remove('hidden');
+  _connexionsCalm = false;
+  _connexionsNetwork.once('stabilizationIterationsDone', function () {
+    if (!_connexionsNetwork) return;
+    _connexionsNetwork.fit({ animation: false });
+    connexionsApplyCalm();
+    if (stabilizingEl) stabilizingEl.classList.add('hidden');
+    // Phase 2j v8 (2026-09-15): si une recherche ou des filtres sont deja
+    // actifs quand on arrive dans la vue, les appliquer maintenant (estompage
+    // + zoom sur le meilleur resultat). Avant, ce n'etait fait qu'au premier
+    // changement de recherche, et le fit ci-dessus laissait le graphe dezoome.
+    applyConnexionsFiltersToGraph();
+  });
+  // Le zoom (recherche qui centre un membre, molette) change l'echelle : on
+  // readapte le plafond de vitesse pour que le mouvement reste lent a l'ecran.
+  _connexionsNetwork.on('zoom', connexionsOnZoom);
+  // Forcer setSize + redraw apres que le container soit visible.
+  setTimeout(function(){
+    if (_connexionsNetwork && graphEl) {
+      const r = graphEl.getBoundingClientRect();
+      _connexionsNetwork.setSize(r.width + 'px', r.height + 'px');
+      _connexionsNetwork.redraw();
+    }
+  }, 50);
+  // Stockons les datasets pour pouvoir reagir aux filtres et a la recherche
+  _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible, pairScores: pairScores, N: N, degree: degree };
+  // Phase 2j v7: curseur de seuil + case "masquer les isoles" (legende).
+  const minScoreEl = document.getElementById('connexionsMinScore');
+  if (minScoreEl && !minScoreEl._wired) {
+    minScoreEl._wired = true;
+    minScoreEl.addEventListener('change', applyConnexionsDensity);
+  }
+  const hideIsoEl = document.getElementById('connexionsHideIsolated');
+  if (hideIsoEl && !hideIsoEl._wired) {
+    hideIsoEl._wired = true;
+    hideIsoEl.addEventListener('change', applyConnexionsDensity);
+  }
+  if (hideIsoEl && hideIsoEl.checked) applyConnexionsDensity();
+  _connexionsNetwork.on('click', function(params) {
+    if (!params.nodes || !params.nodes.length) return;
+    const node = nodesDS.get(params.nodes[0]);
+    if (node && node._ref && typeof showMemberPopup === 'function') showMemberPopup(node._ref.name);
+  });
+  // Phase 2j v2: la recherche est maintenant geree via la barre principale
+  // du bottin (#searchInput) — applyFilters() declenche
+  // applyConnexionsFiltersToGraph() qui focus le 1er match.
+  const exportBtn = document.getElementById('connexionsExportBtn');
+  if (exportBtn && !exportBtn._wired) {
+    exportBtn._wired = true;
+    exportBtn.addEventListener('click', function() {
+      try {
+        const canvas = graphEl.querySelector('canvas');
+        if (!canvas) return;
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rsn-connexions-' + new Date().toISOString().slice(0, 10) + '.png';
+        a.click();
+      } catch (e) { console.warn('Export PNG failed:', e); }
+    });
+  }
+  // Phase 2j v3: insights inter-institutions retires (sidebar supprimee).
+  // Si besoin un jour: les remettre dans une vue admin separee.
+  _connexionsCache = { members: allMembers };
+}
+
+function renderConnexionsInsights(eligible, edgeSet) {
+  const list = document.getElementById('connexionsInsightsList');
+  if (!list) return;
+  while (list.firstChild) list.removeChild(list.firstChild);
+  const pairs = [];
+  for (const e of edgeSet.values()) {
+    const a = eligible[e.from], b = eligible[e.to];
+    const instA = (a.institution || '').trim().toLowerCase();
+    const instB = (b.institution || '').trim().toLowerCase();
+    if (!instA || !instB || instA === instB) continue;
+    pairs.push({ a, b, score: e.score });
+  }
+  pairs.sort((x, y) => y.score - x.score);
+  for (const p of pairs.slice(0, 10)) {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:0.4rem 0.5rem;border-radius:4px;background:var(--rsn-light);font-size:0.78rem;line-height:1.35';
+    const nameA = `${p.a.prenom || ''} ${p.a.nom || ''}`.trim();
+    const nameB = `${p.b.prenom || ''} ${p.b.nom || ''}`.trim();
+    const instA = (p.a.institution || '').split(';')[0].trim();
+    const instB = (p.b.institution || '').split(';')[0].trim();
+    const lineA = document.createElement('div');
+    const strA = document.createElement('strong'); strA.textContent = nameA; lineA.appendChild(strA);
+    if (instA) {
+      const sA = document.createElement('span'); sA.style.color = 'var(--rsn-muted)'; sA.textContent = ' (' + instA + ')';
+      lineA.appendChild(sA);
+    }
+    const lineB = document.createElement('div');
+    lineB.appendChild(document.createTextNode('↔ '));
+    const strB = document.createElement('strong'); strB.textContent = nameB; lineB.appendChild(strB);
+    if (instB) {
+      const sB = document.createElement('span'); sB.style.color = 'var(--rsn-muted)'; sB.textContent = ' (' + instB + ')';
+      lineB.appendChild(sB);
+    }
+    const lineScore = document.createElement('div');
+    lineScore.style.color = 'var(--rsn-accent)';
+    lineScore.textContent = tr('connexions_pair_score').replace('{N}', p.score);
+    item.appendChild(lineA); item.appendChild(lineB); item.appendChild(lineScore);
+    list.appendChild(item);
+  }
 }
 
 function render() {
     const cv=document.getElementById('cardsView'), tv=document.getElementById('tableView'), mc=document.getElementById('mapContainer');
+    const co=document.getElementById('connexionsContainer'), col=document.getElementById('connexionsLoading');
     cv.classList.add('hidden'); tv.classList.add('hidden'); mc.classList.add('hidden');
+    if (co) co.classList.add('hidden'); if (col) col.classList.add('hidden');
     if(currentView==='map') {
         mc.classList.remove('hidden'); renderMap();
     } else if(currentView==='cards') {
         renderCards(); cv.classList.remove('hidden');
+    } else if(currentView==='connexions') {
+        // Phase 2j: vue Connexions (graphe vis-network)
+        if (typeof renderConnexions === 'function') renderConnexions();
     } else {
         renderTable(); tv.classList.remove('hidden');
     }
-    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || currentView==='map');
-    document.getElementById('pagination').classList.toggle('hidden', currentView==='map');
-    if(currentView!=='map') renderPag();
+    const isGraphView = (currentView==='map' || currentView==='connexions');
+    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || isGraphView);
+    document.getElementById('pagination').classList.toggle('hidden', isGraphView);
+    if (!isGraphView) renderPag();
 }
 function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1575,27 +2700,55 @@ function translateType(type) {
     return type;
 }
 
+// Phase 3a: photo de profil ronde. Rien si le membre n'en a pas ; si le
+// relais /api/photo ne repond pas (photo retiree, membre plus approuve),
+// l'image se retire d'elle-meme au lieu d'afficher une icone cassee.
+function photoHtml(m, cls) {
+    if (!m.photo) return '';
+    return `<img class="${cls}" src="${esc(m.photo)}" alt="" loading="lazy" onerror="this.remove()">`;
+}
+
+// En-tete de carte / fiche : avec photo, la photo est au-dessus du nom et
+// l'etiquette de type reste en haut a droite ; sans photo, mise en page inchangee.
+function cardHeaderHtml(m, tc, photoCls) {
+    const tag = `<span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span>`;
+    const name = `<div class="card-name">${displayName(m)}</div>`;
+    if (!m.photo) return `<div class="card-header">${name}${tag}</div>`;
+    return `<div class="card-header"><div class="card-identity">${photoHtml(m, photoCls)}${name}</div>${tag}</div>`;
+}
+
+// Phase 2l (2026-09-15): toutes les selections d'un membre sont affichees et
+// filtrables. Avant, seule la premiere de chaque liste l'etait, parce que les
+// fiches importees de l'ancien bottin avaient tout coche (379 fiches videes
+// dans Notion le 2026-09-15, sauvegarde hors depot).
+function axeLabels(m) { return (m.axes || []).map(a => trAxe(a).replace(/^(Axe|Axis) \d+ - /, '')); }
+function principeLabels(m) { return (m.principes || []).map(p => trPrincipe(p)); }
+function champLabels(m) { return (m.champsAction || []).map(c => trChamp(c)); }
+function focusChipsHtml(m) {
+    const chips = [];
+    axeLabels(m).forEach(l => chips.push(`<span class="axe-chip">${esc(l)}</span>`));
+    principeLabels(m).forEach(l => chips.push(`<span class="principe-chip">${esc(l)}</span>`));
+    champLabels(m).forEach(l => chips.push(`<span class="action-chip">${esc(l)}</span>`));
+    return chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+}
+// Filtre « axe / principe / champ » : vrai si l'une des valeurs choisies est
+// dans l'une des trois listes du membre.
+function memberHasFocus(m, fa) {
+    return fa.some(f => (m.axes || []).includes(f) || (m.principes || []).includes(f) || (m.champsAction || []).includes(f));
+}
+
 function renderCards() {
     const el=document.getElementById('cardsView'), items=pgItems();
     if(!items.length){el.innerHTML='';return;}
     el.innerHTML = items.map((m,i) => {
         const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
-        // Phase 2k : on traduit (sur la valeur complete), puis on enleve le
-        // prefixe "Axe X - " / "Axis X - " selon la langue.
-        const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,'') : '';
-        const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
-        const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
         const eid = `ex-${i}`;
-        const expertiseText = m.themes || m.expertise || '';
+        const expertiseText = m.themes || '';
         let links=[];
         if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
-        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
         const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-        let chips = [];
-        if(ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
-        if(pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
-        if(ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
-        const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+        const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
         let exParts=[];
         if(m.projet) {
             const pLong = m.projet.length > 300;
@@ -1613,8 +2766,13 @@ function renderCards() {
         if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳ ${tr('badge_pending_consent')}</span>`);
         if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${tr('badge_incomplete_form')}</span>`);
         const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
+        // Phase 2j v3: bouton "Voir profils proches" sur chaque card consentante
+        // → ouvre la modal classique qui inclut deja le bloc Profils proches.
+        const neighborsBtn = (m.consent === 'oui')
+          ? `<div style="margin-top:0.3rem"><button class="card-expand-btn" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.2rem 0;font-size:0.78rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>${tr('similar_profiles_btn')}</button></div>`
+          : '';
         return `<div class="member-card ${cc}${pendingClass}">
-            <div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type)||'N/A')}</span></div>
+            ${cardHeaderHtml(m, tc, 'card-photo')}
             ${badgesHtml}
             <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
@@ -1624,7 +2782,7 @@ function renderCards() {
                 ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
             </div>
             ${chipsHtml}
-            ${exH}${lnkH}
+            ${exH}${lnkH}${neighborsBtn}
         </div>`;
     }).join('');
 }
@@ -1636,10 +2794,11 @@ function renderTable() {
     const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
     const bd=items.map(m=>{
         const tc=`tag-${m.typeNorm}`;
-        const ax1=m.axes[0]?trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,''):'';
-        const pf1=m.principes[0]?trPrincipe(m.principes[0]):'';
-        const ca1=m.champsAction[0]?trChamp(m.champsAction[0]):'';
-        const th=m.themes||m.expertise||'';
+        // Phase 2l : toutes les selections, une par ligne dans la cellule
+        const ax1=axeLabels(m).map(esc).join('<br>');
+        const pf1=principeLabels(m).map(esc).join('<br>');
+        const ca1=champLabels(m).map(esc).join('<br>');
+        const th=m.themes||'';
         const isPending = m.consent !== 'oui';
         let lk=[];
         if(m.orcid){const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);}
@@ -1647,7 +2806,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${ax1}</td><td style="font-size:0.78rem">${pf1}</td><td style="font-size:0.78rem">${ca1}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -1678,8 +2837,9 @@ document.getElementById('resetFilters').addEventListener('click',()=>{
 });
 function setView(v) {
     currentView = v;
-    ['btnCards','btnTable','btnMap'].forEach(id => document.getElementById(id).classList.remove('active'));
-    document.getElementById(v==='cards'?'btnCards':v==='table'?'btnTable':'btnMap').classList.add('active');
+    ['btnCards','btnTable','btnMap','btnConnexions'].forEach(id => { var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+    var btnId = v==='cards'?'btnCards':v==='table'?'btnTable':v==='connexions'?'btnConnexions':'btnMap';
+    var btn = document.getElementById(btnId); if (btn) btn.classList.add('active');
     render();
     saveHash();
 }
@@ -1707,6 +2867,8 @@ function goHome() {
 document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
 document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
 document.getElementById('btnMap').addEventListener('click',()=>setView('map'));
+var btnConn = document.getElementById('btnConnexions');
+if (btnConn) btnConn.addEventListener('click',()=>setView('connexions'));
 
 // ─── FILE UPLOAD ───
 const ua=document.getElementById('uploadArea'),fi=document.getElementById('csvFileInput');
@@ -1733,23 +2895,155 @@ function readF(file){
 }
 
 // ─── MEMBER POPUP (from map) ───
+// Phase 2j v2 — calcul des "profils proches" pour l'affichage dans la modal.
+// Reutilise la logique de similarite de la vue Connexions.
+// Cache global du DF (calcule une fois sur l'ensemble des consentants)
+// Reutilise par la modal pour les "Profils proches" — pas besoin de
+// recalculer le DF a chaque ouverture de modal.
+// Phase 2j v7: meme index et meme score que le graphe (ensureConnexionsIndex
+// + connexionsSimilarityDetail). `score` affiche = nombre d'items partages
+// ("{N} mots-cles en commun"), tri par score pondere.
+function getTopNeighbors(member, k) {
+    if (!member || member.consent !== 'oui') return [];
+    k = k || 5;
+    const index = ensureConnexionsIndex();
+    const scored = [];
+    for (const other of index.eligible) {
+        if (other === member) continue;
+        const detail = connexionsSimilarityDetail(member, other, index);
+        if (detail.score >= CONNEXIONS_PARAMS.MIN_SCORE_DEFAULT) {
+            scored.push({ member: other, score: detail.sharedTokens.length, detail });
+        }
+    }
+    scored.sort((a, b) => b.detail.score - a.detail.score);
+    return scored.slice(0, k);
+}
+
+// Phase 2j v3: construit un bloc "Profils proches" avec details
+// des criteres communs (axes/principes/champs/tokens) et toggle expand.
+// Force d'un lien pour l'affichage : trois paliers sur le score pondere
+// (somme des poids de rarete des mots partages). Sur les 277 profils, les
+// liens vont de 4 a ~50, mediane ~13.
+function connexionsStrength(score) {
+  if (score >= 16) return { dots: '●●●', key: 'connexions_strength_strong' };
+  if (score >= 9) return { dots: '●●○', key: 'connexions_strength_medium' };
+  return { dots: '●○○', key: 'connexions_strength_weak' };
+}
+
+function buildNeighborsBlock(neighbors) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:1.25rem;padding-top:0.9rem;border-top:1px solid var(--rsn-border)';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin-bottom:0.5rem';
+    title.textContent = tr('similar_profiles_title');
+    wrap.appendChild(title);
+    const list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem';
+
+    for (const { member: nb, score, detail } of neighbors) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--rsn-light);border:1px solid var(--rsn-border);border-radius:6px;padding:0.55rem 0.75rem;font-family:inherit;color:var(--rsn-text)';
+
+        // Header (clic ouvre la modal)
+        const header = document.createElement('button');
+        header.type = 'button';
+        header.style.cssText = 'background:none;border:none;padding:0;text-align:left;cursor:pointer;color:inherit;font-family:inherit;display:block;width:100%';
+        header.onclick = () => { showMemberPopup(nb.name); };
+        const nameLine = document.createElement('div');
+        nameLine.style.cssText = 'font-size:0.85rem;line-height:1.3';
+        const strong = document.createElement('strong');
+        strong.textContent = nb.name;
+        nameLine.appendChild(strong);
+        const subLine = document.createElement('div');
+        subLine.style.cssText = 'font-size:0.72rem;color:var(--rsn-muted);margin-top:0.15rem;display:flex;justify-content:space-between;gap:0.5rem;align-items:center';
+        const inst = (nb.institution || '').split(';')[0].trim() || '—';
+        const left = document.createElement('span'); left.textContent = inst;
+        const right = document.createElement('span');
+        right.style.color = 'var(--rsn-accent)';
+        // Phase 2j v7: force du lien (score pondere) + nombre de mots communs.
+        // Le tri des profils proches suit le score, pas le nombre : les points
+        // rendent ce classement lisible.
+        const strength = connexionsStrength(detail.score);
+        right.title = tr(strength.key);
+        right.setAttribute('aria-label', tr(strength.key));
+        right.textContent = strength.dots + ' ' + tr('connexions_pair_score').replace('{N}', score);
+        subLine.appendChild(left); subLine.appendChild(right);
+        header.appendChild(nameLine); header.appendChild(subLine);
+        card.appendChild(header);
+
+        // Toggle "Voir les mots-cles communs" — Phase 2j v4: que les tokens
+        const totalCriteria = detail.sharedTokens.length;
+        if (totalCriteria > 0) {
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.style.cssText = 'margin-top:0.4rem;background:none;border:none;color:var(--rsn-accent);cursor:pointer;font-size:0.72rem;padding:0;font-family:inherit';
+            toggle.textContent = '▸ ' + tr('similar_profiles_show_criteria');
+            const detailsBox = document.createElement('div');
+            detailsBox.style.cssText = 'display:none;margin-top:0.5rem;font-size:0.74rem;line-height:1.4;color:var(--rsn-text)';
+
+            // Helper to add a category line
+            function addCategory(label, values, badgeColor) {
+                if (!values.length) return;
+                const line = document.createElement('div');
+                line.style.cssText = 'margin-bottom:0.35rem';
+                const lbl = document.createElement('span');
+                lbl.style.cssText = 'font-weight:600;color:var(--rsn-muted);margin-right:0.3rem';
+                lbl.textContent = label + ' :';
+                line.appendChild(lbl);
+                values.forEach((v, i) => {
+                    const chip = document.createElement('span');
+                    chip.style.cssText = `display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:${badgeColor};margin:0.1rem 0.2rem 0.1rem 0;font-size:0.7rem`;
+                    chip.textContent = v.replace(/^Axe \d+ - /, '');
+                    line.appendChild(chip);
+                });
+                detailsBox.appendChild(line);
+            }
+            // Phase 2j v4: axes/principes/champs retires (signal pourri).
+            // On affiche uniquement les mots-cles distinctifs partages.
+            if (detail.sharedTokens.length) {
+                const line = document.createElement('div');
+                const lbl = document.createElement('span');
+                lbl.style.cssText = 'font-weight:600;color:var(--rsn-muted);margin-right:0.3rem';
+                lbl.textContent = tr('lbl_keywords') + ' :';
+                line.appendChild(lbl);
+                // Phase 2j v6 (2026-05-12): on affiche TOUS les mots-cles
+                // communs (avant on coupait a 12). Le bloc est de toute facon
+                // masque par defaut, l'utilisateur doit cliquer pour deplier.
+                detail.sharedTokens.forEach(t => {
+                    const chip = document.createElement('span');
+                    chip.style.cssText = 'display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;background:rgba(168,85,247,0.15);color:var(--rsn-text);margin:0.1rem 0.2rem 0.1rem 0;font-size:0.7rem';
+                    chip.textContent = t;
+                    line.appendChild(chip);
+                });
+                detailsBox.appendChild(line);
+            }
+
+            toggle.onclick = (e) => {
+                e.stopPropagation();
+                const visible = detailsBox.style.display !== 'none';
+                detailsBox.style.display = visible ? 'none' : 'block';
+                toggle.textContent = (visible ? '▸ ' : '▾ ') + tr('similar_profiles_show_criteria');
+            };
+            card.appendChild(toggle);
+            card.appendChild(detailsBox);
+        }
+
+        list.appendChild(card);
+    }
+    wrap.appendChild(list);
+    return wrap;
+}
+
 function showMemberPopup(name) {
     const m = allMembers.find(x => x.name === name);
     if (!m) return;
     const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
-    const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /, '') : '';
-    const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
-    const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
-    const expertiseText = m.themes || m.expertise || '';
+    const expertiseText = m.themes || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
-    if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank">CV / Profil</a>`); }
+    if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
     const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-    let chips = [];
-    if (ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
-    if (pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
-    if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
-    const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+    const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
     let details = [];
     if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`);
     if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
@@ -1771,16 +3065,69 @@ function showMemberPopup(name) {
     modal.appendChild(closeBtn);
     const content = document.createElement('div');
     content.innerHTML = [
-        `<div class="card-header"><div class="card-name">${displayName(m)}</div><span class="card-tag ${tc}">${esc(translateType(m.type) || 'N/A')}</span></div>`,
+        cardHeaderHtml(m, tc, 'card-photo card-photo-lg'),
         `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || tr('lbl_no_institution'))}</div>`,
         m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
         chipsHtml, lnkH
     ].join('');
     modal.appendChild(content);
+
+    // Phase 2j v3: bloc "Profils proches" avec details des criteres communs.
+    if (m.consent === 'oui') {
+        const neighbors = getTopNeighbors(m, 5);
+        if (neighbors.length) {
+            modal.appendChild(buildNeighborsBlock(neighbors));
+        }
+    }
+
     document.getElementById('memberOverlay').classList.add('active');
 }
 function closeMemberPopup() { document.getElementById('memberOverlay').classList.remove('active'); }
+
+// ─── Connexions : fenetre d'explication de la methode (Phase 2j v7) ───
+// Contenu reconstruit a chaque ouverture avec tr(), donc toujours dans la
+// langue courante. DOM uniquement (textContent), pas de HTML injecte.
+const CONNEXIONS_HELP_SECTIONS = [
+  ['connexions_help_s1_h', 'connexions_help_s1_t'],
+  ['connexions_help_s2_h', 'connexions_help_s2_t'],
+  ['connexions_help_s3_h', 'connexions_help_s3_t'],
+  ['connexions_help_s4_h', 'connexions_help_s4_t'],
+  ['connexions_help_s5_h', 'connexions_help_s5_t'],
+  ['connexions_help_s6_h', 'connexions_help_s6_t'],
+];
+function openConnexionsHelp() {
+  const box = document.getElementById('connexionsHelpContent');
+  const overlay = document.getElementById('connexionsHelpOverlay');
+  if (!box || !overlay) return;
+  // On garde le bouton de fermeture (1er enfant), on remplace le reste.
+  while (box.childNodes.length > 1) box.removeChild(box.lastChild);
+  const title = document.createElement('h3');
+  title.id = 'connexionsHelpTitle';
+  title.style.cssText = 'font-size:1.05rem;color:var(--rsn-accent);margin:0 1.5rem 0.35rem 0';
+  title.textContent = tr('connexions_help_title');
+  box.appendChild(title);
+  const lead = document.createElement('p');
+  lead.style.cssText = 'font-size:0.82rem;color:var(--rsn-muted);margin:0 0 1rem;line-height:1.5';
+  lead.textContent = tr('connexions_help_lead');
+  box.appendChild(lead);
+  CONNEXIONS_HELP_SECTIONS.forEach(([hKey, tKey]) => {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--rsn-muted);margin:0.85rem 0 0.25rem';
+    h.textContent = tr(hKey);
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:0.86rem;line-height:1.55;margin:0;color:var(--rsn-text)';
+    p.textContent = tr(tKey);
+    box.appendChild(h); box.appendChild(p);
+  });
+  overlay.classList.add('active');
+  const closeBtn = box.querySelector('.member-modal-close');
+  if (closeBtn) closeBtn.focus();
+}
+function closeConnexionsHelp() {
+  const overlay = document.getElementById('connexionsHelpOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
 document.addEventListener('click', e => { const el = e.target.closest('.map-member-link'); if (el && el.dataset.member) showMemberPopup(el.dataset.member); });
 
 // ─── MAP ───
@@ -2185,7 +3532,7 @@ function restoreHash() {
     if (p.get('p')) { const pg = parseInt(p.get('p')); const tp = Math.ceil(filteredMembers.length / CONFIG.PER_PAGE); if (pg >= 1 && pg <= tp) currentPage = pg; }
     // View
     const v = p.get('v');
-    if (v === 'table' || v === 'map') setView(v);
+    if (v === 'table' || v === 'map' || v === 'connexions') setView(v);
     else render();
 }
 
@@ -2285,9 +3632,34 @@ window.addEventListener('load', function() {
         try { localStorage.setItem(INST_CACHE_KEY, JSON.stringify({ data: data, etag: etag })); } catch(e) {}
     }
 
+    // Phase 2m (2026-09-15): les membres sont rendus depuis leur propre cache
+    // AVANT que le catalogue ne soit lu ; leurs regions sont alors calculees
+    // avec le catalogue de secours, incomplet (p. ex. Simon Fraser absent ->
+    // pas de « Canada hors Québec »). Des que le catalogue complet est la
+    // (cache ou reseau), on recalcule les regions et on reconstruit le filtre
+    // Region en conservant les cases cochees. Avant, ce n'etait fait que sur
+    // reponse reseau, jamais depuis le cache, et sans reconstruire le filtre.
+    function refreshRegionsAfterCatalog() {
+        if (typeof allMembers === 'undefined' || !Array.isArray(allMembers) || !allMembers.length) return false;
+        for (const m of allMembers) m.region = getRegion(m.institution);
+        if (typeof populateFilters === 'function') {
+            populateFilters();
+            ['filterType','filterRegion','filterStatut','filterFocus'].forEach(id => {
+                const vals = msState[id] || [];
+                const wrap = document.getElementById(id);
+                if (!wrap) return;
+                wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = vals.includes(cb.value); });
+                updateMS(id, id === 'filterRegion' ? tr('all_f') : tr('all_m'));
+            });
+        }
+        if (typeof applyFilters === 'function') applyFilters(); else if (typeof render === 'function') render();
+        return true;
+    }
+
     const cached = loadInstCache();
     if (cached && cached.data && typeof cached.data === 'object') {
         GEOCODE = cached.data;
+        refreshRegionsAfterCatalog();
     }
 
     const headers = {};
@@ -2307,12 +3679,7 @@ window.addEventListener('load', function() {
         // avant que GEOCODE ne soit complet (1ere visite, cache vide),
         // les regions sont incompletes/vides. On recalcule m.region pour
         // tous les membres et on re-rend la vue + le filtre.
-        if (typeof allMembers !== 'undefined' && Array.isArray(allMembers) && allMembers.length) {
-            for (const m of allMembers) {
-                m.region = getRegion(m.institution);
-            }
-            if (typeof render === 'function') render();
-        } else if (currentView === 'map' && typeof renderMap === 'function') {
+        if (!refreshRegionsAfterCatalog() && currentView === 'map' && typeof renderMap === 'function') {
             renderMap();
         }
     }).catch(err => {
@@ -2321,6 +3688,8 @@ window.addEventListener('load', function() {
     });
 })();
 </script>
+<!-- Phase 2j: vis-network pour la vue Connexions -->
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <!-- Phase 2g (2026-05-04): Fuse.js pour recherche fuzzy multilingue ponderee -->
