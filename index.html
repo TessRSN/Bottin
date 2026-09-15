@@ -2141,9 +2141,17 @@ function getConnexionsMinScore() {
   return isNaN(v) ? CONNEXIONS_PARAMS.MIN_SCORE_DEFAULT : v;
 }
 
-function connexionsNodeSize(degree) {
-  return Math.min(Math.max(8 + Math.sqrt(degree) * 3, 6), 28);
+// Phase 2j v9 (2026-09-15): rayon de 12 a 34 px selon le nombre de liens
+// (avant : 8 a 28). Les membres avec photo sont ~30 % plus grands pour que le
+// visage reste reconnaissable ; l'espacement de la physique suit (springLength,
+// avoidOverlap).
+function connexionsNodeSize(degree, hasPhoto) {
+  const r = Math.min(Math.max(12 + Math.sqrt(degree) * 3.5, 10), 34);
+  return hasPhoto ? Math.round(r * 1.3) : r;
 }
+// Image transparente 1x1 : si la photo ne charge pas, le noeud reste un disque
+// de la couleur du type avec son contour, comme un membre sans photo.
+const CONNEXIONS_BLANK_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 // Couleur des traits : assez contrastee sur fond blanc (mode clair) comme sur
 // fond sombre. Avant v7 : rgba(120,120,140,0.35), quasi invisible en clair.
@@ -2238,7 +2246,7 @@ function applyConnexionsDensity() {
   st.nodesDS.update(st.nodes.map((n, i) => ({
     id: n.id,
     hidden: hideIsolated && degree[i] === 0,
-    size: connexionsNodeSize(degree[i]),
+    size: connexionsNodeSize(degree[i], !!(n._ref && n._ref.photo)),
   })));
   const shown = hideIsolated ? degree.filter(d => d > 0).length : st.nodes.length;
   const countEl = document.getElementById('connexionsCount');
@@ -2402,29 +2410,44 @@ function buildAndShowConnexionsGraph() {
     highlight: { background: hex, border: hex },
     hover: { background: connexionsRgba(hex, 0.85), border: connexionsRgba(hex, 0.85) },
   });
-  const TYPE_COLORS = {
-    'Régulier':   typeColor('#2b6cb0'),
-    'Étudiant':   typeColor('#d69e2e'),
-    'Partenaire': typeColor('#38a169'),
-  };
-  const DEFAULT_COLOR = typeColor('#718096');
+  const TYPE_HEX = { 'Régulier': '#2b6cb0', 'Étudiant': '#d69e2e', 'Partenaire': '#38a169' };
+  const DEFAULT_HEX = '#718096';
   const nodeFontColor = isDark ? '#f1f5f9' : '#1a202c';
   const nodeFontStrokeColor = isDark ? '#0f172a' : '#ffffff';
   const nodes = eligible.map((m, i) => {
     const t = (m.type || '').trim();
-    const c = TYPE_COLORS[t] || DEFAULT_COLOR;
+    const hex = TYPE_HEX[t] || DEFAULT_HEX;
+    const photo = (m.photo || '').trim();
     const stripped = `${m.prenom || ''} ${m.nom || ''}`.trim() || (m.email || '?');
-    return {
+    const node = {
       id: i,
       label: stripped,
       title: stripped + (m.institution ? ' — ' + m.institution.split(';')[0].trim() : ''),
-      color: c,
-      borderWidth: 0,
-      size: connexionsNodeSize(degree[i]),
-      shape: 'dot',
+      size: connexionsNodeSize(degree[i], !!photo),
       font: { size: 11, color: nodeFontColor, strokeWidth: 3, strokeColor: nodeFontStrokeColor },
       _ref: m,
     };
+    if (photo) {
+      // Phase 2j v9 (2026-09-15): photo de profil dans un cercle, contour de
+      // 3 px dans la couleur du type de membre (5 px et couleur pleine quand
+      // le noeud est selectionne). L'image vient du relais /api/photo, deja
+      // en cache ; si elle ne charge pas, le disque colore reste visible.
+      node.shape = 'circularImage';
+      node.image = photo;
+      node.brokenImage = CONNEXIONS_BLANK_IMG;
+      node.borderWidth = 3;
+      node.borderWidthSelected = 5;
+      node.color = {
+        background: connexionsRgba(hex, FILL_A), border: hex,
+        highlight: { background: hex, border: hex },
+        hover: { background: connexionsRgba(hex, 0.85), border: hex },
+      };
+    } else {
+      node.shape = 'dot';
+      node.color = typeColor(hex);
+      node.borderWidth = 0;
+    }
+    return node;
   });
   // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
   const edgeColor = connexionsEdgeColor(isDark);
@@ -2445,7 +2468,9 @@ function buildAndShowConnexionsGraph() {
     physics: {
       // Phase 2j v3: damping eleve = mouvement lent et calme apres stabilisation,
       // pas une fixation totale. Garde un effet "vivant" sans deriver loin.
-      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 110, springConstant: 0.05, damping: 0.95 },
+      // Phase 2j v9: noeuds plus gros (photos) -> ressorts plus longs (110 -> 150)
+      // et evitement des chevauchements, pour que les pastilles ne se recouvrent pas.
+      forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.01, springLength: 150, springConstant: 0.05, damping: 0.95, avoidOverlap: 0.6 },
       solver: 'forceAtlas2Based',
       // Phase 2j v7 (2026-09-14): le placement se calcule hors ecran (400
       // iterations, ~3 s pour 277 membres) a pleine vitesse, puis la physique
