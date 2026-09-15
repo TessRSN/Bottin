@@ -1116,9 +1116,10 @@ function loadMembers(data) {
             reseau: (m[C.reseau]||'').trim(),
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
+            // Phase 2l (2026-09-15): toutes les selections (avant : la premiere seulement)
             _search: [name, email, institution, statut, typeRaw,
-                m[C.themes], m[C.projet], axes[0], principes[0],
-                champsAction[0], m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
+                m[C.themes], m[C.projet], axes.join(' '), principes.join(' '),
+                champsAction.join(' '), m[C.reseau]].filter(Boolean).join(' ').toLowerCase()
         });
     });
     // Tri alphabétique par nom de famille par défaut
@@ -1157,7 +1158,7 @@ function buildMS(id, items, allLabel) {
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = value;
         // Phase 2k : on affiche le label traduit (selon currentLang) mais on
         // garde la value FR comme valeur de comparaison interne (msState +
-        // filtres ci-dessous comparent sur m.statutGroup / m.axes[0] qui
+        // filtres ci-dessous comparent sur m.statutGroup / m.axes (toutes les valeurs) qui
         // restent en FR cote donnees).
         const lbl = document.createElement('label'); lbl.textContent = translateFilterValue(id, value);
         const cnt = document.createElement('span'); cnt.className = 'ms-item-count'; cnt.textContent = count;
@@ -1206,10 +1207,12 @@ function populateFilters() {
     buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), tr('all_f'));
     buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), tr('all_m'));
 
-    // Focus filter: axes first, then principes, then champs — with group labels
-    const axeItems = countMap(allMembers.map(m=>m.axes[0]));
-    const principeItems = countMap(allMembers.map(m=>m.principes[0]));
-    const champItems = countMap(allMembers.map(m=>m.champsAction[0]));
+    // Focus filter: axes first, then principes, then champs — with group labels.
+    // Phase 2l (2026-09-15): on compte toutes les selections de chaque membre
+    // (avant : la premiere seulement, regle heritee des imports ou tout etait coche).
+    const axeItems = countMap(allMembers.flatMap(m=>m.axes));
+    const principeItems = countMap(allMembers.flatMap(m=>m.principes));
+    const champItems = countMap(allMembers.flatMap(m=>m.champsAction));
     const focusItems = [];
     if (axeItems.length) { focusItems.push({group: tr('th_axis')}); focusItems.push(...axeItems); }
     if (principeItems.length) { focusItems.push({group: tr('th_principle')}); focusItems.push(...principeItems); }
@@ -1724,7 +1727,7 @@ function applyFilters() {
             if (!fr.some(f => memberRegions.includes(f))) return false;
         }
         if (fs.length && !fs.includes(m.statutGroup)) return false;
-        if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
+        if (fa.length && !memberHasFocus(m, fa)) return false;
         return true;
     });
 
@@ -2278,7 +2281,7 @@ function applyConnexionsFiltersToGraph() {
       if (!fr.some(f => memberRegions.includes(f))) return false;
     }
     if (fs.length && !fs.includes(m.statutGroup)) return false;
-    if (fa.length && !fa.includes(m.axes[0]) && !fa.includes(m.principes[0]) && !fa.includes(m.champsAction[0])) return false;
+    if (fa.length && !memberHasFocus(m, fa)) return false;
     if (queryNorm) {
       const haystack = fold(`${m.prenom||''} ${m.nom||''} ${m.institution||''} ${m.themes||''} ${m.projet||''}`);
       if (!haystack.includes(queryNorm)) return false;
@@ -2663,27 +2666,38 @@ function cardHeaderHtml(m, tc, photoCls) {
     return `<div class="card-header"><div class="card-identity">${photoHtml(m, photoCls)}${name}</div>${tag}</div>`;
 }
 
+// Phase 2l (2026-09-15): toutes les selections d'un membre sont affichees et
+// filtrables. Avant, seule la premiere de chaque liste l'etait, parce que les
+// fiches importees de l'ancien bottin avaient tout coche (379 fiches videes
+// dans Notion le 2026-09-15, sauvegarde hors depot).
+function axeLabels(m) { return (m.axes || []).map(a => trAxe(a).replace(/^(Axe|Axis) \d+ - /, '')); }
+function principeLabels(m) { return (m.principes || []).map(p => trPrincipe(p)); }
+function champLabels(m) { return (m.champsAction || []).map(c => trChamp(c)); }
+function focusChipsHtml(m) {
+    const chips = [];
+    axeLabels(m).forEach(l => chips.push(`<span class="axe-chip">${esc(l)}</span>`));
+    principeLabels(m).forEach(l => chips.push(`<span class="principe-chip">${esc(l)}</span>`));
+    champLabels(m).forEach(l => chips.push(`<span class="action-chip">${esc(l)}</span>`));
+    return chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+}
+// Filtre « axe / principe / champ » : vrai si l'une des valeurs choisies est
+// dans l'une des trois listes du membre.
+function memberHasFocus(m, fa) {
+    return fa.some(f => (m.axes || []).includes(f) || (m.principes || []).includes(f) || (m.champsAction || []).includes(f));
+}
+
 function renderCards() {
     const el=document.getElementById('cardsView'), items=pgItems();
     if(!items.length){el.innerHTML='';return;}
     el.innerHTML = items.map((m,i) => {
         const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
-        // Phase 2k : on traduit (sur la valeur complete), puis on enleve le
-        // prefixe "Axe X - " / "Axis X - " selon la langue.
-        const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,'') : '';
-        const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
-        const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
         const eid = `ex-${i}`;
         const expertiseText = m.themes || '';
         let links=[];
         if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
         if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
         const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-        let chips = [];
-        if(ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
-        if(pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
-        if(ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
-        const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+        const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
         let exParts=[];
         if(m.projet) {
             const pLong = m.projet.length > 300;
@@ -2729,9 +2743,10 @@ function renderTable() {
     const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
     const bd=items.map(m=>{
         const tc=`tag-${m.typeNorm}`;
-        const ax1=m.axes[0]?trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /,''):'';
-        const pf1=m.principes[0]?trPrincipe(m.principes[0]):'';
-        const ca1=m.champsAction[0]?trChamp(m.champsAction[0]):'';
+        // Phase 2l : toutes les selections, une par ligne dans la cellule
+        const ax1=axeLabels(m).map(esc).join('<br>');
+        const pf1=principeLabels(m).map(esc).join('<br>');
+        const ca1=champLabels(m).map(esc).join('<br>');
         const th=m.themes||'';
         const isPending = m.consent !== 'oui';
         let lk=[];
@@ -2740,7 +2755,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${esc(ax1)}</td><td style="font-size:0.78rem">${esc(pf1)}</td><td style="font-size:0.78rem">${esc(ca1)}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${ax1}</td><td style="font-size:0.78rem">${pf1}</td><td style="font-size:0.78rem">${ca1}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -2972,19 +2987,12 @@ function showMemberPopup(name) {
     const m = allMembers.find(x => x.name === name);
     if (!m) return;
     const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
-    const ax1 = m.axes[0] ? trAxe(m.axes[0]).replace(/^(Axe|Axis) \d+ - /, '') : '';
-    const pf1 = m.principes[0] ? trPrincipe(m.principes[0]) : '';
-    const ca1 = m.champsAction[0] ? trChamp(m.champsAction[0]) : '';
     const expertiseText = m.themes || '';
     let links = [];
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
     if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
     const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-    let chips = [];
-    if (ax1) chips.push(`<span class="axe-chip">${esc(ax1)}</span>`);
-    if (pf1) chips.push(`<span class="principe-chip">${esc(pf1)}</span>`);
-    if (ca1) chips.push(`<span class="action-chip">${esc(ca1)}</span>`);
-    const chipsHtml = chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+    const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
     let details = [];
     if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`);
     if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
