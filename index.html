@@ -292,7 +292,9 @@
         .empty-state h3 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--rsn-text); }
 
         /* ─── UPLOAD ─── */
-        .upload-zone { max-width: 1200px; margin: 1rem auto; padding: 0 1rem; }
+        /* 2026-09-15 : zone de depot CSV (d'avant Notion) masquee a la demande de Tess.
+           Le bloc reste dans le DOM : le chargement des donnees ecrit encore son etat dedans. */
+        .upload-zone { max-width: 1200px; margin: 1rem auto; padding: 0 1rem; display: none; }
         .upload-area { border: 2px dashed var(--rsn-border); border-radius: var(--radius); padding: 1.25rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--rsn-card-bg); }
         .upload-area:hover, .upload-area.dragover { border-color: var(--rsn-accent); background: var(--rsn-light); }
         .upload-area p { color: var(--rsn-muted); font-size: 0.88rem; }
