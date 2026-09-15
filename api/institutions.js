@@ -46,17 +46,20 @@ module.exports = async function handler(req, res) {
       out[inst.name] = [inst.lat, inst.lng];
     }
 
-    const json = JSON.stringify(out);
-    const etag = '"' + crypto.createHash('md5').update(json).digest('hex') + '"';
-
     // 2026-09-15 : cle du fond de carte CARTO (CARTO_BASEMAP_KEY, variable
     // Vercel), transmise par en-tete pour que index.html l'utilise sans
     // qu'elle figure dans le depot. Une cle de tuiles est de toute facon
     // visible dans les requetes du navigateur ; elle est restreinte au domaine
-    // dans le tableau de bord CARTO. Envoyee aussi sur 304, pour les visiteurs
-    // dont le catalogue est deja en cache.
+    // dans le tableau de bord CARTO.
+    // Vercel retire les en-tetes personnalises des reponses 304 : la cle fait
+    // donc partie de l'empreinte ETag, pour qu'un navigateur dont le cache
+    // date d'avant la cle (ou d'une cle precedente) recoive une reponse 200
+    // complete, avec l'en-tete.
     const basemapKey = (process.env.CARTO_BASEMAP_KEY || '').trim();
     if (basemapKey) res.setHeader('X-Basemap-Key', basemapKey);
+
+    const json = JSON.stringify(out);
+    const etag = '"' + crypto.createHash('md5').update(json + '|' + basemapKey).digest('hex') + '"';
 
     const ifNoneMatch = req.headers['if-none-match'];
     if (ifNoneMatch && ifNoneMatch === etag) {
