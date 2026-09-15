@@ -989,8 +989,15 @@ function regionFromCoords(lat, lng) {
         const b = r.box;
         if (lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3]) return r.name;
     }
-    return 'Hors Québec';
+    // Phase 2m (2026-09-15): hors Québec, on distingue le reste du Canada de
+    // l'international (avant : une seule valeur « Hors Québec »).
+    if (lat >= 41.6 && lat <= 83.2 && lng >= -141.1 && lng <= -52.5) return 'Canada hors Québec';
+    return 'International';
 }
+// Ces deux entrees sont placees en fin du filtre Region, apres les regions du
+// Québec triees par nombre de membres.
+const REGION_LAST = ['Canada hors Québec', 'International'];
+const REGION_FR_TO_EN = { 'Canada hors Québec': 'Canada outside Quebec', 'International': 'International' };
 // getRegion(inst) retourne un ARRAY de regions (une par institution
 // affiliee). Si le membre a plusieurs institutions (separees par ';'),
 // chacune est lookup dans GEOCODE et sa region calculee. Le filtre
@@ -1036,10 +1043,15 @@ const STATUT_GROUP_MAP = {
     'Personnel de recherche': 'Personnel de recherche',
     'Personnel de la santé': 'Personnel de la santé',
     "Coordination ou gestion d'équipe": 'Direction ou coordination',
+    // Phase 3c (2026-09-14) : nouveau libelle epicene ; l'ancien reste tolere
+    // jusqu'a la migration des fiches (cf. BACKLOG).
+    'Personne en coordination ou gestion de la recherche': 'Direction ou coordination',
     'Personne en milieu industriel ou gouvernemental': 'Partenaire ou autre',
     'Personne partenaire citoyenne': 'Partenaire ou autre',
     'Autre': 'Partenaire ou autre',
 };
+// Ordre d'affichage des regroupements dans le filtre Statut (Phase 2m)
+const STATUT_GROUP_ORDER = ['Chercheur·e', 'Étudiant·e', 'Personnel de recherche', 'Personnel de la santé', 'Direction ou coordination', 'Partenaire ou autre'];
 function groupStatut(raw) {
     if (!raw) return '';
     // Match exact contre la nouvelle taxonomie (cas normal post-Phase 1).
@@ -1204,8 +1216,22 @@ function populateFilters() {
     };
 
     buildMS('filterType', countMap(allMembers.map(m=>m.type)), tr('all_m'));
-    buildMS('filterRegion', countMap(allMembers.map(m=>m.region)), tr('all_f'));
-    buildMS('filterStatut', countMap(allMembers.map(m=>m.statutGroup)), tr('all_m'));
+    // Phase 2m (2026-09-15): regions du Québec par nombre de membres, puis
+    // « Canada hors Québec » et « International » en fin de liste.
+    const regionItems = countMap(allMembers.map(m=>m.region));
+    const regionSorted = regionItems.filter(it => !REGION_LAST.includes(it.value))
+        .concat(REGION_LAST.map(v => regionItems.find(it => it.value === v)).filter(Boolean));
+    buildMS('filterRegion', regionSorted, tr('all_f'));
+    // Phase 2m : les 6 regroupements deviennent des en-tetes et les 14 statuts
+    // sont listes dessous ; le filtre porte sur le statut lui-meme (avant : sur
+    // le regroupement seulement, ce qui « cachait » des statuts).
+    const statutCounts = countMap(allMembers.filter(m => m.statut && m.statutGroup).map(m => m.statut));
+    const statutItems = [];
+    STATUT_GROUP_ORDER.forEach(g => {
+        const inGroup = statutCounts.filter(it => groupStatut(it.value) === g);
+        if (inGroup.length) { statutItems.push({ group: trStatutGroup(g) }); statutItems.push(...inGroup); }
+    });
+    buildMS('filterStatut', statutItems, tr('all_m'));
 
     // Focus filter: axes first, then principes, then champs — with group labels.
     // Phase 2l (2026-09-15): on compte toutes les selections de chaque membre
@@ -1240,6 +1266,7 @@ const STATUT_FR_TO_EN = {
     'Personnel de recherche': 'Research staff',
     'Personnel de la santé': 'Health professional',
     "Coordination ou gestion d'équipe": 'Team coordination or management',
+    'Personne en coordination ou gestion de la recherche': 'Research coordinator or manager', // meme libelle EN que le formulaire
     'Personne en milieu industriel ou gouvernemental': 'Industry or government professional',
     'Personne partenaire citoyenne': 'Citizen partner',
     'Autre': 'Other',
@@ -1295,10 +1322,11 @@ function trChamp(v)       { if (!v || currentLang === 'fr') return v; return CHA
 // originale si pas de mapping. Utilise par buildMS / updateMS.
 function translateFilterValue(filterId, value) {
     if (!value || currentLang === 'fr') return value;
-    if (filterId === 'filterStatut') return STATUT_GROUP_FR_TO_EN[value] || value;
+    if (filterId === 'filterStatut') return STATUT_FR_TO_EN[value] || value; // Phase 2m : statuts, plus regroupements
     if (filterId === 'filterType')   return TYPE_FR_TO_EN[value] || value;
     if (filterId === 'filterFocus')  return AXES_FR_TO_EN[value] || PRINCIPES_FR_TO_EN[value] || CHAMPS_FR_TO_EN[value] || value;
-    return value; // filterRegion : pas de traduction
+    if (filterId === 'filterRegion') return REGION_FR_TO_EN[value] || value; // noms de regions inchanges, sauf hors Québec
+    return value;
 }
 
 // Phase 2k (2026-05-12) — pont linguistique FR↔EN pour la barre de recherche.
@@ -1726,7 +1754,7 @@ function applyFilters() {
             const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
             if (!fr.some(f => memberRegions.includes(f))) return false;
         }
-        if (fs.length && !fs.includes(m.statutGroup)) return false;
+        if (fs.length && !fs.includes(m.statut)) return false; // Phase 2m : filtre sur le statut
         if (fa.length && !memberHasFocus(m, fa)) return false;
         return true;
     });
@@ -2280,7 +2308,7 @@ function applyConnexionsFiltersToGraph() {
       const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
       if (!fr.some(f => memberRegions.includes(f))) return false;
     }
-    if (fs.length && !fs.includes(m.statutGroup)) return false;
+    if (fs.length && !fs.includes(m.statut)) return false; // Phase 2m : filtre sur le statut
     if (fa.length && !memberHasFocus(m, fa)) return false;
     if (queryNorm) {
       const haystack = fold(`${m.prenom||''} ${m.nom||''} ${m.institution||''} ${m.themes||''} ${m.projet||''}`);
