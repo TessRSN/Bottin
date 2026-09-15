@@ -1758,6 +1758,11 @@ function applyFilters() {
         if (fa.length && !memberHasFocus(m, fa)) return false;
         return true;
     });
+    // Phase 2j v10 (2026-09-15): la vue Connexions masque les membres hors
+    // filtres et estompe seulement ceux hors recherche ; elle a donc besoin
+    // du pool « filtres seuls », avant la recherche.
+    applyFilters._pool = pool;
+    applyFilters._filtersActive = !!(ft.length || fr.length || fs.length || fa.length);
 
     // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
     if (queryNorm && typeof Fuse !== 'undefined') {
@@ -2274,11 +2279,14 @@ function applyConnexionsDensity() {
   const degree = new Array(st.N).fill(0);
   for (const e of edgeSet.values()) { degree[e.from]++; degree[e.to]++; }
   const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
+  st.degree = degree;
   st.nodesDS.update(st.nodes.map((n, i) => ({
     id: n.id,
-    hidden: hideIsolated && degree[i] === 0,
     size: connexionsNodeSize(degree[i], !!(n._ref && n._ref.photo)),
   })));
+  // Phase 2j v10 : le masquage (isoles + filtres) est centralise dans
+  // applyConnexionsFiltersToGraph, qui lit st.degree et la case a cocher.
+  applyConnexionsFiltersToGraph();
   const shown = hideIsolated ? degree.filter(d => d > 0).length : st.nodes.length;
   const countEl = document.getElementById('connexionsCount');
   if (countEl) {
@@ -2333,16 +2341,49 @@ function applyConnexionsFiltersToGraph() {
     _connexionsState.nodes.forEach((n) => { if (isMatch(n._ref)) matchedIds.add(n.id); });
   }
 
-  const anyFilterActive = ft.length || fr.length || fs.length || fa.length || queryNorm;
-  const updates = _connexionsState.nodes.map(n => ({
-    id: n.id,
-    // Phase 2j v9 : estompage a 0,35 (avant 0,12) — les photos des non-resultats
-    // restaient trop transparentes, on veut encore reconnaitre les visages.
-    opacity: anyFilterActive ? (matchedIds.has(n.id) ? 1 : 0.35) : 1,
-  }));
+  // Phase 2j v10 (2026-09-15): les filtres (type, region, statut, axe /
+  // principe / champ) MASQUENT les membres qui n'en font pas partie — choisir
+  // « Outaouais » ne laisse que l'Outaouais. La recherche, elle, estompe les
+  // non-resultats (0,35) et centre le meilleur. La case « masquer les membres
+  // sans lien » se combine avec les filtres.
+  const filtersActive = !!(ft.length || fr.length || fs.length || fa.length);
+  const pool = Array.isArray(applyFilters._pool) ? applyFilters._pool : null;
+  const inPool = new Set();
+  if (pool) pool.forEach((m) => { const id = nodeIdByMember.get(m); if (id !== undefined) inPool.add(id); });
+  const passesFilters = (m) => {
+    if (ft.length && !ft.includes(m.type)) return false;
+    if (fr.length) {
+      const memberRegions = Array.isArray(m.region) ? m.region : (m.region ? [m.region] : []);
+      if (!fr.some(f => memberRegions.includes(f))) return false;
+    }
+    if (fs.length && !fs.includes(m.statut)) return false;
+    if (fa.length && !memberHasFocus(m, fa)) return false;
+    return true;
+  };
+  const hideIsolated = !!(document.getElementById('connexionsHideIsolated') || {}).checked;
+  const degree = _connexionsState.degree || null;
+  const updates = _connexionsState.nodes.map((n, i) => {
+    const hiddenByFilter = filtersActive && (pool ? !inPool.has(n.id) : !passesFilters(n._ref));
+    const hiddenByDensity = !!(hideIsolated && degree && degree[i] === 0);
+    return {
+      id: n.id,
+      hidden: hiddenByFilter || hiddenByDensity,
+      // Phase 2j v9 : estompage a 0,35 (avant 0,12) — les photos des non-resultats
+      // restaient trop transparentes, on veut encore reconnaitre les visages.
+      opacity: queryNorm ? (matchedIds.has(n.id) ? 1 : 0.35) : 1,
+    };
+  });
   _connexionsState.nodesDS.update(updates);
+  const visibleIds = updates.filter(u => !u.hidden).map(u => u.id);
   // (Le message « Tous les membres affichés… » a ete retire le 2026-09-14 :
   //  le bandeau d'introduction et le bouton « ? » suffisent.)
+
+  // Signature filtres + recherche : quand elle change sans recherche active,
+  // on recadre sur les membres visibles (ou sur tout le graphe si plus rien
+  // n'est filtre).
+  const key = queryNorm + '|' + (filtersActive ? [ft, fr, fs, fa].map(a => a.join(',')).join(';') : '');
+  const lastKey = applyConnexionsFiltersToGraph._lastKey;
+  const changed = (lastKey === undefined) ? filtersActive : (lastKey !== key);
 
   // Si recherche dans la barre principale, zoom sur le meilleur resultat.
   // Pendant le calcul du placement (stabilisation), on ne centre pas : le fit
@@ -2363,13 +2404,16 @@ function applyConnexionsFiltersToGraph() {
       _connexionsNetwork.focus(foundId, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
       _connexionsNetwork.selectNodes([foundId]);
     }
-  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && applyConnexionsFiltersToGraph._lastQuery) {
-    // Recherche effacee : on deselectionne et on revient a la vue d'ensemble.
+  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && changed && visibleIds.length) {
+    // Recherche effacee ou filtres changes : on deselectionne et on recadre
+    // sur les membres visibles (tout le graphe si aucun filtre).
     _connexionsNetwork.unselectAll();
     _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
-    _connexionsNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
+    const fitOpts = { animation: { duration: 500, easingFunction: 'easeInOutCubic' } };
+    if (filtersActive) fitOpts.nodes = visibleIds;
+    _connexionsNetwork.fit(fitOpts);
   }
-  applyConnexionsFiltersToGraph._lastQuery = queryNorm;
+  applyConnexionsFiltersToGraph._lastKey = key;
 }
 
 function renderConnexions() {
@@ -2548,7 +2592,7 @@ function buildAndShowConnexionsGraph() {
     }
   }, 50);
   // Stockons les datasets pour pouvoir reagir aux filtres et a la recherche
-  _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible, pairScores: pairScores, N: N };
+  _connexionsState = { nodesDS: nodesDS, edgesDS: edgesDS, nodes: nodes, edges: edges, edgeSet: edgeSet, eligible: eligible, pairScores: pairScores, N: N, degree: degree };
   // Phase 2j v7: curseur de seuil + case "masquer les isoles" (legende).
   const minScoreEl = document.getElementById('connexionsMinScore');
   if (minScoreEl && !minScoreEl._wired) {
@@ -3609,9 +3653,34 @@ window.addEventListener('load', function() {
         try { localStorage.setItem(INST_CACHE_KEY, JSON.stringify({ data: data, etag: etag })); } catch(e) {}
     }
 
+    // Phase 2m (2026-09-15): les membres sont rendus depuis leur propre cache
+    // AVANT que le catalogue ne soit lu ; leurs regions sont alors calculees
+    // avec le catalogue de secours, incomplet (p. ex. Simon Fraser absent ->
+    // pas de « Canada hors Québec »). Des que le catalogue complet est la
+    // (cache ou reseau), on recalcule les regions et on reconstruit le filtre
+    // Region en conservant les cases cochees. Avant, ce n'etait fait que sur
+    // reponse reseau, jamais depuis le cache, et sans reconstruire le filtre.
+    function refreshRegionsAfterCatalog() {
+        if (typeof allMembers === 'undefined' || !Array.isArray(allMembers) || !allMembers.length) return false;
+        for (const m of allMembers) m.region = getRegion(m.institution);
+        if (typeof populateFilters === 'function') {
+            populateFilters();
+            ['filterType','filterRegion','filterStatut','filterFocus'].forEach(id => {
+                const vals = msState[id] || [];
+                const wrap = document.getElementById(id);
+                if (!wrap) return;
+                wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = vals.includes(cb.value); });
+                updateMS(id, id === 'filterRegion' ? tr('all_f') : tr('all_m'));
+            });
+        }
+        if (typeof applyFilters === 'function') applyFilters(); else if (typeof render === 'function') render();
+        return true;
+    }
+
     const cached = loadInstCache();
     if (cached && cached.data && typeof cached.data === 'object') {
         GEOCODE = cached.data;
+        refreshRegionsAfterCatalog();
     }
 
     const headers = {};
@@ -3631,12 +3700,7 @@ window.addEventListener('load', function() {
         // avant que GEOCODE ne soit complet (1ere visite, cache vide),
         // les regions sont incompletes/vides. On recalcule m.region pour
         // tous les membres et on re-rend la vue + le filtre.
-        if (typeof allMembers !== 'undefined' && Array.isArray(allMembers) && allMembers.length) {
-            for (const m of allMembers) {
-                m.region = getRegion(m.institution);
-            }
-            if (typeof render === 'function') render();
-        } else if (currentView === 'map' && typeof renderMap === 'function') {
+        if (!refreshRegionsAfterCatalog() && currentView === 'map' && typeof renderMap === 'function') {
             renderMap();
         }
     }).catch(err => {
