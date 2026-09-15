@@ -1661,6 +1661,16 @@ function canonicalizeQuery(q) {
     }).join(' ');
 }
 
+// Phase 2k v3 : un mot du nom (prenom ou nom) commence-t-il par `prefix` ?
+// Sert aux jetons trop courts pour Fuse, c.-a-d. l'initiale d'un nom
+// (« philippe d »). On ne regarde ni les institutions (« de », « du »), ni
+// les themes ni la presentation : presque toutes les fiches y ont un mot
+// commencant par n'importe quelle lettre, et l'initiale ne filtrerait rien.
+const FUSE_PREFIX_FIELDS = ['name'];
+function fuseDocHasWordPrefix(doc, prefix) {
+    return FUSE_PREFIX_FIELDS.some(f => (doc[f] || '').split(/[^a-z0-9]+/).some(w => w && w.indexOf(prefix) === 0));
+}
+
 const FUSE_OPTIONS = {
     includeScore: true,
     // Phase 2k (2026-05-15) : threshold 0.15 (~15% mismatch) pour limiter
@@ -1727,9 +1737,19 @@ function applyFilters() {
         // tokensCanon des profils dans l'autre langue. Les recherches dans la
         // meme langue continuent de fonctionner via les champs bruts.
         const queryCanon = canonicalizeQuery(queryNorm);
-        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut)
-        const results = fuse.search(queryCanon);
-        filteredMembers = results.map(r => r.item._ref); // ordre = score (meilleurs en haut)
+        // Multi-mots : pattern Fuse extended-search avec espaces (AND par defaut).
+        // Phase 2k v3 (2026-09-15) : un jeton d'une seule lettre (« Philippe D »)
+        // tombe sous minMatchCharLength et faisait echouer toute la requete
+        // (0 resultat jusqu'a la 2e lettre). On le retire de la requete Fuse et
+        // on exige a la place qu'un mot d'un champ indexe commence par cette
+        // lettre : « philippe d » = les Philippe dont un mot commence par d.
+        const tokens = queryCanon.split(/\s+/).filter(Boolean);
+        const minLen = FUSE_OPTIONS.minMatchCharLength || 1;
+        const initials = tokens.filter(t => t.length < minLen);
+        const fuseQuery = tokens.filter(t => t.length >= minLen).join(' ');
+        let hits = fuseQuery ? fuse.search(fuseQuery).map(r => r.item) : docs; // ordre = score (meilleurs en haut)
+        if (initials.length) hits = hits.filter(d => initials.every(t => fuseDocHasWordPrefix(d, t)));
+        filteredMembers = hits.map(d => d._ref);
     } else if (queryNorm) {
         // Fallback (Fuse non charge — CDN down OU script en bas de page pas
         // encore execute lors d'un reload avec ?q= dans le hash) : recherche
