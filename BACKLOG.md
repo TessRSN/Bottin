@@ -29,6 +29,14 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 - **Fait dans Notion le 2026-09-15** : les axes, principes fondateurs et champs d'action des 379 fiches portant la signature des imports (tout coché : 4/5/3, ou 4/5/0) ont été vidés — personne n'avait fait ces choix. Sauvegarde hors dépôt (`Downloads/backup-axes-principes-champs-2026-09-15.json`). Le bottin affiche et filtre désormais toutes les sélections d'un membre, plus seulement la première. Les membres concernés choisiront à leur prochaine modification de profil (axes obligatoires) ou lors de la campagne de renouvellement.
 - **Créée dans Notion le 2026-09-14** : propriété technique « OpenAlex ID » (texte) — fiche auteur OpenAlex choisie par la personne dans les formulaires (recherche par nom, sans ORCID) pour les suggestions de thèmes. Jamais affichée ni exportée dans le bottin ; présente dans les sauvegardes. Pourra servir plus tard à lister les publications.
 
+## Campagne « complétez votre profil » (lancée le 2026-09-16)
+
+- Cible : segment A, 430 fiches approuvées sans décision de partage public ; segment B, 234 fiches publiques sans statut, axe ou thème (compte du 2026-09-15). Refus et fiches non approuvées jamais contactés.
+- Mécanique : `lib/campaign.js` (sélection, plafond, dates), `api/campaign.js` (admin, `?key=BACKUP_SECRET`, actions `stats` / `test` / `send`), envoi quotidien par le cron de `/api/export` déplacé à 11 h 30 UTC (7 h 30 au Québec), 40 par jour, membres réguliers puis partenaires puis étudiant·es. Lien de modification signé pour 30 jours (`signCampaignToken`). Date d'envoi dans la propriété Notion « Courriel campagne profil » (créée le 2026-09-15) : jamais deux envois à la même fiche, relance possible sur cette base.
+- Réglages : `CAMPAIGN_PAUSED=true` suspend le cron (redéploiement nécessaire après changement de variable) ; `CAMPAIGN_DAILY_LIMIT` change le plafond. Le cron fait aussi les courriels d'acceptation et de rappel de renouvellement, dans le budget `EMAIL_DAILY_BUDGET` (95).
+- Visuels dans `img/` : `campagne-connexions.gif` (600 px, 2 temps) et `campagne-suggestions.png`.
+- À faire après la campagne : relance des non-répondants (fiches datées sans modification depuis), puis retirer ou archiver le point d'entrée si la 12e fonction Vercel doit servir à autre chose.
+
 ## Édition profil
 
 - ~~Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html`~~ — fait le 2026-09-14 (branche `connexions`).

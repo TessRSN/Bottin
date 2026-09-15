@@ -17,6 +17,11 @@ const {
   sendArchiveNotification, sendAdminRetentionRecap,
 } = require('../lib/email');
 const { signRenewalToken } = require('../lib/token');
+const { runProfileCampaign } = require('../lib/campaign');
+
+// Le cron enchaine export, courriels d'acceptation, retention et campagne :
+// jusqu'a une minute. Un chargement de page normal reste court (pas de campagne).
+module.exports.config = { maxDuration: 60 };
 
 // ─── RETENTION CRON ────────────────────────────────────────────────
 // 60 days before renewal → email 1 + flag emailRenouv60jEnvoye
@@ -472,10 +477,29 @@ module.exports = async function handler(req, res) {
     // Run the membership retention cron (Phase 3, Loi 25).
     // Phase 2k (2026-05-16) : on lui passe le budget restant pour qu'elle
     // s'arrête au lieu de pousser jusqu'à RETENTION_EMAILS_DAILY_LIMIT.
+    let retentionStats = null;
     try {
-      await runRetentionCron(members, remainingBudget);
+      retentionStats = await runRetentionCron(members, remainingBudget);
     } catch (retErr) {
       console.error('[retention] Top-level error:', retErr.message, retErr.stack);
+    }
+
+    // Campagne « complétez votre profil » (2026-09-15) : uniquement quand
+    // Vercel appelle cet endpoint par le cron (7 h 30, heure du Québec), jamais
+    // sur un chargement de page — les visiteurs n'attendent pas les envois.
+    // Plafond 40/jour (CAMPAIGN_DAILY_LIMIT), dans le budget courriel restant ;
+    // CAMPAIGN_PAUSED=true suspend. Idempotent par jour (dates dans Notion).
+    const isCron = /^vercel-cron/i.test(String(req.headers['user-agent'] || ''));
+    if (isCron && process.env.CAMPAIGN_PAUSED !== 'true') {
+      try {
+        const rs = retentionStats || {};
+        const sentByRetention = (rs.sentArchive || 0) + (rs.sent30j || 0) + (rs.sent60j || 0);
+        const budgetLeft = Math.max(0, remainingBudget - sentByRetention);
+        const r = await runProfileCampaign(members, { dryRun: false, limit: Math.min(budgetLeft, parseInt(process.env.CAMPAIGN_DAILY_LIMIT || '40', 10)), timeBudgetMs: 40000, log: console.log });
+        console.log(`[campagne] cron : ${r.sent} envoyes, ${r.failed} echecs, deja ${r.sentToday} aujourd'hui, restants A=${r.remainingBefore.A} B=${r.remainingBefore.B}${r.stoppedByTime ? ', arret par budget de temps' : ''}`);
+      } catch (campErr) {
+        console.error('[campagne] erreur :', campErr.message, campErr.stack);
+      }
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
