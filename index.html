@@ -2278,8 +2278,21 @@ function applyConnexionsFiltersToGraph() {
     return true;
   };
 
+  // Phase 2j v8 (2026-09-15): memes resultats que les vues Profils/Tableau/
+  // Carte. filteredMembers est la sortie de applyFilters (filtres exacts +
+  // recherche Fuse, classee par pertinence) ; isMatch ne sert plus que de
+  // secours si elle n'est pas disponible. Avant, la vue Connexions refaisait
+  // sa propre recherche par sous-chaine, qui ne trouvait pas la meme chose
+  // (« marie p » vs « Marie-Pierre ») et centrait le premier noeud dans
+  // l'ordre du graphe au lieu du meilleur resultat.
+  const nodeIdByMember = new Map(_connexionsState.nodes.map(n => [n._ref, n.id]));
+  const ranked = Array.isArray(filteredMembers) ? filteredMembers : null;
   const matchedIds = new Set();
-  _connexionsState.nodes.forEach((n) => { if (isMatch(n._ref)) matchedIds.add(n.id); });
+  if (ranked) {
+    ranked.forEach((m) => { const id = nodeIdByMember.get(m); if (id !== undefined) matchedIds.add(id); });
+  } else {
+    _connexionsState.nodes.forEach((n) => { if (isMatch(n._ref)) matchedIds.add(n.id); });
+  }
 
   const anyFilterActive = ft.length || fr.length || fs.length || fa.length || queryNorm;
   const updates = _connexionsState.nodes.map(n => ({
@@ -2290,17 +2303,32 @@ function applyConnexionsFiltersToGraph() {
   // (Le message « Tous les membres affichés… » a ete retire le 2026-09-14 :
   //  le bandeau d'introduction et le bouton « ? » suffisent.)
 
-  // Si recherche dans la barre principale, focus sur le 1er match
-  if (queryNorm && _connexionsNetwork) {
-    const found = _connexionsState.nodes.find(n => matchedIds.has(n.id));
-    if (found) {
+  // Si recherche dans la barre principale, zoom sur le meilleur resultat.
+  // Pendant le calcul du placement (stabilisation), on ne centre pas : le fit
+  // de fin de stabilisation annulerait le zoom ; le gestionnaire
+  // stabilizationIterationsDone rappelle cette fonction une fois le graphe pose.
+  if (queryNorm && _connexionsNetwork && _connexionsCalm) {
+    let foundId;
+    if (ranked) {
+      for (const m of ranked) { const id = nodeIdByMember.get(m); if (id !== undefined) { foundId = id; break; } }
+    } else {
+      const found = _connexionsState.nodes.find(n => matchedIds.has(n.id));
+      if (found) foundId = found.id;
+    }
+    if (foundId !== undefined) {
       // Le zoom programme (focus) n'emet pas l'evenement 'zoom' : on readapte
       // le plafond de vitesse a la fin de l'animation.
       _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
-      _connexionsNetwork.focus(found.id, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
-      _connexionsNetwork.selectNodes([found.id]);
+      _connexionsNetwork.focus(foundId, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
+      _connexionsNetwork.selectNodes([foundId]);
     }
+  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && applyConnexionsFiltersToGraph._lastQuery) {
+    // Recherche effacee : on deselectionne et on revient a la vue d'ensemble.
+    _connexionsNetwork.unselectAll();
+    _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
+    _connexionsNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
   }
+  applyConnexionsFiltersToGraph._lastQuery = queryNorm;
 }
 
 function renderConnexions() {
@@ -2444,6 +2472,11 @@ function buildAndShowConnexionsGraph() {
     _connexionsNetwork.fit({ animation: false });
     connexionsApplyCalm();
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
+    // Phase 2j v8 (2026-09-15): si une recherche ou des filtres sont deja
+    // actifs quand on arrive dans la vue, les appliquer maintenant (estompage
+    // + zoom sur le meilleur resultat). Avant, ce n'etait fait qu'au premier
+    // changement de recherche, et le fit ci-dessus laissait le graphe dezoome.
+    applyConnexionsFiltersToGraph();
   });
   // Le zoom (recherche qui centre un membre, molette) change l'echelle : on
   // readapte le plafond de vitesse pour que le mouvement reste lent a l'ecran.
