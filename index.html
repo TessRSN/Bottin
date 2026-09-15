@@ -3134,6 +3134,34 @@ document.addEventListener('click', e => { const el = e.target.closest('.map-memb
 
 // ─── MAP ───
 let map = null, clusterGroup = null;
+// 2026-09-15 : fond de carte. CARTO Voyager (style pastel d'origine) quand une
+// cle est fournie par /api/institutions (en-tete X-Basemap-Key, variable Vercel
+// CARTO_BASEMAP_KEY), sinon OpenStreetMap, gratuit et sans cle. Les tuiles
+// CARTO sans cle portent un filigrane « API KEY REQUIRED » depuis 2025.
+let baseLayer = null, BASEMAP_KEY = '';
+function basemapTileLayer() {
+    if (BASEMAP_KEY) {
+        return L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=' + encodeURIComponent(BASEMAP_KEY), {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19
+        });
+    }
+    return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    });
+}
+// Applique une cle recue apres coup (catalogue en cache, puis reponse reseau) :
+// si la carte est deja affichee, on remplace le fond sans toucher aux marqueurs.
+function applyBasemapKey(key) {
+    key = (key || '').trim();
+    if (!key || key === BASEMAP_KEY) return;
+    BASEMAP_KEY = key;
+    if (map && baseLayer) {
+        map.removeLayer(baseLayer);
+        baseLayer = basemapTileLayer().addTo(map);
+    }
+}
 // GEOCODE is now loaded dynamically from /api/institutions (which reads
 // the "Validée" entries from the Notion Institutions database).
 // The hardcoded fallback below is kept ONLY to avoid breaking the map if
@@ -3318,14 +3346,8 @@ function renderMap() {
     renderMap._retries = 0;
     if (!map) {
         map = L.map('mapView').setView([47.0, -71.5], 6);
-        // 2026-09-15 : fond de carte OpenStreetMap, gratuit et sans cle. Les
-        // tuiles CARTO Voyager (Phase 2d) exigent desormais une cle d'API et
-        // s'affichaient avec un filigrane « API KEY REQUIRED » chez tous les
-        // visiteurs. OSM n'utilise plus de sous-domaines a/b/c ni le suffixe {r}.
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }).addTo(map);
+        // Fond de carte : CARTO Voyager avec cle, sinon OpenStreetMap (voir basemapTileLayer).
+        baseLayer = basemapTileLayer().addTo(map);
     }
     if (clusterGroup) { map.removeLayer(clusterGroup); }
     clusterGroup = L.markerClusterGroup({
@@ -3628,11 +3650,11 @@ window.addEventListener('load', function() {
         try {
             const raw = localStorage.getItem(INST_CACHE_KEY);
             if (!raw) return null;
-            return JSON.parse(raw); // { data, etag }
+            return JSON.parse(raw); // { data, etag, basemapKey }
         } catch(e) { return null; }
     }
-    function saveInstCache(data, etag) {
-        try { localStorage.setItem(INST_CACHE_KEY, JSON.stringify({ data: data, etag: etag })); } catch(e) {}
+    function saveInstCache(data, etag, basemapKey) {
+        try { localStorage.setItem(INST_CACHE_KEY, JSON.stringify({ data: data, etag: etag, basemapKey: basemapKey || '' })); } catch(e) {}
     }
 
     // Phase 2m (2026-09-15): les membres sont rendus depuis leur propre cache
@@ -3662,6 +3684,7 @@ window.addEventListener('load', function() {
     const cached = loadInstCache();
     if (cached && cached.data && typeof cached.data === 'object') {
         GEOCODE = cached.data;
+        if (cached.basemapKey && typeof applyBasemapKey === 'function') applyBasemapKey(cached.basemapKey);
         refreshRegionsAfterCatalog();
     }
 
@@ -3669,14 +3692,20 @@ window.addEventListener('load', function() {
     if (cached && cached.etag) headers['If-None-Match'] = cached.etag;
 
     fetch('/api/institutions', { headers: headers, cache: 'no-cache' }).then(r => {
-        if (r.status === 304) return null;
+        // Cle du fond de carte, envoyee sur 200 comme sur 304 (voir api/institutions.js)
+        const basemapKey = r.headers.get('X-Basemap-Key') || '';
+        if (basemapKey && typeof applyBasemapKey === 'function') applyBasemapKey(basemapKey);
+        if (r.status === 304) {
+            if (cached && cached.data && basemapKey && basemapKey !== (cached.basemapKey || '')) saveInstCache(cached.data, cached.etag, basemapKey);
+            return null;
+        }
         if (!r.ok) throw new Error(r.status);
         const newEtag = r.headers.get('ETag');
-        return r.json().then(data => ({ data: data, etag: newEtag }));
+        return r.json().then(data => ({ data: data, etag: newEtag, basemapKey: basemapKey }));
     }).then(result => {
         if (!result) return;
         GEOCODE = result.data;
-        saveInstCache(result.data, result.etag);
+        saveInstCache(result.data, result.etag, result.basemapKey);
         // Phase 2c (2026-05-04): la region des membres depend de GEOCODE
         // (lookup lat/long → bounding box). Si les membres ont ete charges
         // avant que GEOCODE ne soit complet (1ere visite, cache vide),

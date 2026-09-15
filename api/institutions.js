@@ -49,6 +49,15 @@ module.exports = async function handler(req, res) {
     const json = JSON.stringify(out);
     const etag = '"' + crypto.createHash('md5').update(json).digest('hex') + '"';
 
+    // 2026-09-15 : cle du fond de carte CARTO (CARTO_BASEMAP_KEY, variable
+    // Vercel), transmise par en-tete pour que index.html l'utilise sans
+    // qu'elle figure dans le depot. Une cle de tuiles est de toute facon
+    // visible dans les requetes du navigateur ; elle est restreinte au domaine
+    // dans le tableau de bord CARTO. Envoyee aussi sur 304, pour les visiteurs
+    // dont le catalogue est deja en cache.
+    const basemapKey = (process.env.CARTO_BASEMAP_KEY || '').trim();
+    if (basemapKey) res.setHeader('X-Basemap-Key', basemapKey);
+
     const ifNoneMatch = req.headers['if-none-match'];
     if (ifNoneMatch && ifNoneMatch === etag) {
       res.setHeader('ETag', etag);
