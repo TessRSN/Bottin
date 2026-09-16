@@ -81,8 +81,8 @@
         [data-theme="dark"] .filter-group select { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .page-btn { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .page-btn.active { background: var(--rsn-accent); border-color: var(--rsn-accent); color: #0f1724; }
-        [data-theme="dark"] .view-btn { background: var(--rsn-card-bg); color: var(--rsn-muted); }
-        [data-theme="dark"] .view-btn.active { background: var(--rsn-accent); color: #0f1724; }
+        [data-theme="dark"] .view-btn { background: var(--rsn-card-bg); color: #e2e8f0; }
+        [data-theme="dark"] .view-btn.active { background: var(--rsn-accent); color: #0f1724; border-color: var(--rsn-accent); }
         [data-theme="dark"] .reset-btn { background: var(--rsn-card-bg); color: var(--rsn-muted); }
         [data-theme="dark"] .upload-area { background: var(--rsn-card-bg); }
         [data-theme="dark"] .leaflet-popup-content-wrapper { background: var(--rsn-card-bg); color: var(--rsn-text); }
@@ -212,10 +212,28 @@
         .toolbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; }
         .results-count { font-size: 0.9rem; color: var(--rsn-muted); }
         .results-count strong { color: var(--rsn-text); }
-        .view-toggle { display: flex; gap: 0; border: 1.5px solid var(--rsn-border); border-radius: 6px; overflow: hidden; }
-        .view-btn { padding: 0.4rem 0.75rem; border: none; background: var(--rsn-card-bg); cursor: pointer; font-size: 0.85rem; color: var(--rsn-muted); display: flex; align-items: center; gap: 0.3rem; transition: all 0.15s; }
-        .view-btn.active { background: var(--rsn-primary); color: white; }
-        .view-btn:not(:last-child) { border-right: 1.5px solid var(--rsn-border); }
+        /* 2026-09-16 : onglets de vue en barre pleine largeur, quatre boutons egaux,
+           plus grands et plus contrastes (avant : petit groupe gris aligne a droite). */
+        .toolbar { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+        .toolbar > div:last-child { width: 100%; }
+        .view-toggle { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+        .view-btn { justify-content: center; padding: 0.7rem 1rem; border: 1.5px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); cursor: pointer; font-size: 0.95rem; font-weight: 600; color: var(--rsn-text); display: flex; align-items: center; gap: 0.4rem; transition: all 0.15s; font-family: inherit; }
+        .view-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .view-btn:hover { border-color: var(--rsn-accent); }
+        .view-btn.active { background: var(--rsn-primary); color: white; border-color: var(--rsn-primary); }
+        .view-btn .new-badge { font-size: 0.62rem; background: #d69e2e; color: #1a202c; border-radius: 999px; padding: 0.1rem 0.45rem; margin-left: 0.2rem; font-weight: 700; letter-spacing: 0.02em; }
+        /* Appel a la vue Connexions, au-dessus des cartes, jusqu'au premier clic sur Connexions */
+        .cta-graph { display: flex; gap: 1.25rem; align-items: center; background: linear-gradient(135deg, #1a365d, #2b6cb0); color: #fff; border-radius: 10px; padding: 1rem 1.25rem; margin: 0 auto 1.1rem; max-width: 1200px; }
+        .cta-graph img { width: 230px; max-width: 100%; height: auto; border-radius: 8px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.25); }
+        .cta-graph h3 { margin: 0 0 0.3rem; font-size: 1.1rem; color: #fff; }
+        .cta-graph p { margin: 0 0 0.7rem; font-size: 0.9rem; opacity: 0.92; line-height: 1.45; }
+        .cta-graph-btn { display: inline-block; background: #fff; color: #1a365d; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; font-family: inherit; }
+        .cta-graph-btn:hover { background: #ebf8ff; }
+        @media (max-width: 640px) {
+            .view-toggle { grid-template-columns: repeat(2, 1fr); }
+            .cta-graph { flex-direction: column; align-items: stretch; }
+            .cta-graph img { width: 100%; }
+        }
         .reset-btn { padding: 0.4rem 0.9rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; background: var(--rsn-card-bg); color: var(--rsn-muted); cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
         .reset-btn:hover { border-color: var(--rsn-accent); color: var(--rsn-accent); }
 
@@ -483,7 +501,7 @@
             <button class="view-btn active" id="btnCards"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> <span data-i18n="view_cards">Profils</span></button>
             <button class="view-btn" id="btnTable"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> <span data-i18n="view_table">Tableau</span></button>
             <button class="view-btn" id="btnMap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg> <span data-i18n="view_map">Carte</span></button>
-            <button class="view-btn" id="btnConnexions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="8" y1="6" x2="16" y2="6"/></svg> <span data-i18n="view_connexions">Connexions</span></button>
+            <button class="view-btn" id="btnConnexions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="8" y1="6" x2="16" y2="6"/></svg> <span data-i18n="view_connexions">Connexions</span><span class="new-badge" data-i18n="view_new">Nouveau</span></button>
         </div>
     </div>
 </div>
@@ -493,6 +511,16 @@
         <div style="font-size:2rem;margin-bottom:1rem;animation:pulse 1.5s ease-in-out infinite">⏳</div>
         <p style="font-size:1rem;font-weight:600" data-i18n="loading_title">Chargement des membres...</p>
         <p style="font-size:0.85rem;margin-top:0.5rem" data-i18n="loading_subtitle">Connexion à la base de données</p>
+    </div>
+    <!-- 2026-09-16 : appel a la vue Connexions. Visible en vue Profils, jusqu'au
+         premier clic sur Connexions (memorise dans le navigateur). -->
+    <div id="ctaGraph" class="cta-graph hidden">
+        <img src="/img/campagne-connexions.gif" alt="" loading="lazy" width="230">
+        <div>
+            <h3 data-i18n="cta_graph_title">Qui travaille sur les mêmes sujets que vous ?</h3>
+            <p data-i18n="cta_graph_text">La carte des connexions relie les membres qui partagent des thèmes de recherche. Cliquez sur une personne pour voir les profils les plus proches du sien.</p>
+            <button type="button" class="cta-graph-btn" id="ctaGraphBtn" data-i18n="cta_graph_btn">Explorer les connexions →</button>
+        </div>
     </div>
     <div id="cardsView" class="cards-grid"></div>
     <div id="tableView" class="table-wrapper hidden"></div>
@@ -606,6 +634,10 @@ const I18N = {
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
         view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte', view_connexions: 'Connexions',
+        view_new: 'Nouveau',
+        cta_graph_title: 'Qui travaille sur les mêmes sujets que vous ?',
+        cta_graph_text: 'La carte des connexions relie les membres qui partagent des thèmes de recherche. Cliquez sur une personne pour voir les profils les plus proches du sien.',
+        cta_graph_btn: 'Explorer les connexions →',
         connexions_loading: 'Calcul des connexions…',
         connexions_search_label: 'Rechercher',
         connexions_search_placeholder: 'Rechercher un membre…',
@@ -691,6 +723,10 @@ const I18N = {
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
         view_cards: 'Profiles', view_table: 'Table', view_map: 'Map', view_connexions: 'Connections',
+        view_new: 'New',
+        cta_graph_title: 'Who works on the same topics as you?',
+        cta_graph_text: 'The connections map links members who share research topics. Click on a person to see the profiles closest to theirs.',
+        cta_graph_btn: 'Explore the connections →',
         connexions_loading: 'Computing connections…',
         connexions_search_label: 'Search',
         connexions_search_placeholder: 'Search a member…',
@@ -2683,6 +2719,10 @@ function render() {
     } else {
         renderTable(); tv.classList.remove('hidden');
     }
+    // 2026-09-16 : appel a la vue Connexions, seulement en vue Profils et tant que
+    // la personne n'a jamais ouvert Connexions sur cet appareil.
+    const cta = document.getElementById('ctaGraph');
+    if (cta) cta.classList.toggle('hidden', !(currentView === 'cards' && !ctaGraphSeen()));
     const isGraphView = (currentView==='map' || currentView==='connexions');
     document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || isGraphView);
     document.getElementById('pagination').classList.toggle('hidden', isGraphView);
@@ -2884,7 +2924,13 @@ document.getElementById('resetFilters').addEventListener('click',()=>{
     });
     sortCol=null;sortDir='asc';applyFilters();saveHash();
 });
+// 2026-09-16 : l'appel a la vue Connexions disparait apres le premier clic sur
+// Connexions, memorise dans le navigateur (localStorage).
+const CTA_GRAPH_KEY = 'rsn-cta-graph-seen';
+function ctaGraphSeen() { try { return localStorage.getItem(CTA_GRAPH_KEY) === '1'; } catch (e) { return false; } }
+function markCtaGraphSeen() { try { localStorage.setItem(CTA_GRAPH_KEY, '1'); } catch (e) {} }
 function setView(v) {
+    if (v === 'connexions') markCtaGraphSeen();
     currentView = v;
     ['btnCards','btnTable','btnMap','btnConnexions'].forEach(id => { var b=document.getElementById(id); if(b) b.classList.remove('active'); });
     var btnId = v==='cards'?'btnCards':v==='table'?'btnTable':v==='connexions'?'btnConnexions':'btnMap';
@@ -2918,6 +2964,8 @@ document.getElementById('btnTable').addEventListener('click',()=>setView('table'
 document.getElementById('btnMap').addEventListener('click',()=>setView('map'));
 var btnConn = document.getElementById('btnConnexions');
 if (btnConn) btnConn.addEventListener('click',()=>setView('connexions'));
+var ctaGraphBtn = document.getElementById('ctaGraphBtn');
+if (ctaGraphBtn) ctaGraphBtn.addEventListener('click', () => { setView('connexions'); const co = document.getElementById('connexionsContainer'); if (co) co.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 
 // ─── FILE UPLOAD ───
 const ua=document.getElementById('uploadArea'),fi=document.getElementById('csvFileInput');
