@@ -289,6 +289,7 @@
         .members-table th.sorted .sa { opacity: 1; }
         .members-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--rsn-border); vertical-align: top; }
         .members-table tr:hover td { background: var(--rsn-light); }
+        .members-table tbody tr[data-member] { cursor: pointer; } /* 2026-09-16 : la ligne ouvre la fiche */
         .members-table .ct { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 4px; color: white; }
 
         /* ─── PAGINATION ─── */
@@ -2828,6 +2829,13 @@ function renderCards() {
     }).join('');
 }
 function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?tr('lbl_see_less'):tr('lbl_see_more'); }
+// 2026-09-16 : dans le tableau, un clic sur une ligne ouvre la fiche de la
+// personne (sauf sur un lien, un bouton ou un badge, qui gardent leur action).
+document.getElementById('tableView').addEventListener('click', e => {
+    if (e.target.closest('a, button, .consent-badge')) return;
+    const row = e.target.closest('tr[data-member]');
+    if (row && typeof showMemberPopup === 'function') showMemberPopup(row.dataset.member);
+});
 
 function renderTable() {
     const el=document.getElementById('tableView'), items=pgItems();
@@ -2847,7 +2855,7 @@ function renderTable() {
         let badges='';
         if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
         if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${ax1}</td><td style="font-size:0.78rem">${pf1}</td><td style="font-size:0.78rem">${ca1}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
+        return `<tr class="${isPending?'pending-consent':''}" data-member="${esc(m.name)}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${ax1}</td><td style="font-size:0.78rem">${pf1}</td><td style="font-size:0.78rem">${ca1}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
     }).join('');
     el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
 }
@@ -3084,16 +3092,15 @@ function showMemberPopup(name) {
     if (m.orcid) { const u = m.orcid.startsWith('http') ? m.orcid : `https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
     if (m.cv) { const u = m.cv.startsWith('http') ? m.cv : `https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
     const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-    const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
+    // 2026-09-16 : memes replis que sur les cartes (themes et presentation a
+    // ~3 lignes avec « Voir plus », puces au-dela de 4 derriere « +N »).
+    const chipsHtml = focusChipsHtml(m, 4);
     let details = [];
     if (m.statut) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`);
-    if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`);
+    if (expertiseText) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><div style="min-width:0;flex:1">${clampedTextHtml(expertiseText, 260)}</div></div>`);
     if (m.reseau) details.push(`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`);
     if (m.projet) {
-        const projetLong = m.projet.length > 300;
-        const colClass = projetLong ? ' collapsed' : '';
-        const toggleBtn = projetLong ? `<button class="modal-projet-toggle" onclick="this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?tr('lbl_see_more'):tr('lbl_see_less')">${tr('lbl_see_more')}</button>` : '';
-        details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span><div class="modal-projet-text${colClass}">${esc(m.projet)}</div>${toggleBtn}</div>`);
+        details.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span>${clampedTextHtml(m.projet, 260)}</div>`);
     }
     // Phase 2f: champ Etudiants retire de la modal aussi (cohérence avec les cards).
     const modal = document.getElementById('memberModalContent');
