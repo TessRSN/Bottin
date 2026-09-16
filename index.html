@@ -73,7 +73,8 @@
         [data-theme="dark"] .members-table th:hover {
             background: #2b6cb0;
         }
-        [data-theme="dark"] .axe-chip { background: #1e2a3a; color: #63b3ed; }
+        /* 2026-09-16 : fond distinct de la carte en mode sombre (avant #1e2a3a, invisible sur #1e2740) */
+        [data-theme="dark"] .axe-chip { background: #2a4365; color: #90cdf4; }
         [data-theme="dark"] .principe-chip { background: #2d2a1a; color: #ecc94b; }
         [data-theme="dark"] .action-chip { background: #1a2d1a; color: #68d391; }
         [data-theme="dark"] .search-input { background: var(--rsn-card-bg); color: var(--rsn-text); }
@@ -265,6 +266,17 @@
         .modal-projet-text.collapsed { max-height: 4.5em; overflow: hidden; position: relative; }
         .modal-projet-text.collapsed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.5em; background: linear-gradient(transparent, var(--rsn-card-bg, #fff)); pointer-events: none; }
         [data-theme="dark"] .modal-projet-text.collapsed::after { background: linear-gradient(transparent, #1e293b); }
+        /* 2026-09-16 : blocs repliables sur les cartes — themes et presentation limites a
+           ~3 lignes avec fondu et « Voir plus » ; puces limitees a 4 avec « +N ». */
+        .card-clamp { position: relative; line-height: 1.5; }
+        .card-clamp.collapsed { max-height: 4.5em; overflow: hidden; }
+        .card-clamp.collapsed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.5em; background: linear-gradient(transparent, var(--rsn-card-bg, #fff)); pointer-events: none; }
+        .card-more { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.15rem 0; font-family: inherit; }
+        .card-more:hover { text-decoration: underline; }
+        .chip-more { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: var(--rsn-light); color: var(--rsn-secondary); border: 1px solid var(--rsn-border); cursor: pointer; font-family: inherit; white-space: nowrap; }
+        [data-theme="dark"] .chip-more { background: #2a4365; color: #90cdf4; }
+        .chips-rest[hidden] { display: none; }
+        .chips-rest { display: contents; }
         .modal-projet-toggle { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.8rem; padding: 0.15rem 0; margin-top: 0.1rem; }
         .modal-projet-toggle:hover { text-decoration: underline; }
 
@@ -2726,12 +2738,40 @@ function cardHeaderHtml(m, tc, photoCls) {
 function axeLabels(m) { return (m.axes || []).map(a => trAxe(a).replace(/^(Axe|Axis) \d+ - /, '')); }
 function principeLabels(m) { return (m.principes || []).map(p => trPrincipe(p)); }
 function champLabels(m) { return (m.champsAction || []).map(c => trChamp(c)); }
-function focusChipsHtml(m) {
+function focusChipsHtml(m, limit) {
     const chips = [];
     axeLabels(m).forEach(l => chips.push(`<span class="axe-chip">${esc(l)}</span>`));
     principeLabels(m).forEach(l => chips.push(`<span class="principe-chip">${esc(l)}</span>`));
     champLabels(m).forEach(l => chips.push(`<span class="action-chip">${esc(l)}</span>`));
-    return chips.length ? `<div class="card-chips-row">${chips.join('')}</div>` : '';
+    if (!chips.length) return '';
+    // 2026-09-16 : sur les cartes, au-dela de `limit` puces, les suivantes sont
+    // repliees derriere une puce « +N » (chipsExpand). La fiche detaillee passe
+    // sans limite et montre tout.
+    if (limit && chips.length > limit) {
+        const rest = chips.length - limit;
+        return `<div class="card-chips-row">${chips.slice(0, limit).join('')}<span class="chips-rest" hidden>${chips.slice(limit).join('')}</span><button type="button" class="chip-more" data-rest="${rest}" onclick="event.stopPropagation();chipsExpand(this)">+${rest}</button></div>`;
+    }
+    return `<div class="card-chips-row">${chips.join('')}</div>`;
+}
+// Puce « +N » : deplie les puces cachees, puis « Voir moins » les replie.
+function chipsExpand(btn) {
+    const rest = btn.parentNode.querySelector('.chips-rest');
+    if (!rest) return;
+    const open = rest.hidden;
+    rest.hidden = !open;
+    btn.textContent = open ? tr('lbl_see_less') : '+' + btn.dataset.rest;
+}
+// Bloc de texte replie (themes, presentation) : bascule et libelle du bouton.
+function togClamp(btn) {
+    const box = btn.previousElementSibling;
+    if (!box) return;
+    box.classList.toggle('collapsed');
+    btn.textContent = box.classList.contains('collapsed') ? tr('lbl_see_more') : tr('lbl_see_less');
+}
+// Texte + bouton « Voir plus » si le texte depasse `maxChars` (~3 lignes sur une carte).
+function clampedTextHtml(text, maxChars) {
+    const long = text.length > maxChars;
+    return `<div class="card-clamp${long ? ' collapsed' : ''}">${esc(text)}</div>${long ? `<button type="button" class="card-more" onclick="event.stopPropagation();togClamp(this)">${tr('lbl_see_more')}</button>` : ''}`;
 }
 // Filtre « axe / principe / champ » : vrai si l'une des valeurs choisies est
 // dans l'une des trois listes du membre.
@@ -2750,17 +2790,15 @@ function renderCards() {
         if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
         if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
         const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-        const chipsHtml = focusChipsHtml(m); // Phase 2l : toutes les selections
-        let exParts=[];
-        if(m.projet) {
-            const pLong = m.projet.length > 300;
-            const pCol = pLong ? ' collapsed' : '';
-            const pBtn = pLong ? `<button class="modal-projet-toggle" onclick="event.stopPropagation();this.previousElementSibling.classList.toggle('collapsed');this.textContent=this.previousElementSibling.classList.contains('collapsed')?tr('lbl_see_more'):tr('lbl_see_less')">${tr('lbl_see_more')}</button>` : '';
-            exParts.push(`<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span><div class="modal-projet-text${pCol}">${esc(m.projet)}</div>${pBtn}</div>`);
-        }
+        // 2026-09-16 : sur la carte, les puces au-dela de 4 sont repliees (« +N »),
+        // les themes et la presentation sont limites a ~3 lignes avec « Voir plus »,
+        // et la presentation est visible d'emblee (avant : cachee derriere un
+        // « Voir plus » general en bas de carte).
+        const chipsHtml = focusChipsHtml(m, 4);
+        const themesHtml = expertiseText ? `<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><div style="min-width:0;flex:1">${clampedTextHtml(expertiseText, 200)}</div></div>` : '';
+        const presHtml = m.projet ? `<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span>${clampedTextHtml(m.projet, 220)}</div>` : '';
         // Phase 2f: champ Etudiants retire du bottin public (peu utilise — 3% — et
         // pas pertinent pour les visiteurs externes). Conserve dans Notion pour usage admin.
-        const exH = exParts.length ? `<button class="card-expand-btn" onclick="togEx('${eid}',this)">${tr('lbl_see_more')}</button><div class="card-extra" id="${eid}">${exParts.join('')}</div>` : '';
         // Consent & form badges
         const isPending = m.consent !== 'oui';
         const pendingClass = isPending ? ' pending-consent' : '';
@@ -2780,11 +2818,12 @@ function renderCards() {
             ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
             <div class="card-details">
                 ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`:''}
-                ${expertiseText?`<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><span>${esc(expertiseText)}</span></div>`:''}
+                ${themesHtml}
                 ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
+                ${presHtml}
             </div>
             ${chipsHtml}
-            ${exH}${lnkH}${neighborsBtn}
+            ${lnkH}${neighborsBtn}
         </div>`;
     }).join('');
 }
