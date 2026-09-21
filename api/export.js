@@ -326,6 +326,7 @@ function maskSensitive(row) {
 }
 
 module.exports = async function handler(req, res) {
+  const handlerStart = Date.now(); // sert au budget de temps de la campagne (maxDuration 60 s)
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -495,7 +496,11 @@ module.exports = async function handler(req, res) {
         const rs = retentionStats || {};
         const sentByRetention = (rs.sentArchive || 0) + (rs.sent30j || 0) + (rs.sent60j || 0);
         const budgetLeft = Math.max(0, remainingBudget - sentByRetention);
-        const r = await runProfileCampaign(members, { dryRun: false, limit: Math.min(budgetLeft, parseInt(process.env.CAMPAIGN_DAILY_LIMIT || '40', 10)), timeBudgetMs: 40000, log: console.log });
+        // 2026-09-21 : le budget de temps est ce qu'il reste avant 53 s d'execution
+        // totale (la fonction est limitee a 60 s), au lieu d'un forfait de 40 s qui
+        // ignorait le temps deja pris par l'export et les autres courriels.
+        const timeLeft = Math.max(5000, 53000 - (Date.now() - handlerStart));
+        const r = await runProfileCampaign(members, { dryRun: false, limit: Math.min(budgetLeft, parseInt(process.env.CAMPAIGN_DAILY_LIMIT || '40', 10)), timeBudgetMs: timeLeft, log: console.log });
         console.log(`[campagne] cron : ${r.sent} envoyes, ${r.failed} echecs, deja ${r.sentToday} aujourd'hui, restants A=${r.remainingBefore.A} B=${r.remainingBefore.B}${r.stoppedByTime ? ', arret par budget de temps' : ''}`);
       } catch (campErr) {
         console.error('[campagne] erreur :', campErr.message, campErr.stack);
