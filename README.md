@@ -1,128 +1,171 @@
-# Bottin des membres — RSN (Réseau santé numérique)
+# Bottin des membres du Réseau de santé numérique
 
-**[Accéder au bottin en ligne](https://bottin.rsn.quebec/)**
+**[bottin.rsn.quebec](https://bottin.rsn.quebec/)**
 
-Carte interactive et répertoire des membres du Réseau santé numérique (RSN). Les données sont stockées dans une base Notion et servies via une API Vercel. Les membres peuvent modifier leur profil via un magic link (vérification par email, sans mot de passe).
+> *In English:* an open member directory for a research network. Members appear as profile cards, on a map of institutions, and on a "connections" graph that links people working on similar topics. Members update their own profile through a one-click email link, with keyword suggestions drawn from ORCID and OpenAlex. Data lives in Notion, the site runs on Vercel, emails go through Resend. Everything below is in French; the technical section at the end lists what you need to run your own copy.
 
-## Architecture
+Le bottin est le répertoire public des membres du [Réseau de santé numérique](https://rsn.quebec/) (RSN), un réseau de recherche québécois financé par le Fonds de recherche du Québec. Il sert à une chose : **trouver les bonnes personnes**. Qui travaille en santé numérique au Québec, où, sur quels sujets, et avec qui.
 
-```
-Vercel (héberge tout)
-├── index.html              ← Bottin interactif (carte + profils + tableau)
-├── magic-link.html         ← Page d'entrée du courriel pour modifier son profil
-├── edit.html               ← Formulaire de modification pré-rempli (bilingue)
-├── logo-rsn.png            ← Logo RSN
-├── api/
-│   ├── magic-link.js       ← Vérifie l'email dans Notion → envoie un lien sécurisé
-│   ├── profile.js          ← GET/POST pour lire/modifier un profil membre
-│   └── export.js           ← Exporte Notion → CSV avec règles de consentement
-├── lib/
-│   ├── notion.js           ← Client Notion API + mapping des colonnes
-│   ├── token.js            ← JWT sign/verify (magic links, 1h d'expiration)
-│   └── email.js            ← Envoi d'emails via Gmail SMTP (Nodemailer)
-├── join/index.html         ← Redirection vers le formulaire d'adhésion
-├── update/index.html       ← Redirection vers la page magic link
-└── vercel.json             ← Configuration cron + headers
+![La vue Connexions : la carte des membres, puis le zoom sur une personne et ses liens](img/campagne-connexions.gif)
 
-Notion (base de données)
-└── Membres RSN             ← Source de vérité, vue Kanban pour approbation
+## Ce que l'on y trouve
 
-GitHub (code source)
-└── TessRSN/Bottin          ← Ce repo, pour partage et documentation
-```
+### Des profils, une recherche et des filtres
 
-## Comment ça marche
+Chaque membre a une fiche : statut, institution, thèmes de recherche, présentation, photo, liens ORCID et site web. La barre de recherche comprend les noms, les institutions, les thèmes et les présentations, en français comme en anglais. Quatre filtres croisent le type d'adhésion, la région, le statut et les axes du réseau. Une vue en tableau, triable, remplace les cartes quand on préfère une liste.
 
-### Nouveau membre
-1. Clique "Devenir membre" sur le bottin
-2. Remplit le formulaire d'inscription
-3. L'admin voit la demande dans le Kanban Notion → approuve ou refuse
-4. Le membre apparaît sur le bottin après approbation
+![L'accueil du bottin : recherche, filtres, onglets et appel à la vue Connexions](img/readme-accueil.png)
 
-### Modifier son profil (magic link)
-1. Clique "Mettre à jour mon profil" sur le bottin
-2. Entre son courriel institutionnel
-3. Reçoit un email avec un lien sécurisé (valide 1h, sans mot de passe)
-4. Accède à un formulaire pré-rempli avec ses données actuelles
-5. Modifie uniquement ce qu'il veut (champs obligatoires : nom, email, institution, statut, axes, consentement)
-6. Les modifications apparaissent dans Notion avec le statut "Modifié"
-7. L'admin approuve dans le Kanban → les données sont mises à jour sur le bottin
+### Une carte des institutions
 
-### Export des données
-- L'API `/api/export` interroge Notion en temps réel et génère un CSV
-- Les règles de consentement sont appliquées automatiquement
-- Le CSV est mis en cache 5 minutes sur le edge Vercel
-- Un cron quotidien (6h UTC) rafraîchit le cache
+Chaque membre est placé sur la carte à partir de son institution, de Montréal à Rimouski, avec des membres ailleurs au Canada et à l'international. Les filtres s'appliquent aussi à la carte.
 
-## Règles de consentement
+![La carte des institutions, centrée sur le Québec](img/readme-carte.png)
 
-| Consentement | Données affichées | Données masquées |
+### Les connexions
+
+C'est la partie la plus originale. Un graphe relie les membres dont les profils partagent des mots-clés scientifiques distinctifs : plus deux personnes ont de mots rares en commun, plus le trait est épais. Un clic sur une personne ouvre sa fiche avec la liste de ses profils les plus proches et les mots-clés partagés. Le calcul se fait dans le navigateur, sans intelligence artificielle, à partir des thèmes et des présentations, et un bouton « ? » explique la méthode aux membres.
+
+### Un profil qui se remplit presque tout seul
+
+Pour créer ou modifier son profil, un membre reçoit un lien par courriel, sans mot de passe. Le formulaire propose ses thèmes de recherche à partir de son identifiant ORCID, ou d'une recherche de ses publications par son nom dans OpenAlex ; la personne coche ce qui lui convient. Elle peut ajouter une photo, recadrée sur place. Toute modification passe par l'approbation de l'équipe du réseau avant d'apparaître.
+
+![Les thèmes proposés à partir d'un profil ORCID](img/campagne-suggestions.png)
+
+### Le consentement, au centre
+
+C'est un bottin de personnes, soumis à la Loi 25 du Québec. Chaque membre décide si son profil est public. Sans réponse, seuls le nom, le type d'adhésion et les axes apparaissent, le reste est masqué ; en cas de refus, la personne n'apparaît pas du tout et n'est comptée que dans les totaux. Le courriel n'est affiché que si la personne l'a accepté, et elle peut retirer son consentement à tout moment depuis son profil.
+
+## Sur quoi ça repose
+
+| Brique | Rôle | Coût |
 |---|---|---|
-| **Oui** | Toutes les données du profil | Aucune |
-| **Vide** (en attente) | Nom + type d'adhésion + axes/principes/champs | Email, institution, statut, expertise, projet, ORCID, CV |
-| **Non** | Aucune (exclu du bottin) | Tout — compté uniquement dans les statistiques agrégées |
+| [Notion](https://notion.so) | La base de données des membres et celle des institutions. L'équipe du réseau y approuve les demandes, corrige une fiche ou change un libellé sans toucher au code. | gratuit |
+| [Vercel](https://vercel.com) | Héberge le site et ses douze petites fonctions serveur : export des données, formulaires, liens par courriel, photos, sauvegardes, campagne. Deux tâches planifiées : l'une chaque matin, l'autre chaque semaine. | gratuit, forfait Hobby |
+| [Resend](https://resend.com) | Envoie tous les courriels : lien de modification, confirmation d'inscription, acceptation, rappels de renouvellement, campagne. | gratuit jusqu'à 100 courriels par jour |
+| [ORCID](https://orcid.org) et [OpenAlex](https://openalex.org) | Sources publiques des suggestions de thèmes : mots-clés et publications d'un profil ORCID, thèmes et termes MeSH calculés par OpenAlex. Interrogés directement par le navigateur, sans compte. | gratuit |
+| [CARTO](https://carto.com/basemaps) et [OpenStreetMap](https://www.openstreetmap.org) | Le fond de carte. CARTO avec une clé gratuite ; OpenStreetMap en repli, sans clé. | gratuit |
+| [Leaflet](https://leafletjs.com), [vis-network](https://visjs.org), [Fuse.js](https://www.fusejs.io) | Bibliothèques ouvertes pour la carte, le graphe des connexions et la recherche tolérante aux fautes. | libres |
+| [GitHub](https://github.com/TessRSN/Bottin) | Le code, et le déploiement automatique sur Vercel à chaque changement. | gratuit |
 
-## Fonctionnalités du bottin
+Aucun serveur à entretenir, aucune base de données à administrer : le site est une page statique, les fonctions ne tournent qu'à la demande, et Notion reste la seule source de vérité. Une équipe qui sait utiliser Notion peut faire vivre le bottin au quotidien.
 
-- **Carte Leaflet** avec regroupement de marqueurs (clusters) et profils cliquables
-- **Vue profils** avec fiches détaillées par membre
-- **Vue tableau** triable par colonnes (nom, institution, type, etc.)
-- **4 filtres multi-sélection** : type d'adhésion, région, statut, axes/principes/champs d'action
-- **Barre de recherche** par nom, institution, courriel, expertise, thème ou projet
-- **Mode sombre / clair** avec détection automatique des préférences système
-- **Bilingue** français / anglais
-- **Magic links** pour modification de profil sans mot de passe
-- **Persistance de l'état** : vue, recherche, filtres et pagination conservés au rafraîchissement (via URL hash)
-- **Badges** visuels pour le consentement en attente et les formulaires incomplets
-- **Export CSV** des résultats filtrés
+## Comment ça marche, côté équipe
 
-## Propriétés Notion
+1. **Une personne demande l'adhésion** sur le site. Sa fiche apparaît dans Notion avec le statut « Nouveau » ; l'équipe l'approuve ou la refuse, et un courriel d'acceptation part automatiquement.
+2. **Un membre met son profil à jour** avec le lien reçu par courriel. Sa fiche passe en « Modifié » ; l'équipe approuve, et le bottin se rafraîchit.
+3. **L'adhésion dure deux ans.** Des rappels partent 60 puis 30 jours avant l'échéance, avec un lien de renouvellement en un clic ; sans réponse, la fiche est archivée.
+4. **Une campagne** peut inviter les membres au profil incomplet à le compléter, à raison d'un lot par jour, chaque envoi étant noté dans Notion pour ne jamais écrire deux fois à la même personne.
+5. **Une sauvegarde** de la base part chaque semaine, et une page d'administration permet d'en lancer une à la main.
 
-| Propriété | Type | Description |
-|---|---|---|
-| Prénom | Title | Prénom du membre |
-| Nom | Rich text | Nom de famille |
-| Email | Email | Courriel principal (utilisé pour les magic links) |
-| Email secondaire | Email | Courriel alternatif |
-| Institution | Rich text | Affiliation institutionnelle |
-| Statut | Rich text | Poste / rôle actuel |
-| Type d'adhésion | Select | Régulier, Étudiant, Partenaire |
-| Axes d'intérêt | Multi-select | 4 axes thématiques du RSN |
-| Principes fondateurs | Multi-select | 5 principes du RSN |
-| Champs d'action | Multi-select | 3 champs d'action |
-| Consentement | Select | Oui / Non / (vide = en attente) |
-| Statut workflow | Select | Nouveau / Approuvé / Modifié / Refusé |
-| + autres | Divers | Expertise, projet, ORCID, CV, etc. |
+Contact : Tess Berthier, [tess.berthier@rimuhc.ca](mailto:tess.berthier@rimuhc.ca).
 
-## Variables d'environnement (Vercel)
+---
 
-| Variable | Description |
-|---|---|
-| `NOTION_KEY` | Clé API de l'intégration Notion |
-| `NOTION_DB_ID` | ID de la base de données Notion (32 caractères) |
-| `GMAIL_USER` | Adresse Gmail pour l'envoi des magic links |
-| `GMAIL_APP_PASSWORD` | Mot de passe d'application Gmail (16 caractères) |
-| `JWT_SECRET` | Secret pour signer les tokens magic link |
+## Pour installer son propre bottin
 
-## Reproduire ce projet
+Cette partie s'adresse à qui veut reprendre l'outil pour un autre réseau. Comptez une demi-journée pour une première mise en ligne, avec des connaissances de base en Git et en Vercel ; aucune installation locale n'est nécessaire.
 
 ### Prérequis
-- Un compte [Notion](https://notion.so) (gratuit)
-- Un compte [Vercel](https://vercel.com) (gratuit, plan Hobby)
-- Un compte Gmail avec authentification 2 facteurs activée
-- Un repo GitHub
 
-### Étapes
-1. **Notion** : Créer une base de données avec les propriétés listées ci-dessus. Créer une [intégration](https://www.notion.so/my-integrations) et la connecter à la base.
-2. **Gmail** : Activer la validation en 2 étapes, puis générer un [mot de passe d'application](https://myaccount.google.com/apppasswords).
-3. **GitHub** : Forker ce repo ou copier les fichiers.
-4. **Vercel** : Importer le repo GitHub, configurer les 5 variables d'environnement, déployer.
-5. **Tester** : Visiter le bottin, demander un magic link, modifier un profil.
+- Un compte **Notion** avec une intégration interne (Paramètres → Connexions → Développer ou gérer des intégrations) et deux bases de données : les membres et les institutions.
+- Un compte **Vercel** (forfait Hobby) relié à un dépôt **GitHub** contenant une copie de ce projet.
+- Un compte **Resend** avec un domaine d'envoi vérifié (par exemple `bottin.votre-domaine.ca`).
+- Facultatif : une clé **CARTO Basemaps** pour le fond de carte pastel ; sans elle, la carte utilise OpenStreetMap.
 
-### Limites du plan gratuit
-- **Vercel** : 100k requêtes/mois, fonctions serverless de 10s (30s max)
-- **Notion API** : pas de limite documentée pour ce volume
-- **Gmail SMTP** : 500 emails/jour
+### Structure du projet
+
+```
+index.html          le bottin : profils, tableau, carte, connexions
+join.html           formulaire d'adhésion
+edit.html           formulaire de modification (ouvert par lien courriel)
+magic-link.html     demande du lien de modification
+renew.html          renouvellement de l'adhésion
+backups.html        page d'administration des sauvegardes
+orcid-suggest.js    suggestions de thèmes (ORCID, OpenAlex)
+photo-cropper.js    recadrage de la photo de profil
+api/                fonctions serveur (Vercel) : export, join, profile, magic-link,
+                    email-change, renew, photo, institutions, backups, backup-auto,
+                    campaign, membership-report
+lib/                accès Notion, courriels (Resend), jetons, campagne, photos
+img/                images du site et du README
+vercel.json         tâches planifiées, réécritures d'adresses, en-têtes
+BACKLOG.md          chantiers en cours et décisions de données
+```
+
+### Base Notion « Membres »
+
+Les noms des propriétés doivent correspondre exactement à ceux du fichier `lib/notion.js` (objet `PROP`). Les principales :
+
+| Propriété | Type | Rôle |
+|---|---|---|
+| Prénom | Titre | prénom |
+| Nom | Texte | nom de famille |
+| Email, Email secondaire | Courriel | le premier sert aux liens de modification |
+| Institution | Texte | affiliations, séparées par `;` |
+| Institution liée | Relation | vers la base Institutions, prioritaire pour la carte |
+| Statut | Sélection | 14 statuts, du 1er cycle à la coordination de recherche |
+| Type d'adhésion | Sélection | Régulier, Étudiant, Partenaire |
+| Thèmes de recherche ou d'intérêt | Texte | mots-clés séparés par des virgules ; base des connexions |
+| Présentation | Texte | quelques phrases ; base des connexions |
+| Axes d'intérêt, Principes fondateurs, Champs d'action | Multi-sélection | taxonomie du réseau |
+| ORCID, CV / LinkedIn | URL | liens de la fiche |
+| Photo | Fichiers | photo de profil, téléversée par le formulaire |
+| Consentement | Sélection | Oui, Non, ou vide |
+| Afficher courriel | Case à cocher | courriel visible sur la fiche |
+| Statut workflow | Sélection | Nouveau, Approuvé, Modifié, Refusé |
+| Date de début d'adhésion, Date de renouvellement | Date | cycle de deux ans |
+| Email d'acceptation envoyé, Email renouv. 60j envoyé, Email renouv. 30j envoyé, Email archivage envoyé | Cases à cocher | courriels déjà partis, pour ne jamais les renvoyer |
+| Réseau, Étudiants, Référé par, Droit de vote, Évaluateur | Divers | champs propres au RSN, facultatifs |
+| OpenAlex ID, Courriel campagne profil | Texte, Date | techniques : fiche OpenAlex choisie, date du courriel de campagne |
+
+Base « Institutions » : `Nom` (titre), `Adresse` (texte), `Latitude` et `Longitude` (nombres), `Statut` (sélection ; seules les institutions « Validée » sont servies au site). Les régions de la carte sont déduites des coordonnées.
+
+### Variables d'environnement (Vercel)
+
+| Variable | Obligatoire | Rôle |
+|---|---|---|
+| `NOTION_KEY` | oui | jeton de l'intégration Notion |
+| `NOTION_DB_ID` | oui | identifiant de la base Membres |
+| `NOTION_INSTITUTIONS_DB_ID` | oui | identifiant de la base Institutions |
+| `RESEND_API_KEY` | oui | clé Resend |
+| `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME` | non | expéditeur des courriels (défaut : `bottin@rsn.quebec`, « RSN — Bottin ») |
+| `JWT_SECRET` | oui | secret des liens signés (modification 1 h, renouvellement 90 jours, campagne 30 jours) |
+| `BASE_URL` | non | adresse publique du site, utilisée dans les courriels (défaut : `https://bottin.rsn.quebec`) |
+| `BACKUP_SECRET` | oui | clé des pages et actions d'administration (sauvegardes, campagne, catalogue complet) |
+| `CRON_SECRET` | oui | protège la sauvegarde hebdomadaire contre un appel direct |
+| `ADMIN_NOTIFICATION_RECIPIENTS` | non | courriels de l'équipe pour le récapitulatif des échéances |
+| `EMAIL_DAILY_BUDGET` | non | plafond de courriels automatiques par passage du matin (défaut 95, sous les 100/jour de Resend) |
+| `RETENTION_EMAILS_ENABLED`, `RETENTION_EMAILS_DAILY_LIMIT`, `RETENTION_EMAILS_TEST_RECIPIENTS` | non | rappels de renouvellement : activation (`true`), plafond (défaut 30), liste de test |
+| `CAMPAIGN_DAILY_LIMIT`, `CAMPAIGN_PAUSED` | non | campagne « complétez votre profil » : plafond (défaut 40), pause (`true`) |
+| `EMAIL_TEST_MODE`, `EMAIL_TEST_RECIPIENT` | non | sur un environnement de test, redirige tous les courriels vers une seule adresse |
+| `CARTO_BASEMAP_KEY` | non | clé du fond de carte CARTO ; sans elle, OpenStreetMap |
+
+Un changement de variable ne prend effet qu'au déploiement suivant.
+
+### Tâches planifiées
+
+`vercel.json` déclare les deux tâches autorisées par le forfait Hobby :
+
+- `/api/export` chaque jour à 11 h 30 UTC (7 h 30 au Québec) : régénère l'export, envoie les courriels d'acceptation, les rappels de renouvellement, l'archivage des adhésions échues et le lot du jour de la campagne.
+- `/api/backup-auto` chaque dimanche à 3 h UTC : sauvegarde complète de la base.
+
+L'export est aussi appelé en direct par le site à chaque visite, avec un cache par empreinte : les visiteurs voient toujours des données à jour.
+
+### Mise en route
+
+1. Créer les deux bases Notion avec les propriétés ci-dessus, et y connecter l'intégration.
+2. Copier ce dépôt sur GitHub, l'importer dans Vercel, renseigner les variables, déployer.
+3. Dans Resend, vérifier le domaine d'envoi et ajuster `RESEND_FROM_EMAIL`.
+4. Adapter les textes propres au réseau : taxonomie des axes, principes et champs (dans `index.html`, `join.html`, `edit.html` et `api/membership-report.js`), courriels (`lib/email.js`), logo et images (`logo-rsn.png`, `og-image-v3.png`, `img/`).
+5. Tester : demander l'adhésion avec une adresse de test, approuver dans Notion, demander un lien de modification, modifier, approuver.
+
+### Limites à connaître
+
+- Vercel Hobby : au plus 12 fonctions serveur (toutes utilisées ici) et 2 tâches planifiées ; une fonction s'exécute au plus 60 secondes.
+- Resend gratuit : 100 courriels par jour, 3 000 par mois. Les envois automatiques sont plafonnés en conséquence.
+- Notion : environ 3 requêtes par seconde ; les scripts qui écrivent en série respectent une pause.
+- Les fichiers Notion, dont les photos, ont des adresses temporaires : le site les sert par un relais qui les met en cache.
 
 ## Licence
 
