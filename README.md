@@ -6,8 +6,6 @@
 
 Le bottin est le répertoire public des membres du [Réseau santé numérique](https://rsn.quebec/) (RSN), un réseau de recherche québécois financé par le Fonds de recherche du Québec. Il sert à une chose : **trouver les bonnes personnes**. Qui travaille en santé numérique au Québec, où, sur quels sujets, et avec qui.
 
-![La vue Connexions : la carte des membres, puis le zoom sur une personne et ses liens](img/campagne-connexions.gif)
-
 ## Ce que l'on y trouve
 
 ### Des profils, une recherche et des filtres
@@ -29,6 +27,8 @@ Les institutions ne sont pas du texte libre : elles forment un catalogue à part
 ### Les connexions
 
 C'est la partie la plus originale. Un graphe relie les membres dont les profils partagent des mots-clés scientifiques distinctifs : plus deux personnes ont de mots rares en commun, plus le trait est épais. Un clic sur une personne ouvre sa fiche avec la liste de ses profils les plus proches et les mots-clés partagés. Le calcul se fait dans le navigateur, sans intelligence artificielle, à partir des thèmes et des présentations, et un bouton « ? » explique la méthode aux membres.
+
+<p align="center"><img src="img/campagne-connexions.gif" alt="La vue Connexions : la carte des membres, puis le zoom sur une personne et ses liens" width="600"></p>
 
 ### Un profil qui se remplit presque tout seul
 
