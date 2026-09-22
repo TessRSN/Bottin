@@ -22,6 +22,10 @@ Chaque membre est placé sur la carte à partir de son institution, de Montréal
 
 ![La carte des institutions, centrée sur le Québec](img/readme-carte.png)
 
+### Des institutions référencées
+
+Les institutions ne sont pas du texte libre : elles forment un catalogue à part, avec pour chacune une adresse, des coordonnées et un statut. Au moment de l'adhésion ou d'une mise à jour, le champ « institution » propose celles qui existent déjà au fil de la frappe ; si la sienne manque, la personne l'ajoute avec son adresse, et elle est placée sur la carte automatiquement à partir de cette adresse. L'équipe du réseau valide ensuite la nouvelle institution, et peut compléter sa fiche. C'est ce catalogue qui alimente la carte et le filtre par région ; renommer une institution dans le catalogue met à jour tous les membres qui y sont rattachés.
+
 ### Les connexions
 
 C'est la partie la plus originale. Un graphe relie les membres dont les profils partagent des mots-clés scientifiques distinctifs : plus deux personnes ont de mots rares en commun, plus le trait est épais. Un clic sur une personne ouvre sa fiche avec la liste de ses profils les plus proches et les mots-clés partagés. Le calcul se fait dans le navigateur, sans intelligence artificielle, à partir des thèmes et des présentations, et un bouton « ? » explique la méthode aux membres.
@@ -45,6 +49,7 @@ C'est un bottin de personnes, soumis à la Loi 25 du Québec. Chaque membre déc
 | [Resend](https://resend.com) | Envoie tous les courriels : lien de modification, confirmation d'inscription, acceptation, rappels de renouvellement, campagne. | gratuit jusqu'à 100 courriels par jour |
 | [ORCID](https://orcid.org) et [OpenAlex](https://openalex.org) | Sources publiques des suggestions de thèmes : mots-clés et publications d'un profil ORCID, thèmes et termes MeSH calculés par OpenAlex. Interrogés directement par le navigateur, sans compte. | gratuit |
 | [CARTO](https://carto.com/basemaps) et [OpenStreetMap](https://www.openstreetmap.org) | Le fond de carte. CARTO avec une clé gratuite ; OpenStreetMap en repli, sans clé. | gratuit |
+| [Nominatim](https://nominatim.org) (OpenStreetMap) | Transforme l'adresse d'une nouvelle institution en coordonnées pour la carte. | gratuit, usage modéré |
 | [Leaflet](https://leafletjs.com), [vis-network](https://visjs.org), [Fuse.js](https://www.fusejs.io) | Bibliothèques ouvertes pour la carte, le graphe des connexions et la recherche tolérante aux fautes. | libres |
 | [GitHub](https://github.com/TessRSN/Bottin) | Le code, et le déploiement automatique sur Vercel à chaque changement. | gratuit |
 
@@ -54,9 +59,10 @@ Aucun serveur à entretenir, aucune base de données à administrer : le site es
 
 1. **Une personne demande l'adhésion** sur le site. Sa fiche apparaît dans Notion avec le statut « Nouveau » ; l'équipe l'approuve ou la refuse, et un courriel d'acceptation part automatiquement.
 2. **Un membre met son profil à jour** avec le lien reçu par courriel. Sa fiche passe en « Modifié » ; l'équipe approuve, et le bottin se rafraîchit.
-3. **L'adhésion dure deux ans.** Des rappels partent 60 puis 30 jours avant l'échéance, avec un lien de renouvellement en un clic ; sans réponse, la fiche est archivée.
-4. **Une campagne** peut inviter les membres au profil incomplet à le compléter, à raison d'un lot par jour, chaque envoi étant noté dans Notion pour ne jamais écrire deux fois à la même personne.
-5. **Une sauvegarde** de la base part chaque semaine, et une page d'administration permet d'en lancer une à la main.
+3. **Une institution proposée** par un membre arrive dans le catalogue avec le statut « En attente », déjà géolocalisée ; l'équipe vérifie le nom et l'adresse, complète au besoin, puis la passe en « Validée » pour qu'elle apparaisse sur la carte et dans les suggestions.
+4. **L'adhésion dure deux ans.** Des rappels partent 60 puis 30 jours avant l'échéance, avec un lien de renouvellement en un clic ; sans réponse, la fiche est archivée.
+5. **Une campagne** peut inviter les membres au profil incomplet à le compléter, à raison d'un lot par jour, chaque envoi étant noté dans Notion pour ne jamais écrire deux fois à la même personne.
+6. **Une sauvegarde** de la base part chaque semaine, et une page d'administration permet d'en lancer une à la main.
 
 Contact : Tess Berthier, [tess.berthier@rimuhc.ca](mailto:tess.berthier@rimuhc.ca).
 
@@ -87,7 +93,7 @@ photo-cropper.js    recadrage de la photo de profil
 api/                fonctions serveur (Vercel) : export, join, profile, magic-link,
                     email-change, renew, photo, institutions, backups, backup-auto,
                     campaign, membership-report
-lib/                accès Notion, courriels (Resend), jetons, campagne, photos
+lib/                accès Notion, courriels (Resend), jetons, campagne, photos, géocodage
 img/                images du site et du README
 vercel.json         tâches planifiées, réécritures d'adresses, en-têtes
 BACKLOG.md          chantiers en cours et décisions de données
@@ -119,7 +125,7 @@ Les noms des propriétés doivent correspondre exactement à ceux du fichier `li
 | Réseau, Étudiants, Référé par, Droit de vote, Évaluateur | Divers | champs propres au RSN, facultatifs |
 | OpenAlex ID, Courriel campagne profil | Texte, Date | techniques : fiche OpenAlex choisie, date du courriel de campagne |
 
-Base « Institutions » : `Nom` (titre), `Adresse` (texte), `Latitude` et `Longitude` (nombres), `Statut` (sélection ; seules les institutions « Validée » sont servies au site). Les régions de la carte sont déduites des coordonnées.
+Base « Institutions » : `Nom` (titre), `Adresse` (texte), `Latitude` et `Longitude` (nombres), `Statut` (sélection : « En attente » à la création par un membre, « Validée » une fois vérifiée ; seules les institutions validées sont servies au site). Les coordonnées sont remplies automatiquement à partir de l'adresse (Nominatim) et peuvent être corrigées à la main. Les régions de la carte sont déduites des coordonnées.
 
 ### Variables d'environnement (Vercel)
 
@@ -164,7 +170,8 @@ L'export est aussi appelé en direct par le site à chaque visite, avec un cache
 
 - Vercel Hobby : au plus 12 fonctions serveur (toutes utilisées ici) et 2 tâches planifiées ; une fonction s'exécute au plus 60 secondes.
 - Resend gratuit : 100 courriels par jour, 3 000 par mois. Les envois automatiques sont plafonnés en conséquence.
-- Notion : environ 3 requêtes par seconde ; les scripts qui écrivent en série respectent une pause.
+- Notion : environ 3 requêtes par seconde ; les scripts qui écrivent en série respectent une pause. Notion ne fixe pas de plafond au nombre de fiches sur un espace personnel gratuit ; un espace d'équipe gratuit est limité à un essai de 1 000 blocs, chaque fiche en comptant au moins un, donc prévoir le forfait Plus au-delà de quelques centaines de membres et d'institutions. La limite pratique est le temps de lecture : Notion livre 100 fiches par requête, et l'export lit toute la base à chaque passage. Avec 740 membres et 150 institutions, l'export prend 3 à 5 secondes ; il resterait sous la limite de 60 secondes jusqu'à plusieurs milliers de fiches, mais le fichier envoyé au navigateur grossirait d'autant.
+- Nominatim : une requête par seconde au plus, et une adresse imprécise peut ne pas être trouvée ; l'institution est alors créée sans coordonnées, à compléter dans Notion.
 - Les fichiers Notion, dont les photos, ont des adresses temporaires : le site les sert par un relais qui les met en cache.
 
 ## Licence
