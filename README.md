@@ -1,10 +1,10 @@
-# Bottin des membres du Réseau de santé numérique
+# Bottin des membres du Réseau santé numérique
 
 **[bottin.rsn.quebec](https://bottin.rsn.quebec/)**
 
 > *In English:* an open member directory for a research network. Members appear as profile cards, on a map of institutions, and on a "connections" graph that links people working on similar topics. Members update their own profile through a one-click email link, with keyword suggestions drawn from ORCID and OpenAlex. Data lives in Notion, the site runs on Vercel, emails go through Resend. Everything below is in French; the technical section at the end lists what you need to run your own copy.
 
-Le bottin est le répertoire public des membres du [Réseau de santé numérique](https://rsn.quebec/) (RSN), un réseau de recherche québécois financé par le Fonds de recherche du Québec. Il sert à une chose : **trouver les bonnes personnes**. Qui travaille en santé numérique au Québec, où, sur quels sujets, et avec qui.
+Le bottin est le répertoire public des membres du [Réseau santé numérique](https://rsn.quebec/) (RSN), un réseau de recherche québécois financé par le Fonds de recherche du Québec. Il sert à une chose : **trouver les bonnes personnes**. Qui travaille en santé numérique au Québec, où, sur quels sujets, et avec qui.
 
 ![La vue Connexions : la carte des membres, puis le zoom sur une personne et ses liens](img/campagne-connexions.gif)
 
