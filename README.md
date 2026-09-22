@@ -1,8 +1,8 @@
-# Bottin des membres — RSN (Réseau de santé numérique)
+# Bottin des membres — RSN (Réseau santé numérique)
 
 **[Accéder au bottin en ligne](https://bottin.rsn.quebec/)**
 
-Carte interactive et répertoire des membres du Réseau de santé numérique (RSN). Les données sont stockées dans une base Notion et servies via une API Vercel. Les membres peuvent modifier leur profil via un magic link (vérification par email, sans mot de passe).
+Carte interactive et répertoire des membres du Réseau santé numérique (RSN). Les données sont stockées dans une base Notion et servies via une API Vercel. Les membres peuvent modifier leur profil via un magic link (vérification par email, sans mot de passe).
 
 ## Architecture
 
