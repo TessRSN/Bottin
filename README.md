@@ -58,7 +58,7 @@ Aucun serveur à entretenir, aucune base de données à administrer : le site es
 ## Comment ça marche, côté équipe
 
 1. **Une personne demande l'adhésion** sur le site. Sa fiche apparaît dans Notion avec le statut « Nouveau » ; l'équipe l'approuve ou la refuse, et un courriel d'acceptation part automatiquement.
-2. **Un membre met son profil à jour** avec le lien reçu par courriel. Sa fiche passe en « Modifié » ; l'équipe approuve, et le bottin se rafraîchit.
+2. **Un membre met son profil à jour** avec le lien reçu par courriel. Comme la personne est la seule à pouvoir modifier sa fiche, les changements sont publiés immédiatement, sans revue ; la date de modification est notée dans Notion.
 3. **Une institution proposée** par un membre arrive dans le catalogue avec le statut « En attente », déjà géolocalisée ; l'équipe vérifie le nom et l'adresse, complète au besoin, puis la passe en « Validée » pour qu'elle apparaisse sur la carte et dans les suggestions.
 4. **L'adhésion dure deux ans.** Des rappels partent 60 puis 30 jours avant l'échéance, avec un lien de renouvellement en un clic ; sans réponse, la fiche est archivée.
 5. **Une campagne** peut inviter les membres au profil incomplet à le compléter, à raison d'un lot par jour, chaque envoi étant noté dans Notion pour ne jamais écrire deux fois à la même personne.
@@ -119,11 +119,11 @@ Les noms des propriétés doivent correspondre exactement à ceux du fichier `li
 | Photo | Fichiers | photo de profil, téléversée par le formulaire |
 | Consentement | Sélection | Oui, Non, ou vide |
 | Afficher courriel | Case à cocher | courriel visible sur la fiche |
-| Statut workflow | Sélection | Nouveau, Approuvé, Modifié, Refusé |
+| Statut workflow | Sélection | Nouveau, Approuvé, Refusé ; seules les fiches approuvées sont publiées |
 | Date de début d'adhésion, Date de renouvellement | Date | cycle de deux ans |
 | Email d'acceptation envoyé, Email renouv. 60j envoyé, Email renouv. 30j envoyé, Email archivage envoyé | Cases à cocher | courriels déjà partis, pour ne jamais les renvoyer |
 | Réseau, Étudiants, Référé par, Droit de vote, Évaluateur | Divers | champs propres au RSN, facultatifs |
-| OpenAlex ID, Courriel campagne profil | Texte, Date | techniques : fiche OpenAlex choisie, date du courriel de campagne |
+| OpenAlex ID, Courriel campagne profil, Profil modifié le | Texte, Date, Date | techniques : fiche OpenAlex choisie, date du courriel de campagne, dernière modification par le membre |
 
 Base « Institutions » : `Nom` (titre), `Adresse` (texte), `Latitude` et `Longitude` (nombres), `Statut` (sélection : « En attente » à la création par un membre, « Validée » une fois vérifiée ; seules les institutions validées sont servies au site). Les coordonnées sont remplies automatiquement à partir de l'adresse (Nominatim) et peuvent être corrigées à la main. Les régions de la carte sont déduites des coordonnées.
 

@@ -40,6 +40,7 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 ## Édition profil
 
 - ~~Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html`~~ — fait le 2026-09-14 (branche `connexions`).
+- **Publication directe, 2026-09-25** : une modification par le membre ne passe plus la fiche en « Modifié » (ce statut retirait la fiche du bottin jusqu'à réapprobation) ; le statut workflow n'est plus touché par `updateProfile`, la date est notée dans la propriété Notion « Profil modifié le » (date, créée le 2026-09-25). L'option « Modifié » du select « Statut workflow » peut être supprimée dans Notion (colonne vide au moment du changement : 741 Approuvé, 3 Nouveau, 1 On Hold). Messages de confirmation de `edit.html` et README mis à jour.
 
 ## Institutions
 
