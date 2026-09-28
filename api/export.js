@@ -49,11 +49,17 @@ function fullName(m) {
 async function runRetentionCron(allMembers, availableBudget) {
   const enabled = process.env.RETENTION_EMAILS_ENABLED === 'true';
   // Phase 2k (2026-05-16) : si un budget partagé est fourni par l'appelant
-  // (cron principal), on l'utilise comme plafond. Sinon (appel autonome ou
-  // test), on retombe sur RETENTION_EMAILS_DAILY_LIMIT (défaut 30).
+  // (cron principal), il borne le plafond. Sinon (appel autonome ou test),
+  // on retombe sur RETENTION_EMAILS_DAILY_LIMIT (défaut 30).
+  // 2026-09-28 : le budget partagé ne remplace plus RETENTION_EMAILS_DAILY_LIMIT,
+  // il le borne. Du 25 au 27 septembre, la vague des rappels 60 j avait pris
+  // tout le budget (~95/jour) au lieu de 30, et les envois en temps réel de la
+  // journée (confirmations de renouvellement, liens magiques) dépassaient les
+  // 100/jour de Resend.
+  const ownLimit = parseInt(process.env.RETENTION_EMAILS_DAILY_LIMIT || '30', 10);
   const dailyLimit = (typeof availableBudget === 'number' && availableBudget >= 0)
-    ? availableBudget
-    : parseInt(process.env.RETENTION_EMAILS_DAILY_LIMIT || '30', 10);
+    ? Math.min(availableBudget, ownLimit)
+    : ownLimit;
   const testRecipientsEnv = (process.env.RETENTION_EMAILS_TEST_RECIPIENTS || '').trim();
   const testRecipients = testRecipientsEnv ? testRecipientsEnv.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
   const adminRecipients = (process.env.ADMIN_NOTIFICATION_RECIPIENTS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -445,7 +451,10 @@ module.exports = async function handler(req, res) {
     // batch + nombreuses échéances le même jour, le cron envoie en priorité
     // les acceptances (les plus attendues côté UX), puis la rétention avec
     // le budget restant. Le reste est reporté au cron du lendemain.
-    const dailyBudget = parseInt(process.env.EMAIL_DAILY_BUDGET || '95', 10);
+    // 2026-09-28 : défaut abaissé de 95 à 70 (30 rétention + 40 campagne) pour
+    // garder ~30 envois par jour aux courriels en temps réel (liens magiques,
+    // confirmations de renouvellement) sous la limite Resend de 100/jour.
+    const dailyBudget = parseInt(process.env.EMAIL_DAILY_BUDGET || '70', 10);
     let remainingBudget = dailyBudget;
     let emailsSent = 0;
     let emailsFailed = 0;

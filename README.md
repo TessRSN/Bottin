@@ -141,7 +141,7 @@ Base « Institutions » : `Nom` (titre), `Adresse` (texte), `Latitude` et `Longi
 | `BACKUP_SECRET` | oui | clé des pages et actions d'administration (sauvegardes, campagne, catalogue complet) |
 | `CRON_SECRET` | oui | protège la sauvegarde hebdomadaire contre un appel direct |
 | `ADMIN_NOTIFICATION_RECIPIENTS` | non | courriels de l'équipe pour le récapitulatif des échéances |
-| `EMAIL_DAILY_BUDGET` | non | plafond de courriels automatiques par passage du matin (défaut 95, sous les 100/jour de Resend) |
+| `EMAIL_DAILY_BUDGET` | non | plafond de courriels automatiques par passage du matin (défaut 70 : 30 rappels + 40 campagne, pour garder une marge aux liens magiques et confirmations sous les 100/jour de Resend) |
 | `RETENTION_EMAILS_ENABLED`, `RETENTION_EMAILS_DAILY_LIMIT`, `RETENTION_EMAILS_TEST_RECIPIENTS` | non | rappels de renouvellement : activation (`true`), plafond (défaut 30), liste de test |
 | `CAMPAIGN_DAILY_LIMIT`, `CAMPAIGN_PAUSED` | non | campagne « complétez votre profil » : plafond (défaut 40), pause (`true`) |
 | `EMAIL_TEST_MODE`, `EMAIL_TEST_RECIPIENT` | non | sur un environnement de test, redirige tous les courriels vers une seule adresse |
