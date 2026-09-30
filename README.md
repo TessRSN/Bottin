@@ -57,7 +57,7 @@ Aucun serveur à entretenir, aucune base de données à administrer : le site es
 
 ## Comment ça marche, côté équipe
 
-1. **Une personne demande l'adhésion** sur le site. Sa fiche apparaît dans Notion avec le statut « Nouveau » ; l'équipe l'approuve ou la refuse, et un courriel d'acceptation part automatiquement.
+1. **Une personne demande l'adhésion** sur le site. Sa fiche apparaît dans Notion avec le statut « Nouveau » ; l'équipe l'approuve ou la refuse, et un courriel d'acceptation part automatiquement le lendemain matin.
 2. **Un membre met son profil à jour** avec le lien reçu par courriel. Comme la personne est la seule à pouvoir modifier sa fiche, les changements sont publiés immédiatement, sans revue ; la date de modification est notée dans Notion.
 3. **Une institution proposée** par un membre arrive dans le catalogue avec le statut « En attente », déjà géolocalisée ; l'équipe vérifie le nom et l'adresse, complète au besoin, puis la passe en « Validée » pour qu'elle apparaisse sur la carte et dans les suggestions.
 4. **L'adhésion dure deux ans.** Des rappels partent 60 puis 30 jours avant l'échéance, avec un lien de renouvellement en un clic ; sans réponse, la fiche est archivée.
@@ -153,7 +153,7 @@ Un changement de variable ne prend effet qu'au déploiement suivant.
 
 `vercel.json` déclare les deux tâches autorisées par le forfait Hobby :
 
-- `/api/export` chaque jour à 11 h 30 UTC (7 h 30 au Québec) : régénère l'export, envoie les courriels d'acceptation, les rappels de renouvellement, l'archivage des adhésions échues et le lot du jour de la campagne.
+- `/api/export` chaque jour à 11 h 30 UTC (7 h 30 au Québec) : régénère l'export, envoie les courriels d'acceptation, les rappels de renouvellement, l'archivage des adhésions échues et le lot du jour de la campagne. Tous les courriels automatiques partent de ce seul passage ; une visite du site ne déclenche jamais d'envoi.
 - `/api/backup-auto` chaque dimanche à 3 h UTC : sauvegarde complète de la base.
 
 L'export est aussi appelé en direct par le site à chaque visite, avec un cache par empreinte : les visiteurs voient toujours des données à jour.

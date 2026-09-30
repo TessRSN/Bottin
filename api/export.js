@@ -441,65 +441,72 @@ module.exports = async function handler(req, res) {
       return res.status(304).end();
     }
 
-    // Send acceptance emails to newly-approved members (idempotent via checkbox)
-    // Triggered when admin moves a card to "Approuvé" in the Notion Kanban.
-    // Failures don't block the CSV response — they'll be retried tomorrow.
+    // ─── Courriels automatiques : uniquement quand Vercel appelle cet endpoint
+    // par le cron (7 h 30, heure du Québec), jamais sur un chargement de page.
     //
-    // Phase 2k (2026-05-16) : budget global EMAIL_DAILY_BUDGET (défaut 95)
-    // partagé entre acceptance + rétention. Sous la limite Resend free 100/j,
-    // avec ~5 marge pour les magic links temps réel. Si Tess approuve un gros
-    // batch + nombreuses échéances le même jour, le cron envoie en priorité
-    // les acceptances (les plus attendues côté UX), puis la rétention avec
-    // le budget restant. Le reste est reporté au cron du lendemain.
-    // 2026-09-28 : défaut abaissé de 95 à 70 (30 rétention + 40 campagne) pour
-    // garder ~30 envois par jour aux courriels en temps réel (liens magiques,
-    // confirmations de renouvellement) sous la limite Resend de 100/jour.
+    // 2026-09-30 : les acceptations et les rappels de renouvellement tournaient
+    // à chaque export servi (chaque visite sans cache à jour), avec un budget
+    // neuf à chaque passage. Du 25 au 28 septembre, avec 418 rappels 60 j en
+    // attente et l'affluence de la campagne, la routine est repartie à chaque
+    // chargement : ~100 rappels par jour acceptés par Resend, le reste refusé
+    // puis renvoyé au passage suivant, les courriels en temps réel refusés
+    // toute la journée, et les visiteurs qui attendaient la fin des envois
+    // avant de recevoir l'export. Désormais un seul passage par jour, comme la
+    // campagne. Conséquence : un courriel d'acceptation part le lendemain
+    // matin de l'approbation dans Notion.
+    //
+    // Budget global EMAIL_DAILY_BUDGET (défaut 70 depuis le 2026-09-28 :
+    // 30 rétention + 40 campagne, ~30 gardés pour les liens magiques et les
+    // confirmations de renouvellement sous la limite Resend de 100/jour),
+    // consommé dans l'ordre : acceptations, rétention, campagne. Le reste est
+    // reporté au cron du lendemain (idempotent : cases et dates dans Notion).
+    const isCron = /^vercel-cron/i.test(String(req.headers['user-agent'] || ''));
     const dailyBudget = parseInt(process.env.EMAIL_DAILY_BUDGET || '70', 10);
     let remainingBudget = dailyBudget;
-    let emailsSent = 0;
-    let emailsFailed = 0;
-    let emailsSkippedBudget = 0;
-    for (const m of members) {
-      if (m.workflow !== 'Approuvé') continue;
-      if (m.emailAccepteEnvoye) continue;
-      if (!m.email || !m.prenom) continue;
-      if (remainingBudget <= 0) {
-        emailsSkippedBudget++;
-        continue;
-      }
-      try {
-        // Phase 2h (2026-05-04): on passe le type d'adhesion pour personnaliser
-        // le bandeau "Vous etes actuellement inscrit·e comme..." en haut du courriel.
-        await sendAcceptanceEmail(m.email, m.prenom, m.type);
-        await markAcceptanceEmailSent(m.id);
-        emailsSent++;
-        remainingBudget--;
-        console.log(`[export] Acceptance email sent to ${m.email}`);
-      } catch (err) {
-        emailsFailed++;
-        console.error(`[export] Failed to send acceptance email to ${m.email}:`, err.message);
-      }
-    }
-    if (emailsSent > 0 || emailsFailed > 0 || emailsSkippedBudget > 0) {
-      console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed, ${emailsSkippedBudget} reportés. Budget restant: ${remainingBudget}/${dailyBudget}`);
-    }
-
-    // Run the membership retention cron (Phase 3, Loi 25).
-    // Phase 2k (2026-05-16) : on lui passe le budget restant pour qu'elle
-    // s'arrête au lieu de pousser jusqu'à RETENTION_EMAILS_DAILY_LIMIT.
     let retentionStats = null;
-    try {
-      retentionStats = await runRetentionCron(members, remainingBudget);
-    } catch (retErr) {
-      console.error('[retention] Top-level error:', retErr.message, retErr.stack);
+
+    if (isCron) {
+      // Acceptations des fiches passées en « Approuvé » (idempotent via la case).
+      let emailsSent = 0;
+      let emailsFailed = 0;
+      let emailsSkippedBudget = 0;
+      for (const m of members) {
+        if (m.workflow !== 'Approuvé') continue;
+        if (m.emailAccepteEnvoye) continue;
+        if (!m.email || !m.prenom) continue;
+        if (remainingBudget <= 0) {
+          emailsSkippedBudget++;
+          continue;
+        }
+        try {
+          // Phase 2h (2026-05-04): on passe le type d'adhesion pour personnaliser
+          // le bandeau "Vous etes actuellement inscrit·e comme..." en haut du courriel.
+          await sendAcceptanceEmail(m.email, m.prenom, m.type);
+          await markAcceptanceEmailSent(m.id);
+          emailsSent++;
+          remainingBudget--;
+          console.log(`[export] Acceptance email sent to ${m.email}`);
+        } catch (err) {
+          emailsFailed++;
+          console.error(`[export] Failed to send acceptance email to ${m.email}:`, err.message);
+        }
+      }
+      if (emailsSent > 0 || emailsFailed > 0 || emailsSkippedBudget > 0) {
+        console.log(`[export] Acceptance emails: ${emailsSent} sent, ${emailsFailed} failed, ${emailsSkippedBudget} reportés. Budget restant: ${remainingBudget}/${dailyBudget}`);
+      }
+
+      // Rappels de renouvellement et archivage (Phase 3, Loi 25). Le budget
+      // restant borne RETENTION_EMAILS_DAILY_LIMIT (30 par défaut).
+      try {
+        retentionStats = await runRetentionCron(members, remainingBudget);
+      } catch (retErr) {
+        console.error('[retention] Top-level error:', retErr.message, retErr.stack);
+      }
     }
 
-    // Campagne « complétez votre profil » (2026-09-15) : uniquement quand
-    // Vercel appelle cet endpoint par le cron (7 h 30, heure du Québec), jamais
-    // sur un chargement de page — les visiteurs n'attendent pas les envois.
+    // Campagne « complétez votre profil » (2026-09-15).
     // Plafond 40/jour (CAMPAIGN_DAILY_LIMIT), dans le budget courriel restant ;
     // CAMPAIGN_PAUSED=true suspend. Idempotent par jour (dates dans Notion).
-    const isCron = /^vercel-cron/i.test(String(req.headers['user-agent'] || ''));
     if (isCron && process.env.CAMPAIGN_PAUSED !== 'true') {
       try {
         const rs = retentionStats || {};
