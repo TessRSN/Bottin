@@ -1077,7 +1077,11 @@ const STATUT_GROUP_MAP = {
     // Phase 3c (2026-09-14) : nouveau libelle epicene ; l'ancien reste tolere
     // jusqu'a la migration des fiches (cf. BACKLOG).
     'Personne en coordination ou gestion de la recherche': 'Direction ou coordination',
+    // 2026-10-28 : statut scindé en deux ; l'ancien libellé reste toléré
+    // si une fiche le porte encore (aucune après la migration du même jour).
     'Personne en milieu industriel ou gouvernemental': 'Partenaire ou autre',
+    'Personne en entreprise ou en milieu industriel': 'Partenaire ou autre',
+    'Personne en milieu gouvernemental ou public': 'Partenaire ou autre',
     'Personne partenaire citoyenne': 'Partenaire ou autre',
     'Autre': 'Partenaire ou autre',
 };
@@ -1299,6 +1303,8 @@ const STATUT_FR_TO_EN = {
     "Coordination ou gestion d'équipe": 'Team coordination or management',
     'Personne en coordination ou gestion de la recherche': 'Research coordinator or manager', // meme libelle EN que le formulaire
     'Personne en milieu industriel ou gouvernemental': 'Industry or government professional',
+    'Personne en entreprise ou en milieu industriel': 'Industry or private-sector professional',
+    'Personne en milieu gouvernemental ou public': 'Government or public-sector professional',
     'Personne partenaire citoyenne': 'Citizen partner',
     'Autre': 'Other',
 };

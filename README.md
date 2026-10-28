@@ -110,7 +110,7 @@ Les noms des propriétés doivent correspondre exactement à ceux du fichier `li
 | Email, Email secondaire | Courriel | le premier sert aux liens de modification |
 | Institution | Texte | affiliations, séparées par `;` |
 | Institution liée | Relation | vers la base Institutions, prioritaire pour la carte |
-| Statut | Sélection | 14 statuts, du 1er cycle à la coordination de recherche |
+| Statut | Sélection | 15 statuts, du 1er cycle à la coordination de recherche, dont « entreprise ou milieu industriel » et « milieu gouvernemental ou public » |
 | Type d'adhésion | Sélection | Régulier, Étudiant, Partenaire |
 | Thèmes de recherche ou d'intérêt | Texte | mots-clés séparés par des virgules ; base des connexions |
 | Présentation | Texte | quelques phrases ; base des connexions |

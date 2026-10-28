@@ -41,6 +41,7 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 ## Édition profil
 
 - ~~Ajouter dans `edit.html` un bloc consentement équivalent à celui de `join.html`~~ — fait le 2026-09-14 (branche `connexions`).
+- **Statut scindé, 2026-10-28** : « Personne en milieu industriel ou gouvernemental » remplacé par « Personne en entreprise ou en milieu industriel » et « Personne en milieu gouvernemental ou public » (formulaires, filtres, traduction, rapport d'adhésion). Règle décidée par Tess : les OBNL et consortiums liés à l'industrie (Axelys, MEDTEQ+, Numana) vont dans « entreprise ou milieu industriel ». Migration des 10 fiches de l'ancien statut d'après l'institution (3 entreprise, 7 public, dont Netiv Institute et REED par décision de Tess) ; les partenaires sans statut d'Axelys, MEDTEQ+ et Numana reçoivent « entreprise ou milieu industriel ». Ancien libellé toléré dans le bottin, retiré des options Notion après migration. Sauvegarde hors dépôt dans Downloads.
 - **Publication directe, 2026-09-25** : une modification par le membre ne passe plus la fiche en « Modifié » (ce statut retirait la fiche du bottin jusqu'à réapprobation) ; le statut workflow n'est plus touché par `updateProfile`, la date est notée dans la propriété Notion « Profil modifié le » (date, créée le 2026-09-25). L'option « Modifié » du select « Statut workflow » peut être supprimée dans Notion (colonne vide au moment du changement : 741 Approuvé, 3 Nouveau, 1 On Hold). Messages de confirmation de `edit.html` et README mis à jour.
 
 ## Institutions

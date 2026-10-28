@@ -70,7 +70,11 @@ const STATUT_OPTIONS = [
   'Personnel de recherche',
   'Personnel de la santé',
   'Personne en coordination ou gestion de la recherche', // libelle 2026-09-14 (ex-« Coordination ou gestion d'équipe », 34 fiches migrees le 2026-09-15)
-  'Personne en milieu industriel ou gouvernemental',
+  // 2026-10-28 : ex-« Personne en milieu industriel ou gouvernemental » (10 fiches),
+  // scindé en deux et migré le même jour (OBNL et consortiums liés à l'industrie,
+  // comme Axelys ou MEDTEQ+, vont dans « entreprise ou milieu industriel »).
+  'Personne en entreprise ou en milieu industriel',
+  'Personne en milieu gouvernemental ou public',
   'Personne partenaire citoyenne',
   'Autre',
 ];
@@ -250,7 +254,7 @@ const STATUT_FIXES = {
   'Professionnel de recherche': 'Personnel de recherche',
   'Stagiaire postdoctoral': 'Personne en stage postdoctoral',
   'Direction ou gestion': 'Personne en coordination ou gestion de la recherche',
-  "Membre de l'industrie": 'Personne en milieu industriel ou gouvernemental',
+  "Membre de l'industrie": 'Personne en entreprise ou en milieu industriel',
   'Professionnel de la santé': 'Personnel de la santé',
 
   // ─── Anciennes valeurs "epicene avec X ou Y" → nouvelle forme neutre
