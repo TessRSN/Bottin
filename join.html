@@ -101,6 +101,10 @@
   .btn-add-inst:hover { background:rgba(43,108,176,.05); border-color:var(--primary); }
   /* Sub-group labels for the merged "thématiques" question */
   .subgroup-label { font-size:.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.4rem; padding-bottom:.2rem; border-bottom:1px solid var(--border); }
+  /* Inscriptions suspendues (REGISTRATION_PAUSED) */
+  .pause-notice { margin-bottom:1.25rem; padding:1rem 1.25rem; background:#fef3c7; border-left:4px solid #d97706; color:#78350f; font-size:.9rem; line-height:1.5; border-radius:var(--radius); }
+  [data-theme="dark"] .pause-notice { background:#451a03; color:#fef3c7; }
+  .pause-notice a { color:inherit; font-weight:600; text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -119,6 +123,10 @@
 
   <div class="intro" id="intro">
     Le Réseau de santé numérique est financé par le Fonds de recherche du Québec (secteur Santé). Notre mission est de développer et de bâtir les fondations de la science de la santé numérique au Québec. Nous accueillons chaleureusement les nouveaux membres réguliers, les personnes aux études et les partenaires qui souhaitent contribuer à l'avancement de la santé numérique au Québec.
+  </div>
+
+  <div class="pause-notice" id="pauseNotice" role="status" style="display:none">
+    <span id="pause_text"></span> <a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a>.
   </div>
 
   <div class="step-indicator">
@@ -370,8 +378,14 @@ var AXES_OPTIONS = [
 var PRINCIPES_OPTIONS = ['Science ouverte','Numérique de confiance','Santé durable','Engagement citoyen','Équité diversité inclusion et accessibilité'];
 var CHAMPS_OPTIONS = ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'];
 
+// 2026-11-02 : inscriptions suspendues. L'espace Notion du plan gratuit est
+// plafonne a 1 000 blocs des qu'il compte deux membres, et le plafond est
+// atteint : la creation de fiche echoue. Remettre a false une fois le plan
+// Plus active (ou l'espace revenu a un seul membre).
+var REGISTRATION_PAUSED = true;
+
 // ─── I18N ───
-var lang = (function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
+var lang =(function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();
 
 var I18N = {
   fr: {
@@ -497,6 +511,7 @@ var I18N = {
     err_submit: "Erreur lors de l'envoi. Veuillez réessayer.",
     err_duplicate: 'Un compte avec ce courriel existe déjà. Utilisez plutôt la page de mise à jour de profil.',
     err_ratelimit: 'Trop de tentatives. Veuillez réessayer dans une heure.',
+    pause_text: "Les inscriptions sont temporairement suspendues en raison d'un problème technique. Nous travaillons à les rouvrir sous peu. Pour toute question, écrivez-nous à",
   },
   en: {
     title: 'Join the RSN',
@@ -621,6 +636,7 @@ var I18N = {
     err_submit: 'Error submitting. Please try again.',
     err_duplicate: 'An account with this email already exists. Please use the profile update page instead.',
     err_ratelimit: 'Too many attempts. Please try again in an hour.',
+    pause_text: 'Registration is temporarily paused due to a technical issue. We are working to reopen it shortly. For any questions, contact us at',
   }
 };
 
@@ -642,7 +658,7 @@ function setWithRequired(id, text, required) {
 function applyI18n() {
   // Simple text elements
   var textKeys = ['title','subtitle','langBtn','success_title','success_msg','success_btn',
-    'nl_title','nl_text','nl_btn','nl_done','nl_footer'];
+    'nl_title','nl_text','nl_btn','nl_done','nl_footer','pause_text'];
   textKeys.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = t(id); });
   var nlEmail = document.getElementById('nl_email');
   if (nlEmail) nlEmail.placeholder = t('nl_email_placeholder');
@@ -978,6 +994,7 @@ function validatePage(page) {
 
 // ─── SUBMIT ───
 function submit() {
+  if (REGISTRATION_PAUSED) return;
   if (!validatePage(3)) return;
 
   var btn = document.getElementById('submitBtn');
@@ -1233,6 +1250,13 @@ function init() {
   addInstitutionRow(); // Start with one institution row
   applyI18n();
   updateThemeIcons();
+  // Inscriptions suspendues : bandeau a la place du formulaire, pour que
+  // personne ne le remplisse pour rien.
+  if (REGISTRATION_PAUSED) {
+    document.getElementById('pauseNotice').style.display = 'block';
+    document.querySelector('.step-indicator').style.display = 'none';
+    document.getElementById('page1').style.display = 'none';
+  }
 }
 
 init();
