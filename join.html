@@ -378,11 +378,10 @@ var AXES_OPTIONS = [
 var PRINCIPES_OPTIONS = ['Science ouverte','Numérique de confiance','Santé durable','Engagement citoyen','Équité diversité inclusion et accessibilité'];
 var CHAMPS_OPTIONS = ['Formation interdisciplinaire','Mobilisation des connaissances','Renforcement des capacités'];
 
-// 2026-11-02 : inscriptions suspendues. L'espace Notion du plan gratuit est
-// plafonne a 1 000 blocs des qu'il compte deux membres, et le plafond est
-// atteint : la creation de fiche echoue. Remettre a false une fois le plan
-// Plus active (ou l'espace revenu a un seul membre).
-var REGISTRATION_PAUSED = true;
+// Mettre a true pour suspendre les inscriptions : un bandeau remplace le
+// formulaire. Utilise du 2026-11-02 au 2026-11-03, quand l'espace Notion du
+// plan gratuit avait atteint sa limite de 1 000 blocs (plan Plus depuis).
+var REGISTRATION_PAUSED = false;
 
 // ─── I18N ───
 var lang =(function(){ try { return localStorage.getItem('rsn-lang') || 'fr'; } catch(e){ return 'fr'; } })();

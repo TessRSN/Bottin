@@ -51,7 +51,7 @@ Liste des chantiers à venir, ordre indicatif. À éditer librement.
 
 ## Plan Notion
 
-- **Inscriptions suspendues le 2026-11-02** : le plan gratuit plafonne l'espace à 1 000 blocs dès qu'il compte deux membres (un·e invité·e en « Full access » devient membre) ; plafond atteint, `createMember` échouait depuis le 31 octobre. Bandeau dans `join.html` (`REGISTRATION_PAUSED = true`) en attendant le plan Plus (demande de paiement envoyée). Les renouvellements et modifications de fiches continuent de fonctionner. À la réactivation : remettre `REGISTRATION_PAUSED` à false.
+- **Inscriptions suspendues le 2026-11-02** : le plan gratuit plafonne l'espace à 1 000 blocs dès qu'il compte deux membres (un·e invité·e en « Full access » devient membre) ; plafond atteint, `createMember` échouait depuis le 31 octobre. Bandeau dans `join.html` (`REGISTRATION_PAUSED = true`) en attendant le plan Plus ; les renouvellements et modifications de fiches continuaient de fonctionner. **Rouvertes le 2026-11-03** : plan Plus payé par le RSN (accord de Sara), création de fiche vérifiée, `REGISTRATION_PAUSED` remis à false (le mécanisme reste disponible). Données Notion hébergées aux États-Unis (AWS Oregon, secours Ohio) : piste à terme d'un hébergement au Québec pour la cartographie et le bottin réunis.
 
 ## Sécurité
 
