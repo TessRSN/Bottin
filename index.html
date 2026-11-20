@@ -633,22 +633,60 @@
         [data-theme="dark"] .modal-actions button.primary { background: var(--rsn-accent); border-color: var(--rsn-accent); color: #0f1724; }
         .modal-actions svg { width: 15px; height: 15px; }
 
+        /* ─── Retours du 2026-11-20 : croix d'effacement de la recherche, barre de filtres sur une ligne ─── */
+        .header .search-input { padding-right: 2.7rem; }
+        .search-clear { position: absolute; right: 4px; top: 4px; width: 36px; height: 36px; border: 0; border-radius: 6px; background: none; color: #fff; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+        .search-clear:hover { background: rgba(255,255,255,0.18); }
+        /* Le nom du filtre est ecrit dans le bouton (« Région : Toutes ») ; l'etiquette
+           au-dessus reste dans la page pour les lecteurs d'ecran mais n'est plus affichee. */
+        .controls { align-items: center; padding: 0.5rem 2rem; }
+        .filters-row { align-items: center; }
+        .filter-group { flex: 0 1 auto; min-width: 0; }
+        .filter-group > label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+        .ms-btn { min-width: 0; gap: 0.45rem; justify-content: flex-start; }
+        .ms-btn::before { content: attr(data-name); color: var(--muted-strong); font-size: 0.82rem; white-space: nowrap; }
+        .ms-btn .ms-label { font-weight: 600; }
+        .ms-btn .ms-arrow { margin-left: 0.2rem; }
+        .results-count { line-height: 1.3; }
+        /* Outils de la vue du haut : selecteur Carte | Connexions et bouton « Recentrer » */
+        .hero-tools { position: absolute; top: 20px; left: 20px; z-index: 6; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+        .view-switch { position: static; }
+        .view-reset { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0 0.9rem; border-radius: 10px; color: var(--ink); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .view-reset svg { width: 16px; height: 16px; }
+        #connexionsIntro { padding-left: 430px !important; }
+        /* Bandeau « Portrait du réseau » plus compact : texte et marges reduits */
+        .stats-head { min-height: 44px; padding: 0.3rem 2rem; }
+        .stats-head .t { font-size: 0.9rem; }
+        .stats-head .s, .stats-head .tog { font-size: 0.8rem; }
+        .stats-body { padding: 0 2rem 0.4rem; }
+        .stats-row { padding: 0.1rem 0; gap: 0.2rem 1.5rem; }
+        .stats-row.types { padding: 0.55rem 0; }
+        .stats-label { flex-basis: 185px; gap: 0; }
+        .stats-label h3 { font-size: 0.8rem; }
+        .stats-label span { font-size: 0.72rem; }
+        .types-bar { height: 9px; }
+        .types-legend { margin-top: 5px; font-size: 0.78rem; }
+        .stat-tokens { gap: 0 14px; }
+        .stat-token { gap: 6px; padding: 6px 14px 6px 0; }
+        .stat-token strong { font-size: 1rem; }
+        .stat-token span { font-size: 0.8rem; }
+
         @media (max-width: 900px) {
             .header { padding: 0.8rem 1rem; }
             .header-cta-row { margin-left: 0; }
-            .controls { padding: 0.55rem 1rem 0.7rem; }
+            .controls { padding: 0.5rem 1rem; }
             .filters-row { flex-direction: row; flex-wrap: wrap; }
-            .filter-group { flex: 1 1 150px; min-width: 140px; }
+            .filter-group { flex: 1 1 auto; min-width: 0; }
             .results-count { margin-left: 0; }
-            .stats-head { padding: 0.5rem 1rem; }
-            .stats-body { padding: 0 1rem 0.8rem; }
+            .stats-head { padding: 0.3rem 1rem; }
+            .stats-body { padding: 0 1rem 0.5rem; }
             .stats-label { flex-basis: 100%; }
             .content { padding: 1.2rem 1rem 2rem; }
             #mapView { height: 420px; }
             .map-panel { position: static; width: auto; border-radius: 0; box-shadow: none; border-width: 1px 0; }
             .hero-bottom { position: static; padding: 0.6rem 1rem; }
             .teaser { width: 100%; margin-left: 0; }
-            #connexionsIntro { padding: 76px 1rem 0.65rem !important; }
+            #connexionsIntro { padding: 140px 1rem 0.65rem !important; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -667,6 +705,7 @@
     <div class="header-search" id="searchBox">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, présentation...">
+        <button type="button" class="search-clear hidden" id="searchClear" data-i18n-title="search_clear" aria-label="Effacer la recherche">×</button>
     </div>
     <div class="header-cta-row">
         <button class="header-cta cta-join" onclick="window.location.href='/join.html'">
@@ -708,9 +747,13 @@
 
 <!-- Vue du haut : la carte ou le graphe des connexions, au choix -->
 <div class="hero" id="hero">
+    <div class="hero-tools">
     <div class="view-switch glass" role="group" data-i18n-title="view_switch_label" aria-label="Choisir la vue">
         <button type="button" data-view="map" class="active" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg><span data-i18n="view_map">Carte</span></button>
         <button type="button" data-view="connexions" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7.8l4 8.4M17 7.8l-4 8.4M8 6h8"/></svg><span data-i18n="view_connexions">Connexions</span></button>
+    </div>
+    <!-- Retour a la vue d'ensemble de la carte ou du graphe -->
+    <button type="button" class="view-reset glass" id="heroReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span data-i18n="hero_reset">Recentrer</span></button>
     </div>
     <div id="mapContainer">
         <div id="mapView"></div>
@@ -860,7 +903,7 @@ const UPDATE_SHORT_URL = 'https://bottin.rsn.quebec/magic-link.html';
 const I18N = {
     fr: {
         // Refonte 2026-11
-        view_switch_label: 'Choisir la vue', teaser_link: 'Voir les connexions',
+        view_switch_label: 'Choisir la vue', teaser_link: 'Voir les connexions', search_clear: 'Effacer la recherche', hero_reset: 'Recentrer',
         members_lc: 'membres', insts_lc: 'établissements',
         stats_title: 'Portrait du réseau', stats_show: 'Déplier', stats_hide: 'Replier',
         stats_types: "Types d'adhésion", stats_types_sub: 'Tous les membres',
@@ -964,7 +1007,7 @@ const I18N = {
     },
     en: {
         // Refonte 2026-11
-        view_switch_label: 'Choose the view', teaser_link: 'See the connections',
+        view_switch_label: 'Choose the view', teaser_link: 'See the connections', search_clear: 'Clear search', hero_reset: 'Reset view',
         members_lc: 'members', insts_lc: 'institutions',
         stats_title: 'Network at a glance', stats_show: 'Expand', stats_hide: 'Collapse',
         stats_types: 'Membership types', stats_types_sub: 'All members',
@@ -3013,6 +3056,8 @@ function render() {
     renderList();
     renderStatsBand();
     renderStatChip();
+    syncFilterNames();
+    syncSearchClear();
 }
 function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -3885,7 +3930,9 @@ function renderMap() {
         // entier ; des qu'un filtre ou une recherche est actif, elle cadre tous
         // les marqueurs restants, y compris hors Quebec.
         const fitQuebec = !rawSearch && !applyFilters._filtersActive && quebecLatLngs.length > 1;
-        setTimeout(() => map.fitBounds(fitQuebec ? L.latLngBounds(quebecLatLngs).pad(0.08) : clusterGroup.getBounds().pad(0.1)), 200);
+        const home = fitQuebec ? L.latLngBounds(quebecLatLngs).pad(0.08) : clusterGroup.getBounds().pad(0.1);
+        renderMap._home = home; // vue d'ensemble, reprise par le bouton « Recentrer »
+        setTimeout(() => map.fitBounds(home), 200);
     }
 }
 
@@ -3953,6 +4000,41 @@ function statFilterLabel() {
     if (!statFilter) return '';
     return statFilter.kind === 'inst' ? shortInst(statFilter.value) : themeLabel(statFilter.value);
 }
+// Bouton « Recentrer » : retour a la vue d'ensemble de la carte (tous les
+// cercles de la selection) ou du graphe (tous les points).
+function resetHeroView() {
+    if (currentView === 'connexions') {
+        if (!_connexionsNetwork) return;
+        _connexionsNetwork.unselectAll();
+        _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
+        _connexionsNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
+    } else if (map && renderMap._home) {
+        map.closePopup();
+        map.fitBounds(renderMap._home);
+    }
+}
+(function() { const b = document.getElementById('heroReset'); if (b) b.addEventListener('click', resetHeroView); })();
+
+// Nom de chaque filtre ecrit dans son bouton (« Région : Toutes »), relu a
+// chaque rendu pour suivre la langue ; croix d'effacement de la recherche
+// visible des qu'il y a du texte.
+function syncFilterNames() {
+    const colon = currentLang === 'fr' ? ' :' : ':';
+    document.querySelectorAll('.filter-group').forEach(g => {
+        const label = g.querySelector('label'), btn = g.querySelector('.ms-btn');
+        if (label && btn) btn.dataset.name = label.textContent.trim() + colon;
+    });
+}
+function syncSearchClear() {
+    const input = document.getElementById('searchInput'), btn = document.getElementById('searchClear');
+    if (input && btn) btn.classList.toggle('hidden', !input.value);
+}
+(function() {
+    const input = document.getElementById('searchInput'), btn = document.getElementById('searchClear');
+    if (!input || !btn) return;
+    input.addEventListener('input', syncSearchClear);
+    btn.addEventListener('click', function() { input.value = ''; syncSearchClear(); applyFilters(); saveHash(); input.focus(); });
+})();
 function renderStatChip() {
     const el = document.getElementById('statChip');
     if (!el) return;
