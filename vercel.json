@@ -12,7 +12,8 @@
   "rewrites": [
     { "source": "/api/backup-manual", "destination": "/api/backups?action=manual" },
     { "source": "/api/list-backups", "destination": "/api/backups?action=list" },
-    { "source": "/api/download-backup", "destination": "/api/backups?action=download" }
+    { "source": "/api/download-backup", "destination": "/api/backups?action=download" },
+    { "source": "/membre/:slug", "destination": "/index.html" }
   ],
   "headers": [
     {

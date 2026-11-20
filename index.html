@@ -435,11 +435,249 @@
         .map-member-link:hover { color:var(--rsn-primary);text-decoration:underline }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
+    <!-- Refonte 2026-11 (branche refonte-accueil) : ces regles passent apres les
+         styles d'origine et les remplacent. Les regles d'origine devenues
+         inutiles (onglets, tableau, barre de chiffres du bandeau) sont a
+         retirer avant la fusion dans main. -->
+    <style id="refonte">
+        :root {
+            --glass-bg: rgba(255,255,255,0.62);
+            --glass-border: rgba(255,255,255,0.8);
+            --glass-shadow: 0 18px 44px rgba(18,35,63,0.18);
+            --ink: #1a365d;
+            --muted-strong: #4a5568;
+            --bar-bg: #ffffff;
+        }
+        [data-theme="dark"] {
+            --glass-bg: rgba(20,30,50,0.68);
+            --glass-border: rgba(255,255,255,0.14);
+            --glass-shadow: 0 18px 44px rgba(0,0,0,0.45);
+            --ink: #e2e8f0;
+            --muted-strong: #a0aec0;
+            --bar-bg: var(--rsn-card-bg);
+        }
+        .glass {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: blur(22px) saturate(170%);
+            backdrop-filter: blur(22px) saturate(170%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* ─── Bandeau ─── */
+        .header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.6rem; padding: 0.8rem 2rem; text-align: left; }
+        .header-top { margin: 0; gap: 0.9rem; justify-content: flex-start; }
+        .header-logo { height: 44px; }
+        .header-title h1 { font-size: 1.05rem; }
+        .header-title p { font-size: 0.78rem; opacity: 0.9; }
+        .header-search { flex: 1 1 320px; max-width: 560px; position: relative; }
+        .header-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #fff; pointer-events: none; }
+        .header .search-input { height: 44px; padding: 0 0.9rem 0 2.4rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.14); color: #fff; font-size: 0.92rem; }
+        .header .search-input::placeholder { color: #d7e3f3; }
+        .header .search-input:focus { border-color: #fff; background: rgba(255,255,255,0.2); }
+        [data-theme="dark"] .header .search-input { background: rgba(255,255,255,0.1); color: #fff; }
+        .header-cta-row { margin: 0 0 0 auto; }
+        .header-cta { height: 44px; padding: 0 1rem; }
+        .header-controls { position: static; }
+        .header-btn { height: 44px; min-width: 44px; justify-content: center; border-radius: 8px; padding: 0 0.7rem; font-size: 0.8rem; text-decoration: none; }
+
+        /* ─── Barre de filtres ─── */
+        .controls { max-width: none; margin: 0; padding: 0.55rem 2rem 0.7rem; background: var(--bar-bg); border-bottom: 1px solid var(--rsn-border); position: relative; z-index: 20; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1rem; }
+        .filters-row { background: none; box-shadow: none; padding: 0; margin: 0; flex: 1 1 auto; gap: 0.5rem 0.9rem; align-items: flex-end; }
+        .filter-group { flex: 0 1 190px; min-width: 150px; }
+        .ms-item label { margin: 0; font-size: 0.86rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--rsn-text); }
+        .ms-btn { height: 44px; border-radius: 8px; padding: 0 0.75rem; font-size: 0.86rem; }
+        .ms-panel { min-width: 300px; right: auto; margin-top: 8px; border-radius: 10px; padding: 6px; max-height: 340px; background: var(--glass-bg); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); }
+        [data-theme="dark"] .ms-panel { background: var(--glass-bg); }
+        .ms-item { border-radius: 6px; padding: 0.5rem 0.6rem; font-size: 0.86rem; align-items: center; }
+        .ms-item input[type="checkbox"] { margin-top: 0; }
+        .ms-item:hover { background: rgba(43,108,176,0.14); }
+        .results-count { margin-left: auto; white-space: nowrap; line-height: 44px; }
+        .reset-btn { height: 44px; border-radius: 8px; }
+        .stat-chip { display: inline-flex; align-items: center; gap: 0.3rem; height: 44px; padding: 0 0.3rem 0 0.8rem; border-radius: 8px; border: 1.5px solid var(--rsn-accent); background: var(--rsn-light); color: var(--ink); font-size: 0.86rem; font-weight: 600; }
+        .stat-chip button { width: 36px; height: 36px; border: 0; background: none; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; border-radius: 6px; }
+        .stat-chip button:hover { background: rgba(43,108,176,0.16); }
+
+        /* ─── Vue du haut : carte ou connexions ─── */
+        .hero { position: relative; background: var(--rsn-light); }
+        #mapContainer { position: relative; }
+        #mapView { height: clamp(460px, 62vh, 640px); border-radius: 0; box-shadow: none; }
+        .view-switch { position: absolute; top: 20px; left: 20px; z-index: 6; display: flex; gap: 4px; padding: 4px; border-radius: 10px; }
+        .view-switch button { display: inline-flex; align-items: center; gap: 0.5rem; height: 44px; padding: 0 0.9rem; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .view-switch button.active { background: #1a365d; color: #fff; }
+        [data-theme="dark"] .view-switch button.active { background: var(--rsn-accent); color: #0f1724; }
+        .view-switch svg { width: 16px; height: 16px; }
+        .map-panel { position: absolute; top: 20px; right: 20px; z-index: 5; width: min(340px, calc(100% - 40px)); box-sizing: border-box; padding: 1.2rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.9rem; color: var(--rsn-text); }
+        .map-panel .kicker { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-strong); }
+        .map-panel h2 { margin: 0.15rem 0; font-size: 1.6rem; line-height: 1.15; color: var(--ink); }
+        .map-panel .count { font-size: 0.92rem; color: var(--muted-strong); }
+        .map-panel .count strong { color: var(--ink); }
+        .panel-list { display: flex; flex-direction: column; }
+        .panel-list-title { font-size: 0.8rem; font-weight: 600; color: var(--muted-strong); padding-bottom: 0.35rem; }
+        .panel-row { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; padding: 0.5rem 0; border: 0; border-top: 1px solid rgba(26,54,93,0.14); background: none; font: inherit; font-size: 0.88rem; color: var(--rsn-text); text-align: left; cursor: pointer; }
+        [data-theme="dark"] .panel-row { border-top-color: rgba(255,255,255,0.14); }
+        .panel-row:hover span { color: var(--rsn-accent); text-decoration: underline; text-underline-offset: 3px; }
+        .panel-row strong { color: var(--ink); }
+        .panel-cta { display: flex; align-items: center; justify-content: center; height: 46px; border: 0; border-radius: 8px; background: #1a365d; color: #fff; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; }
+        [data-theme="dark"] .panel-cta { background: var(--rsn-accent); color: #0f1724; }
+        .hero-bottom { position: absolute; left: 64px; right: 20px; bottom: 30px; z-index: 5; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; pointer-events: none; }
+        .hero-bottom > * { pointer-events: auto; }
+        .map-pill { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; box-sizing: border-box; padding: 0.35rem 0.9rem; border-radius: 8px; font-size: 0.82rem; color: var(--rsn-text); }
+        .teaser { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; width: min(340px, 100%); box-sizing: border-box; padding: 0.6rem 1rem 0.6rem 0.75rem; border-radius: 12px; text-align: left; font: inherit; cursor: pointer; color: var(--ink); }
+        .teaser svg { flex: none; overflow: visible; }
+        .teaser strong { display: block; font-size: 0.9rem; line-height: 1.3; }
+        .teaser .go { display: inline-block; margin-top: 0.2rem; font-size: 0.84rem; font-weight: 600; color: var(--rsn-secondary); }
+        [data-theme="dark"] .teaser .go { color: var(--rsn-accent); }
+        @keyframes rsn-sway { 0%, 100% { transform: rotate(-6deg) translateY(1px); } 50% { transform: rotate(6deg) translateY(-2px); } }
+        @keyframes rsn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4); } }
+        .teaser .sway { transform-origin: 52px 38px; animation: rsn-sway 9s ease-in-out infinite; }
+        .teaser circle { transform-box: fill-box; transform-origin: center; animation: rsn-pulse 2.8s ease-in-out infinite; }
+        .teaser circle:nth-of-type(2) { animation-delay: 0.4s; }
+        .teaser circle:nth-of-type(3) { animation-delay: 0.8s; }
+        .teaser circle:nth-of-type(4) { animation-delay: 1.2s; }
+        .teaser circle:nth-of-type(5) { animation-delay: 1.6s; }
+        .teaser circle:nth-of-type(6) { animation-delay: 2s; }
+        .teaser circle:nth-of-type(7) { animation-delay: 2.4s; }
+        @media (prefers-reduced-motion: reduce) { .teaser .sway, .teaser circle { animation: none; } }
+        #connexionsContainer { height: clamp(520px, 72vh, 740px) !important; min-height: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+        #connexionsIntro { padding-left: 290px !important; min-height: 64px; box-sizing: border-box; }
+        /* Pendant le calcul du graphe, la zone garde la hauteur de la vue pour que la page ne saute pas. */
+        #connexionsLoading { min-height: clamp(520px, 72vh, 740px); box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .leaflet-popup-content-wrapper { background: var(--glass-bg); -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); border: 1px solid var(--glass-border); border-radius: 10px; box-shadow: var(--glass-shadow); }
+        .leaflet-popup-tip { background: var(--glass-bg); }
+        [data-theme="dark"] .leaflet-popup-content-wrapper, [data-theme="dark"] .leaflet-popup-tip { background: var(--glass-bg); }
+
+        /* ─── Bandeau « Portrait du réseau » ─── */
+        .stats-band { background: var(--bar-bg); border-bottom: 1px solid var(--rsn-border); }
+        .stats-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; width: 100%; min-height: 52px; box-sizing: border-box; padding: 0.5rem 2rem; border: 0; background: none; font: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+        .stats-head .t { font-size: 0.95rem; font-weight: 700; }
+        .stats-head .s { font-size: 0.85rem; color: var(--muted-strong); }
+        .stats-head .s strong { color: var(--ink); }
+        .stats-head .tog { margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--rsn-secondary); }
+        [data-theme="dark"] .stats-head .tog { color: var(--rsn-accent); }
+        .stats-head .chev { width: 14px; height: 14px; transition: transform 0.2s; }
+        .stats-band.closed .stats-head .chev { transform: rotate(180deg); }
+        .stats-body { padding: 0 2rem 0.8rem; }
+        .stats-band.closed .stats-body { display: none; }
+        .stats-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 2rem; padding: 0.3rem 0; border-top: 1px solid var(--rsn-border); }
+        .stats-row.types { padding: 0.9rem 0; }
+        .stats-label { flex: 0 0 210px; display: flex; flex-direction: column; gap: 2px; }
+        .stats-label h3 { margin: 0; font-size: 0.88rem; font-weight: 700; color: var(--ink); }
+        .stats-label span { font-size: 0.78rem; color: var(--muted-strong); }
+        .stats-main { flex: 1 1 420px; min-width: 0; }
+        .types-bar { display: flex; gap: 2px; height: 12px; }
+        .seg-regulier { background: #2b6cb0; border-radius: 3px 0 0 3px; }
+        .seg-etudiant { background: #dba521; }
+        .seg-partenaire { background: #2f8f5b; border-radius: 0 3px 3px 0; }
+        .types-legend { display: flex; gap: 2px; margin-top: 8px; font-size: 0.85rem; line-height: 1.35; color: var(--muted-strong); }
+        .types-legend span { min-width: 0; }
+        .types-legend strong { color: var(--ink); }
+        .stat-tokens { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 18px; }
+        .stat-token { display: inline-flex; align-items: baseline; gap: 7px; padding: 9px 18px 9px 0; border: 0; border-right: 1px solid var(--rsn-border); border-radius: 0; background: none; font: inherit; color: var(--rsn-text); cursor: pointer; }
+        .stat-token:last-child { border-right: 0; padding-right: 0; }
+        .stat-token strong { font-size: 1.25rem; font-weight: 700; color: var(--ink); }
+        .stat-token span { font-size: 0.88rem; }
+        .stat-token:hover span, .stat-token[aria-pressed="true"] span { color: var(--rsn-accent); text-decoration: underline; text-underline-offset: 3px; }
+        .stat-token[aria-pressed="true"] strong { color: var(--rsn-accent); }
+
+        /* ─── Fiches ─── */
+        .content { max-width: none; padding: 1.5rem 2rem 2.5rem; }
+        .list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 1rem; }
+        .list-head h2 { margin: 0; font-size: 1.3rem; color: var(--ink); }
+        .list-sort { display: flex; align-items: center; gap: 0.5rem; font-size: 0.86rem; color: var(--muted-strong); }
+        .list-sort select { height: 44px; padding: 0 0.75rem; border: 1px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); color: var(--rsn-text); font: inherit; font-size: 0.88rem; }
+        .cards-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.1rem; }
+        .member-card { border: 1px solid var(--rsn-border); border-radius: 10px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; box-shadow: 0 1px 2px rgba(18,35,63,0.05); }
+        .member-card:hover { transform: none; }
+        .card-top { display: flex; align-items: flex-start; gap: 0.75rem; }
+        .avatar { position: relative; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--rsn-light); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 700; }
+        .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .avatar-muted { background: var(--rsn-border); color: var(--muted-strong); }
+        .card-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .member-card .card-name { font-size: 1rem; color: var(--ink); }
+        .member-card .card-institution { margin: 0; font-size: 0.82rem; line-height: 1.4; color: var(--muted-strong); }
+        .card-tag { border-radius: 5px; padding: 0.2rem 0.55rem; font-size: 0.72rem; }
+        .tag-regulier { background: #dbeafe; color: #1e3f8a; }
+        .tag-etudiant { background: #fdecc8; color: #6b4200; }
+        .tag-partenaire { background: #d6f2e1; color: #1c5e3a; }
+        .tag-autre { background: var(--rsn-border); color: var(--muted-strong); }
+        [data-theme="dark"] .tag-regulier { background: #1e3a5f; color: #bfdbfe; }
+        [data-theme="dark"] .tag-etudiant { background: #4a3a10; color: #fde68a; }
+        [data-theme="dark"] .tag-partenaire { background: #173d2a; color: #bbf7d0; }
+        .card-statut { font-size: 0.8rem; color: var(--muted-strong); }
+        .card-themes { font-size: 0.86rem; line-height: 1.5; }
+        .member-card .card-chips-row { margin-top: 0; }
+        .member-card .card-chips-row > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+        /* Texte replie : fondu par masque, valable sur tout fond (fiche en verre comprise). */
+        .card-clamp.collapsed, .modal-projet-text.collapsed { -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+        .card-clamp.collapsed::after, .modal-projet-text.collapsed::after { display: none; }
+        .card-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 0.75rem; padding-top: 0.3rem; border-top: 1px solid var(--rsn-border); }
+        .card-action { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0; border: 0; background: none; color: var(--rsn-secondary); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+        [data-theme="dark"] .card-action { color: var(--rsn-accent); }
+        .card-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+        .card-action svg { width: 15px; height: 15px; }
+        .member-card.pending-consent { background: transparent; box-shadow: none; border-style: dashed; padding: 0.8rem 1rem; }
+        .member-card.pending-consent .card-name { color: var(--muted-strong); }
+        .consent-badge { border-radius: 5px; margin-top: 0.2rem; text-decoration: none; align-self: flex-start; }
+        .cards-divider { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; margin-top: 0.6rem; padding-top: 1rem; border-top: 1px solid var(--rsn-border); font-size: 0.95rem; color: var(--ink); }
+        .cards-divider a { color: var(--rsn-secondary); font-weight: 600; }
+        [data-theme="dark"] .cards-divider a { color: var(--rsn-accent); }
+
+        /* ─── Fiche détaillée ─── */
+        .member-overlay { background: rgba(15,30,55,0.38); }
+        .member-modal { max-width: 560px; border-radius: 14px; background: rgba(255,255,255,0.86); -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%); border: 1px solid var(--glass-border); }
+        [data-theme="dark"] .member-modal { background: rgba(22,32,52,0.88); }
+        .modal-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--rsn-border); }
+        .modal-actions button { display: inline-flex; align-items: center; gap: 0.4rem; height: 44px; padding: 0 0.9rem; border-radius: 8px; border: 1px solid var(--rsn-border); background: var(--rsn-card-bg); color: var(--ink); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+        .modal-actions button.primary { background: #1a365d; border-color: #1a365d; color: #fff; }
+        [data-theme="dark"] .modal-actions button.primary { background: var(--rsn-accent); border-color: var(--rsn-accent); color: #0f1724; }
+        .modal-actions svg { width: 15px; height: 15px; }
+
+        @media (max-width: 900px) {
+            .header { padding: 0.8rem 1rem; }
+            .header-cta-row { margin-left: 0; }
+            .controls { padding: 0.55rem 1rem 0.7rem; }
+            .filters-row { flex-direction: row; flex-wrap: wrap; }
+            .filter-group { flex: 1 1 150px; min-width: 140px; }
+            .results-count { margin-left: 0; }
+            .stats-head { padding: 0.5rem 1rem; }
+            .stats-body { padding: 0 1rem 0.8rem; }
+            .stats-label { flex-basis: 100%; }
+            .content { padding: 1.2rem 1rem 2rem; }
+            #mapView { height: 420px; }
+            .map-panel { position: static; width: auto; border-radius: 0; box-shadow: none; border-width: 1px 0; }
+            .hero-bottom { position: static; padding: 0.6rem 1rem; }
+            .teaser { width: 100%; margin-left: 0; }
+            #connexionsIntro { padding: 76px 1rem 0.65rem !important; }
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
 
+<!-- Refonte 2026-11 : bandeau mince, logo a gauche, recherche dans le bandeau -->
 <div class="header">
+    <div class="header-top">
+        <img class="header-logo" src="/logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
+        <div class="header-title">
+            <h1 data-i18n="title">Bottin des membres</h1>
+            <p>Réseau santé numérique</p>
+        </div>
+    </div>
+    <div class="header-search" id="searchBox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, présentation...">
+    </div>
+    <div class="header-cta-row">
+        <button class="header-cta cta-join" onclick="window.location.href='/join.html'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span data-i18n="cta_join">Devenir membre</span>
+        </button>
+        <button class="header-cta cta-update" onclick="window.location.href='/magic-link.html'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span data-i18n="cta_update">Mettre à jour mon profil</span>
+        </button>
+    </div>
     <div class="header-controls">
         <button class="header-btn" id="btnLang" onclick="toggleLang()" title="Switch language">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -453,86 +691,41 @@
             <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
     </div>
-    <div class="header-top">
-        <img class="header-logo" src="logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
-        <div class="header-title">
-            <h1 data-i18n="title">Bottin des membres</h1>
-            <p>Réseau santé numérique</p>
-        </div>
-    </div>
-    <div class="header-cta-row">
-        <button class="header-cta cta-join" onclick="window.location.href='/join.html'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-            <span data-i18n="cta_join">Devenir membre</span>
-        </button>
-        <button class="header-cta cta-update" onclick="window.location.href='/magic-link.html'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span data-i18n="cta_update">Mettre à jour mon profil</span>
-        </button>
-    </div>
-    <div class="stats-bar">
-        <div class="stat"><div class="stat-number" id="totalMembers">—</div><div class="stat-label" data-i18n="members">Membres</div></div>
-        <div class="stat"><div class="stat-number" id="totalInstitutions">—</div><div class="stat-label" data-i18n="institutions">Institutions</div></div>
-        <div class="stat"><div class="stat-number" id="totalRegulier">—</div><div class="stat-label" data-i18n="regular_pl">Réguliers</div></div>
-        <div class="stat"><div class="stat-number" id="totalEtudiant">—</div><div class="stat-label" data-i18n="student_pl">Étudiants</div></div>
-        <div class="stat"><div class="stat-number" id="totalPartenaire">—</div><div class="stat-label" data-i18n="partner_pl">Partenaires</div></div>
-    </div>
 </div>
 
+<!-- Barre de filtres pleine largeur ; les menus deroulants sont en verre -->
 <div class="controls" id="controlsBlock">
-    <div class="search-box" id="searchBox">
-        <div class="search-input-wrapper">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, présentation...">
-        </div>
-    </div>
     <div class="filters-row" id="filtersRow">
         <div class="filter-group"><label data-i18n="filter_type">Type d'adhésion</label><div id="filterType" class="ms-wrap"></div></div>
         <div class="filter-group"><label data-i18n="filter_region">Région</label><div id="filterRegion" class="ms-wrap"></div></div>
         <div class="filter-group"><label data-i18n="filter_status">Statut</label><div id="filterStatut" class="ms-wrap"></div></div>
         <div class="filter-group"><label data-i18n="filter_focus">Axe / Principe / Champ</label><div id="filterFocus" class="ms-wrap"></div></div>
-        <button class="reset-btn" id="resetFilters" data-i18n="reset">Réinitialiser</button>
+        <span id="statChip" class="stat-chip hidden"></span>
     </div>
-</div>
-
-<div class="toolbar">
     <div class="results-count" id="resultsBar"><strong id="filteredCount">0</strong> <span data-i18n="members_shown">membre(s) affiché(s)</span></div>
-    <div style="display:flex;gap:0.5rem;align-items:center;">
-        <div class="view-toggle">
-            <button class="view-btn active" id="btnCards"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> <span data-i18n="view_cards">Profils</span></button>
-            <button class="view-btn" id="btnTable"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> <span data-i18n="view_table">Tableau</span></button>
-            <button class="view-btn" id="btnMap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg> <span data-i18n="view_map">Carte</span></button>
-            <button class="view-btn" id="btnConnexions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="8" y1="6" x2="16" y2="6"/></svg> <span data-i18n="view_connexions">Connexions</span><span class="new-badge" data-i18n="view_new">Nouveau</span></button>
-        </div>
-    </div>
+    <button class="reset-btn" id="resetFilters" data-i18n="reset">Réinitialiser</button>
 </div>
 
-<div class="content">
-    <div id="loadingState" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
-        <div style="font-size:2rem;margin-bottom:1rem;animation:pulse 1.5s ease-in-out infinite">⏳</div>
-        <p style="font-size:1rem;font-weight:600" data-i18n="loading_title">Chargement des membres...</p>
-        <p style="font-size:0.85rem;margin-top:0.5rem" data-i18n="loading_subtitle">Connexion à la base de données</p>
+<!-- Vue du haut : la carte ou le graphe des connexions, au choix -->
+<div class="hero" id="hero">
+    <div class="view-switch glass" role="group" data-i18n-title="view_switch_label" aria-label="Choisir la vue">
+        <button type="button" data-view="map" class="active" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg><span data-i18n="view_map">Carte</span></button>
+        <button type="button" data-view="connexions" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7.8l4 8.4M17 7.8l-4 8.4M8 6h8"/></svg><span data-i18n="view_connexions">Connexions</span></button>
     </div>
-    <!-- 2026-09-16 : appel a la vue Connexions. Visible en vue Profils, jusqu'au
-         premier clic sur Connexions (memorise dans le navigateur). -->
-    <div id="ctaGraph" class="cta-graph hidden">
-        <img src="/img/campagne-connexions.gif" alt="" loading="lazy" width="230">
-        <div>
-            <h3 data-i18n="cta_graph_title">Qui travaille sur les mêmes sujets que vous ?</h3>
-            <p data-i18n="cta_graph_text">La carte des connexions relie les membres qui partagent des thèmes de recherche. Cliquez sur une personne pour voir les profils les plus proches du sien.</p>
-            <button type="button" class="cta-graph-btn" id="ctaGraphBtn" data-i18n="cta_graph_btn">Explorer les connexions →</button>
-        </div>
-    </div>
-    <div id="cardsView" class="cards-grid"></div>
-    <div id="tableView" class="table-wrapper hidden"></div>
-    <div id="mapContainer" class="hidden">
+    <div id="mapContainer">
         <div id="mapView"></div>
-        <div class="map-legend">
-            <span class="map-stats" id="mapStats">—</span>
-            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-regulier)"></div> <span data-i18n="regular">Régulier</span></div>
-            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-etudiant)"></div> <span data-i18n="student">Étudiant</span></div>
-            <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--rsn-tag-partenaire)"></div> <span data-i18n="partner">Partenaire</span></div>
-            <span style="font-size:0.75rem;color:var(--rsn-muted);margin-left:auto;" id="mapCoverage">—</span>
+        <aside class="map-panel glass" id="mapPanel"></aside>
+        <div class="hero-bottom">
+            <div class="map-pill glass"><span class="map-legend-dot" style="background:#a855f7"></span><span class="map-stats" id="mapStats">—</span><span id="mapCoverage" class="hidden">—</span></div>
+            <button type="button" class="teaser glass" data-view="connexions">
+                <svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
+                    <g class="sway">
+                        <path d="M20 22L46 12M20 22L52 40M46 12L52 40M52 40L26 54M52 40L78 26M52 40L60 66M78 26L86 56M86 56L60 66M20 22L26 54" fill="none" stroke="#8fa3bd" stroke-width="1.4"/>
+                        <circle cx="20" cy="22" r="5" fill="#2b6cb0"/><circle cx="46" cy="12" r="5" fill="#dba521"/><circle cx="52" cy="40" r="7" fill="#1a365d"/><circle cx="26" cy="54" r="5" fill="#2f8f5b"/><circle cx="78" cy="26" r="5" fill="#dba521"/><circle cx="86" cy="56" r="5" fill="#2b6cb0"/><circle cx="60" cy="66" r="5" fill="#dba521"/>
+                    </g>
+                </svg>
+                <span><strong data-i18n="cta_graph_title">Qui travaille sur les mêmes sujets que vous ?</strong><span class="go"><span data-i18n="teaser_link">Voir les connexions</span> →</span></span>
+            </button>
         </div>
     </div>
     <!-- Phase 2j v3: vue Connexions plein ecran avec legende compacte en bas -->
@@ -565,6 +758,48 @@
       <div style="font-size:2rem;margin-bottom:1rem">⏳</div>
       <p style="font-size:1rem;font-weight:600" data-i18n="connexions_loading">Calcul des connexions…</p>
     </div>
+</div>
+
+<!-- Bandeau depliable « Portrait du reseau » : chiffres cliquables qui filtrent la carte et les fiches -->
+<section class="stats-band" id="statsBand" aria-label="Portrait du réseau">
+    <button type="button" class="stats-head" id="statsToggle" aria-expanded="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>
+        <span class="t" data-i18n="stats_title">Portrait du réseau</span>
+        <span class="s"><strong id="totalMembers">—</strong> <span data-i18n="members_lc">membres</span> · <strong id="totalInstitutions">—</strong> <span data-i18n="insts_lc">établissements</span></span>
+        <span class="tog"><span id="statsToggleLabel">Replier</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></span>
+    </button>
+    <span id="totalRegulier" hidden></span><span id="totalEtudiant" hidden></span><span id="totalPartenaire" hidden></span>
+    <div class="stats-body">
+        <div class="stats-row types">
+            <div class="stats-label"><h3 data-i18n="stats_types">Types d'adhésion</h3><span data-i18n="stats_types_sub">Tous les membres</span></div>
+            <div class="stats-main"><div class="types-bar" id="statsTypesBar"></div><div class="types-legend" id="statsTypesLegend"></div></div>
+        </div>
+        <div class="stats-row">
+            <div class="stats-label"><h3 data-i18n="stats_themes">Principaux thèmes</h3><span id="statsThemesSub"></span></div>
+            <div class="stats-main stat-tokens" id="statsThemes"></div>
+        </div>
+        <div class="stats-row">
+            <div class="stats-label"><h3 data-i18n="stats_insts">Principaux établissements</h3><span data-i18n="stats_insts_sub">Nombre de profils publics</span></div>
+            <div class="stats-main stat-tokens" id="statsInsts"></div>
+        </div>
+    </div>
+</section>
+
+<div class="content" id="profils">
+    <div id="loadingState" style="text-align:center;padding:3rem 1rem;color:var(--rsn-muted)">
+        <p style="font-size:1rem;font-weight:600;animation:pulse 1.5s ease-in-out infinite" data-i18n="loading_title">Chargement des membres...</p>
+        <p style="font-size:0.85rem;margin-top:0.5rem" data-i18n="loading_subtitle">Connexion à la base de données</p>
+    </div>
+    <div class="list-head">
+        <h2 data-i18n="list_title">Profils</h2>
+        <label class="list-sort"><span data-i18n="sort_label">Trier</span>
+            <select id="listSort">
+                <option value="complete" data-i18n="sort_complete">Profils complets d'abord</option>
+                <option value="name" data-i18n="sort_name">Nom (A–Z)</option>
+            </select>
+        </label>
+    </div>
+    <div id="cardsView" class="cards-grid"></div>
     <div id="emptyState" class="empty-state hidden">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
         <h3 data-i18n="no_results">Aucun membre trouvé</h3>
@@ -624,6 +859,21 @@ const UPDATE_SHORT_URL = 'https://bottin.rsn.quebec/magic-link.html';
 // ─── I18N ───
 const I18N = {
     fr: {
+        // Refonte 2026-11
+        view_switch_label: 'Choisir la vue', teaser_link: 'Voir les connexions',
+        members_lc: 'membres', insts_lc: 'établissements',
+        stats_title: 'Portrait du réseau', stats_show: 'Déplier', stats_hide: 'Replier',
+        stats_types: "Types d'adhésion", stats_types_sub: 'Tous les membres',
+        stats_themes: 'Principaux thèmes', stats_themes_sub: 'Part des {n} profils avec thèmes',
+        stats_insts: 'Principaux établissements', stats_insts_sub: 'Nombre de profils publics',
+        chip_theme: 'Thème', chip_inst: 'Établissement', chip_remove: 'Retirer ce filtre',
+        panel_all_kicker: 'Réseau santé numérique', panel_all: 'Tous les membres',
+        panel_region: 'Région sélectionnée', panel_selection: 'Sélection actuelle', panel_selection_title: 'Résultats',
+        panel_public: 'profils publics', panel_top_insts: 'Établissements les plus représentés', panel_see: 'Voir les profils',
+        list_title: 'Profils', sort_label: 'Trier', sort_complete: "Profils complets d'abord", sort_name: 'Nom (A–Z)',
+        card_open: 'Voir la fiche', card_graph: 'Voir ses connexions',
+        copy_link: 'Copier le lien', link_copied: 'Lien copié',
+        pending_title: 'Membres sans profil public', pending_cta: "C'est vous ? Complétez votre profil",
         title: 'Bottin des membres',
         members: 'Membres', institutions: 'Institutions',
         regular: 'Régulier', regular_pl: 'Réguliers',
@@ -713,6 +963,21 @@ const I18N = {
         qr_title_update: 'Mettre à jour mon profil', qr_subtitle_update: 'Scannez le QR code ou remplissez le formulaire en ligne'
     },
     en: {
+        // Refonte 2026-11
+        view_switch_label: 'Choose the view', teaser_link: 'See the connections',
+        members_lc: 'members', insts_lc: 'institutions',
+        stats_title: 'Network at a glance', stats_show: 'Expand', stats_hide: 'Collapse',
+        stats_types: 'Membership types', stats_types_sub: 'All members',
+        stats_themes: 'Top themes', stats_themes_sub: 'Share of the {n} profiles with themes',
+        stats_insts: 'Top institutions', stats_insts_sub: 'Number of public profiles',
+        chip_theme: 'Theme', chip_inst: 'Institution', chip_remove: 'Remove this filter',
+        panel_all_kicker: 'Digital Health Network', panel_all: 'All members',
+        panel_region: 'Selected region', panel_selection: 'Current selection', panel_selection_title: 'Results',
+        panel_public: 'public profiles', panel_top_insts: 'Most represented institutions', panel_see: 'See the profiles',
+        list_title: 'Profiles', sort_label: 'Sort', sort_complete: 'Complete profiles first', sort_name: 'Name (A–Z)',
+        card_open: 'View profile', card_graph: 'See connections',
+        copy_link: 'Copy link', link_copied: 'Link copied',
+        pending_title: 'Members without a public profile', pending_cta: 'Is this you? Complete your profile',
         title: 'Member Directory',
         members: 'Members', institutions: 'Institutions',
         regular: 'Regular', regular_pl: 'Regular',
@@ -958,7 +1223,8 @@ const CONFIG = {
     }
 };
 
-let allMembers = [], filteredMembers = [], currentPage = 1, currentView = 'cards', sortCol = null, sortDir = 'asc';
+// Refonte 2026-11 : currentView designe la vue du haut, 'map' ou 'connexions' (les fiches sont toujours affichees).
+let allMembers = [], filteredMembers = [], currentPage = 1, currentView = 'map', sortCol = null, sortDir = 'asc';
 
 // ─── CSV PARSER ───
 function parseCSV(text) {
@@ -1172,7 +1438,9 @@ function loadMembers(data) {
     // Tri alphabétique par nom de famille par défaut
     allMembers.sort((a,b) => { const an=a.nom||a.prenom||''; const bn=b.nom||b.prenom||''; const c=an.localeCompare(bn,'fr'); return c!==0?c:(a.prenom||'').localeCompare(b.prenom||'','fr'); });
     const ls = document.getElementById('loadingState'); if (ls) ls.style.display = 'none';
+    buildSlugs(); // Refonte 2026-11 : adresses /membre/prenom-nom
     updateStats(); populateFilters(); applyFilters(); restoreHash();
+    openMemberFromPath(); // ouvre la fiche si l'adresse en designe une
 }
 
 function updateStats() {
@@ -1181,7 +1449,8 @@ function updateStats() {
     $('totalMembers').textContent = allMembers.length + excludedStats.total;
     // Count unique atomic institutions (after splitting on ';'), not the raw composite strings
     const uniqueInsts = new Set();
-    allMembers.forEach(m => (m.institutions || []).forEach(i => uniqueInsts.add(i)));
+    // Refonte 2026-11 : « Institution non divulguée » (fiches sans profil public) n'est pas un etablissement.
+    allMembers.forEach(m => (m.institutions || []).forEach(i => { if (!/non divulgu/i.test(i)) uniqueInsts.add(i); }));
     $('totalInstitutions').textContent = uniqueInsts.size;
     $('totalRegulier').textContent = allMembers.filter(m=>m.typeNorm==='regulier').length + excludedStats.regulier;
     $('totalEtudiant').textContent = allMembers.filter(m=>m.typeNorm==='etudiant').length + excludedStats.etudiant;
@@ -1793,13 +2062,14 @@ function applyFilters() {
         }
         if (fs.length && !fs.includes(m.statut)) return false; // Phase 2m : filtre sur le statut
         if (fa.length && !memberHasFocus(m, fa)) return false;
+        if (statFilter && !statFilterMatch(m)) return false; // Refonte 2026-11 : chiffre cliquable du bandeau
         return true;
     });
     // Phase 2j v10 (2026-09-15): la vue Connexions masque les membres hors
     // filtres et estompe seulement ceux hors recherche ; elle a donc besoin
     // du pool « filtres seuls », avant la recherche.
     applyFilters._pool = pool;
-    applyFilters._filtersActive = !!(ft.length || fr.length || fs.length || fa.length);
+    applyFilters._filtersActive = !!(ft.length || fr.length || fs.length || fa.length || statFilter);
 
     // 2) Recherche Fuse sur le pool deja filtre (si query non vide)
     if (queryNorm && typeof Fuse !== 'undefined') {
@@ -1842,6 +2112,9 @@ function applyFilters() {
             return sortDir === 'asc' ? cmp : -cmp;
         });
     }
+    // Refonte 2026-11 : profils publics d'abord (les plus complets en tete),
+    // membres sans profil public a la fin.
+    filteredMembers = orderForDisplay(filteredMembers, !!queryNorm);
 
     currentPage = 1;
     document.getElementById('filteredCount').textContent = filteredMembers.length;
@@ -2418,7 +2691,7 @@ function applyConnexionsFiltersToGraph() {
   // Signature filtres + recherche : quand elle change sans recherche active,
   // on recadre sur les membres visibles (ou sur tout le graphe si plus rien
   // n'est filtre).
-  const key = queryNorm + '|' + (filtersActive ? [ft, fr, fs, fa].map(a => a.join(',')).join(';') : '');
+  const key = queryNorm + '|' + (filtersActive ? [ft, fr, fs, fa].map(a => a.join(',')).join(';') : '') + (statFilter ? '|' + statFilter.kind + ':' + statFilter.value : '');
   const lastKey = applyConnexionsFiltersToGraph._lastKey;
   const changed = (lastKey === undefined) ? filtersActive : (lastKey !== key);
 
@@ -2711,29 +2984,35 @@ function renderConnexionsInsights(eligible, edgeSet) {
   }
 }
 
-function render() {
-    const cv=document.getElementById('cardsView'), tv=document.getElementById('tableView'), mc=document.getElementById('mapContainer');
-    const co=document.getElementById('connexionsContainer'), col=document.getElementById('connexionsLoading');
-    cv.classList.add('hidden'); tv.classList.add('hidden'); mc.classList.add('hidden');
-    if (co) co.classList.add('hidden'); if (col) col.classList.add('hidden');
-    if(currentView==='map') {
-        mc.classList.remove('hidden'); renderMap();
-    } else if(currentView==='cards') {
-        renderCards(); cv.classList.remove('hidden');
-    } else if(currentView==='connexions') {
-        // Phase 2j: vue Connexions (graphe vis-network)
+// Refonte 2026-11 : la page n'a plus d'onglets. La vue du haut (#hero) montre
+// la carte ou le graphe des connexions ; les fiches sont toujours affichees
+// en dessous. renderHero() et renderList() sont separes pour qu'un changement
+// de page de fiches ne recadre pas la carte.
+function renderHero() {
+    const mc = document.getElementById('mapContainer');
+    const co = document.getElementById('connexionsContainer'), col = document.getElementById('connexionsLoading');
+    updateViewSwitch();
+    if (currentView === 'connexions') {
+        mc.classList.add('hidden');
         if (typeof renderConnexions === 'function') renderConnexions();
     } else {
-        renderTable(); tv.classList.remove('hidden');
+        if (co) co.classList.add('hidden');
+        if (col) col.classList.add('hidden');
+        mc.classList.remove('hidden');
+        renderMap();
+        renderMapPanel();
     }
-    // 2026-09-16 : appel a la vue Connexions, seulement en vue Profils et tant que
-    // la personne n'a jamais ouvert Connexions sur cet appareil.
-    const cta = document.getElementById('ctaGraph');
-    if (cta) cta.classList.toggle('hidden', !(currentView === 'cards' && !ctaGraphSeen()));
-    const isGraphView = (currentView==='map' || currentView==='connexions');
-    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length>0 || isGraphView);
-    document.getElementById('pagination').classList.toggle('hidden', isGraphView);
-    if (!isGraphView) renderPag();
+}
+function renderList() {
+    renderCards();
+    document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length > 0);
+    renderPag();
+}
+function render() {
+    renderHero();
+    renderList();
+    renderStatsBand();
+    renderStatChip();
 }
 function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -2827,85 +3106,57 @@ function memberHasFocus(m, fa) {
     return fa.some(f => (m.axes || []).includes(f) || (m.principes || []).includes(f) || (m.champsAction || []).includes(f));
 }
 
+// Refonte 2026-11 : pastille ronde avec les initiales ; la photo, quand il y en
+// a une, la recouvre (et se retire d'elle-meme si elle ne charge pas).
+function initialsOf(m) {
+    const a = (m.prenom || m.name || '').trim().charAt(0), b = (m.nom || '').trim().charAt(0);
+    return (a + b).toUpperCase() || '?';
+}
+function avatarHtml(m, cls) {
+    const img = m.photo ? `<img src="${esc(m.photo)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    return `<span class="avatar${cls ? ' ' + cls : ''}" aria-hidden="true">${esc(initialsOf(m))}${img}</span>`;
+}
+const GRAPH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7.8l4 8.4M17 7.8l-4 8.4M8 6h8"/></svg>';
+
+// Refonte 2026-11 : fiches allegees (identite, statut, themes, puces) avec deux
+// actions, « Voir la fiche » et « Voir ses connexions ». Le courriel, le reseau
+// et la presentation restent dans la fiche detaillee. Les membres sans profil
+// public sont regroupes a la fin de la liste (voir orderForDisplay), sous un
+// separateur qui invite a completer son profil.
 function renderCards() {
-    const el=document.getElementById('cardsView'), items=pgItems();
-    if(!items.length){el.innerHTML='';return;}
-    el.innerHTML = items.map((m,i) => {
-        const tc=`tag-${m.typeNorm}`, cc=`type-${m.typeNorm}`;
-        const eid = `ex-${i}`;
-        const expertiseText = m.themes || '';
-        let links=[];
-        if(m.orcid){ const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`; links.push(`<a class="card-link" href="${u}" target="_blank">ORCID</a>`); }
-        if(m.cv){ const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`; links.push(`<a class="card-link" href="${u}" target="_blank" rel="noopener">${tr('lbl_website')}</a>`); }
-        const lnkH = links.length ? `<div class="card-links">${links.join('')}</div>` : '';
-        // 2026-09-16 : sur la carte, les puces au-dela de 4 sont repliees (« +N »),
-        // les themes et la presentation sont limites a ~3 lignes avec « Voir plus »,
-        // et la presentation est visible d'emblee (avant : cachee derriere un
-        // « Voir plus » general en bas de carte).
-        const chipsHtml = focusChipsHtml(m, 4);
-        const themesHtml = expertiseText ? `<div class="card-detail"><span class="dl">${tr('lbl_expertise')}</span><div style="min-width:0;flex:1">${clampedTextHtml(expertiseText, 200)}</div></div>` : '';
-        const presHtml = m.projet ? `<div class="card-detail" style="flex-direction:column;gap:0.15rem"><span class="dl">${tr('lbl_project')}</span>${clampedTextHtml(m.projet, 220)}</div>` : '';
-        // Phase 2f: champ Etudiants retire du bottin public (peu utilise — 3% — et
-        // pas pertinent pour les visiteurs externes). Conserve dans Notion pour usage admin.
-        // Consent & form badges
+    const el = document.getElementById('cardsView'), items = pgItems();
+    if (!items.length) { el.innerHTML = ''; return; }
+    const start = (currentPage - 1) * CONFIG.PER_PAGE;
+    el.innerHTML = items.map((m, i) => {
         const isPending = m.consent !== 'oui';
-        const pendingClass = isPending ? ' pending-consent' : '';
-        let badges = [];
-        if(isPending) badges.push(`<span class="consent-badge badge-pending-consent" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳ ${tr('badge_pending_consent')}</span>`);
-        if(!m.formComplete) badges.push(`<span class="consent-badge badge-incomplete-form" style="cursor:pointer" onclick="window.location.href='/magic-link.html'">📋 ${tr('badge_incomplete_form')}</span>`);
-        const badgesHtml = badges.length ? `<div class="consent-badges-row">${badges.join('')}</div>` : '';
-        // Phase 2j v3: bouton "Voir profils proches" sur chaque card consentante
-        // → ouvre la modal classique qui inclut deja le bloc Profils proches.
-        const neighborsBtn = (m.consent === 'oui')
-          ? `<div style="margin-top:0.3rem"><button class="card-expand-btn" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.2rem 0;font-size:0.78rem" onclick="event.stopPropagation();showMemberPopup(${JSON.stringify(m.name).replace(/"/g, '&quot;')})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>${tr('similar_profiles_btn')}</button></div>`
-          : '';
-        return `<div class="member-card ${cc}${pendingClass}">
-            ${cardHeaderHtml(m, tc, 'card-photo')}
-            ${badgesHtml}
-            <div class="card-institution">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution||tr('lbl_no_institution'))}</div>
-            ${m.email?`<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
-            <div class="card-details">
-                ${m.statut?`<div class="card-detail"><span class="dl">${tr('lbl_status')}</span><span>${esc(trStatut(m.statut))}</span></div>`:''}
-                ${themesHtml}
-                ${m.reseau?`<div class="card-detail"><span class="dl">${tr('lbl_network')}</span><span>${esc(m.reseau)}</span></div>`:''}
-                ${presHtml}
+        const tag = `<span class="card-tag tag-${m.typeNorm}">${esc(translateType(m.type) || 'N/A')}</span>`;
+        const prev = filteredMembers[start + i - 1];
+        const divider = (isPending && (i === 0 || (prev && prev.consent === 'oui')))
+            ? `<div class="cards-divider"><strong>${tr('pending_title')}</strong><a href="/magic-link.html">${tr('pending_cta')}</a></div>` : '';
+        if (isPending) {
+            return `${divider}<div class="member-card pending-consent">
+                <div class="card-top">${avatarHtml(m, 'avatar-muted')}<div class="card-id"><div class="card-name">${displayName(m)}</div><a class="consent-badge badge-pending-consent" href="/magic-link.html">${tr('badge_pending_consent')}</a></div>${tag}</div>
+            </div>`;
+        }
+        // Deux etablissements au plus sur la carte ; les autres sont comptes (« +2 ») et restent dans la fiche.
+        const insts = m.institutions.length ? m.institutions : [m.institution || tr('lbl_no_institution')];
+        const instHtml = insts.slice(0, 2).map(x => esc(x)).join('<br>') + (insts.length > 2 ? ` <span title="${esc(insts.slice(2).join(' · '))}">+${insts.length - 2}</span>` : '');
+        const themesHtml = m.themes ? `<div class="card-themes">${clampedTextHtml(m.themes, 150)}</div>` : '';
+        const incomplete = !m.formComplete ? `<a class="consent-badge badge-incomplete-form" href="/magic-link.html">${tr('badge_incomplete_form')}</a>` : '';
+        return `${divider}<div class="member-card">
+            <div class="card-top">${avatarHtml(m)}<div class="card-id"><div class="card-name">${displayName(m)}</div><div class="card-institution">${instHtml}</div></div>${tag}</div>
+            ${m.statut ? `<div class="card-statut">${esc(trStatut(m.statut))}</div>` : ''}
+            ${themesHtml}
+            ${focusChipsHtml(m, 3)}
+            ${incomplete}
+            <div class="card-foot">
+                <button type="button" class="card-action" data-member-open="${esc(m.name)}">${tr('card_open')}</button>
+                <button type="button" class="card-action" data-member-graph="${esc(m.name)}">${GRAPH_ICON}${tr('card_graph')}</button>
             </div>
-            ${chipsHtml}
-            ${lnkH}${neighborsBtn}
         </div>`;
     }).join('');
 }
 function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?tr('lbl_see_less'):tr('lbl_see_more'); }
-// 2026-09-16 : dans le tableau, un clic sur une ligne ouvre la fiche de la
-// personne (sauf sur un lien, un bouton ou un badge, qui gardent leur action).
-document.getElementById('tableView').addEventListener('click', e => {
-    if (e.target.closest('a, button, .consent-badge')) return;
-    const row = e.target.closest('tr[data-member]');
-    if (row && typeof showMemberPopup === 'function') showMemberPopup(row.dataset.member);
-});
-
-function renderTable() {
-    const el=document.getElementById('tableView'), items=pgItems();
-    const mth=(c,l)=>{ const a=sortCol===c?(sortDir==='asc'?'▲':'▼'):'⇅'; return `<th class="${sortCol===c?'sorted':''}" onclick="doSort('${c}')">${l} <span class="sa">${a}</span></th>`; };
-    const hd=`<tr>${mth('name',tr('th_name'))}${mth('institution',tr('th_institution'))}<th>${tr('th_email')}</th>${mth('statut',tr('th_status'))}${mth('type',tr('th_type'))}<th>${tr('th_axis')}</th><th>${tr('th_principle')}</th><th>${tr('th_action')}</th><th>${tr('th_expertise')}</th><th>${tr('th_links')}</th></tr>`;
-    const bd=items.map(m=>{
-        const tc=`tag-${m.typeNorm}`;
-        // Phase 2l : toutes les selections, une par ligne dans la cellule
-        const ax1=axeLabels(m).map(esc).join('<br>');
-        const pf1=principeLabels(m).map(esc).join('<br>');
-        const ca1=champLabels(m).map(esc).join('<br>');
-        const th=m.themes||'';
-        const isPending = m.consent !== 'oui';
-        let lk=[];
-        if(m.orcid){const u=m.orcid.startsWith('http')?m.orcid:`https://orcid.org/${m.orcid}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">ORCID</a>`);}
-        if(m.cv){const u=m.cv.startsWith('http')?m.cv:`https://${m.cv}`;lk.push(`<a href="${u}" target="_blank" style="color:var(--rsn-accent);font-size:0.76rem">CV</a>`);}
-        let badges='';
-        if(isPending) badges+=`<span class="consent-badge badge-pending-consent" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">⏳</span> `;
-        if(!m.formComplete) badges+=`<span class="consent-badge badge-incomplete-form" style="font-size:0.62rem;padding:0.1rem 0.4rem;cursor:pointer" onclick="window.location.href='/magic-link.html'">📋</span> `;
-        return `<tr class="${isPending?'pending-consent':''}" data-member="${esc(m.name)}"><td>${displayName(m)}${badges?' <br>'+badges:''}</td><td>${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution)}</td><td style="font-size:0.78rem">${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--rsn-accent)">${esc(m.email)}</a>`:''}</td><td style="font-size:0.8rem">${esc(trStatut(m.statut))}</td><td><span class="ct ${tc}">${esc(translateType(m.type)||'N/A')}</span></td><td style="font-size:0.78rem">${ax1}</td><td style="font-size:0.78rem">${pf1}</td><td style="font-size:0.78rem">${ca1}</td><td style="font-size:0.78rem;max-width:220px">${esc(trunc(th,100))}</td><td>${lk.join(' · ')}</td></tr>`;
-    }).join('');
-    el.innerHTML=`<table class="members-table"><thead>${hd}</thead><tbody>${bd}</tbody></table>`;
-}
 
 function renderPag() {
     const el=document.getElementById('pagination'), tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE);
@@ -2916,7 +3167,7 @@ function renderPag() {
     h+=`<button class="page-btn" onclick="goP(${currentPage+1})" ${currentPage===tp?'disabled':''}>${tr('next')}</button>`;
     el.innerHTML=h;
 }
-function goP(p){ const tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE); if(p<1||p>tp)return; currentPage=p; render(); saveHash(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
+function goP(p){ const tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE); if(p<1||p>tp)return; currentPage=p; renderList(); saveHash(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
 function doSort(c){ if(sortCol===c){sortDir=sortDir==='asc'?'desc':'asc';}else{sortCol=c;sortDir='asc';} applyFilters(); saveHash(); }
 
 // ─── EVENTS ───
@@ -2929,21 +3180,22 @@ document.getElementById('resetFilters').addEventListener('click',()=>{
         wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         updateMS(id, id==='filterRegion' ? tr('all_f') : tr('all_m'));
     });
-    sortCol=null;sortDir='asc';applyFilters();saveHash();
+    statFilter=null;sortCol=null;sortDir='asc';applyFilters();saveHash();
 });
-// 2026-09-16 : l'appel a la vue Connexions disparait apres le premier clic sur
-// Connexions, memorise dans le navigateur (localStorage).
-const CTA_GRAPH_KEY = 'rsn-cta-graph-seen';
-function ctaGraphSeen() { try { return localStorage.getItem(CTA_GRAPH_KEY) === '1'; } catch (e) { return false; } }
-function markCtaGraphSeen() { try { localStorage.setItem(CTA_GRAPH_KEY, '1'); } catch (e) {} }
+// Refonte 2026-11 : la vue du haut est soit la carte ('map'), soit le graphe
+// des connexions ('connexions'). Les anciennes vues 'cards' et 'table' des
+// liens deja partages retombent sur la carte.
 function setView(v) {
-    if (v === 'connexions') markCtaGraphSeen();
-    currentView = v;
-    ['btnCards','btnTable','btnMap','btnConnexions'].forEach(id => { var b=document.getElementById(id); if(b) b.classList.remove('active'); });
-    var btnId = v==='cards'?'btnCards':v==='table'?'btnTable':v==='connexions'?'btnConnexions':'btnMap';
-    var btn = document.getElementById(btnId); if (btn) btn.classList.add('active');
+    currentView = (v === 'connexions') ? 'connexions' : 'map';
     render();
     saveHash();
+}
+function updateViewSwitch() {
+    document.querySelectorAll('.view-switch [data-view]').forEach(b => {
+        const on = b.dataset.view === currentView;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
 }
 
 // Phase 2k (2026-05-12) : clic sur le logo RSN = retour a la page principale.
@@ -2961,18 +3213,14 @@ function goHome() {
     sortCol = null;
     sortDir = 'asc';
     currentPage = 1;
-    setView('cards');
+    statFilter = null;
+    currentView = 'map';
     applyFilters();
     saveHash();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-document.getElementById('btnCards').addEventListener('click',()=>setView('cards'));
-document.getElementById('btnTable').addEventListener('click',()=>setView('table'));
-document.getElementById('btnMap').addEventListener('click',()=>setView('map'));
-var btnConn = document.getElementById('btnConnexions');
-if (btnConn) btnConn.addEventListener('click',()=>setView('connexions'));
-var ctaGraphBtn = document.getElementById('ctaGraphBtn');
-if (ctaGraphBtn) ctaGraphBtn.addEventListener('click', () => { setView('connexions'); const co = document.getElementById('connexionsContainer'); if (co) co.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+// Refonte 2026-11 : selecteur Carte | Connexions et tuile d'appel aux connexions
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 
 // ─── FILE UPLOAD ───
 const ua=document.getElementById('uploadArea'),fi=document.getElementById('csvFileInput');
@@ -3175,6 +3423,8 @@ function showMemberPopup(name) {
         chipsHtml, lnkH
     ].join('');
     modal.appendChild(content);
+    // Refonte 2026-11 : actions de la fiche (connexions, lien direct) et adresse /membre/prenom-nom
+    if (m.consent === 'oui') { modal.appendChild(buildModalActions(m)); setMemberUrl(m); }
 
     // Phase 2j v3: bloc "Profils proches" avec details des criteres communs.
     if (m.consent === 'oui') {
@@ -3186,7 +3436,10 @@ function showMemberPopup(name) {
 
     document.getElementById('memberOverlay').classList.add('active');
 }
-function closeMemberPopup() { document.getElementById('memberOverlay').classList.remove('active'); }
+function closeMemberPopup() {
+    document.getElementById('memberOverlay').classList.remove('active');
+    if (/^\/membre\//.test(location.pathname)) setMemberUrl(null); // l'adresse revient a l'accueil
+}
 
 // ─── Connexions : fenetre d'explication de la methode (Phase 2j v7) ───
 // Contenu reconstruit a chaque ouverture avec tr(), donc toujours dans la
@@ -3446,7 +3699,17 @@ function renderMap() {
     }
     renderMap._retries = 0;
     if (!map) {
-        map = L.map('mapView').setView([47.0, -71.5], 6);
+        // Retire le message « Chargement de la carte… » pose pendant l'attente de Leaflet.
+        const mv0 = document.getElementById('mapView');
+        if (mv0) mv0.textContent = '';
+        // Refonte 2026-11 : la carte est en haut de page. La molette ne zoome
+        // qu'apres un clic sur la carte, pour ne pas bloquer le defilement de la
+        // page ; les boutons de zoom passent en bas a gauche (le selecteur de
+        // vue occupe le coin haut gauche).
+        map = L.map('mapView', { zoomControl: false, scrollWheelZoom: false }).setView([47.0, -71.5], 6);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        map.on('click', function() { map.scrollWheelZoom.enable(); });
+        map.on('mouseout', function() { map.scrollWheelZoom.disable(); });
         // Fond de carte : CARTO Voyager avec cle, sinon OpenStreetMap (voir basemapTileLayer).
         baseLayer = basemapTileLayer().addTo(map);
     }
@@ -3526,6 +3789,9 @@ function renderMap() {
         }
         return inst; // fallback: raw name (no coords, won't appear on the map)
     }
+    // Refonte 2026-11 : un etablissement choisi dans le bandeau ou le panneau
+    // ne laisse que son marqueur, comme une recherche exacte d'etablissement.
+    if (!exactInstMatched && statFilter && statFilter.kind === 'inst') exactInstMatched = resolveCanonical(statFilter.value);
     // Each member can be affiliated to multiple institutions (split on ';' upstream).
     // Add the member to every institution so they appear at every relevant location.
     // Phase 2c (2026-05-04): si le filtre Region est actif, on ne montre QUE
@@ -3575,6 +3841,7 @@ function renderMap() {
     // with multiple institutions appears at each location but should be counted
     // only once in the "X membres géolocalisés" stat.
     const uniqueMappedMembers = new Set();
+    const quebecLatLngs = []; // Refonte 2026-11 : cadrage d'arrivee sur le sud du Quebec
     Object.entries(byInst).forEach(([inst, data]) => {
         if (!data.coords) return;
         const n = data.members.length;
@@ -3602,6 +3869,7 @@ function renderMap() {
         const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span></div>`).join('');
         marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
+        if (lat >= 44.5 && lat <= 49 && lng >= -77.5 && lng <= -66) quebecLatLngs.push([lat, lng]);
     });
     map.addLayer(clusterGroup);
     mapped = uniqueMappedMembers.size;
@@ -3612,14 +3880,245 @@ function renderMap() {
     document.getElementById('mapCoverage').textContent = `${tr('map_coverage')} : ${pct}% (${instMapped} ${tr('map_institutions_on')} ${instTotal})`;
     if (clusterGroup.getLayers().length > 0) {
         setTimeout(() => map.invalidateSize(), 100);
-        setTimeout(() => map.fitBounds(clusterGroup.getBounds().pad(0.1)), 200);
+        // Refonte 2026-11 : sans filtre ni recherche, la carte s'ouvre sur le sud
+        // du Quebec (ou sont presque tous les membres) plutot que sur le monde
+        // entier ; des qu'un filtre ou une recherche est actif, elle cadre tous
+        // les marqueurs restants, y compris hors Quebec.
+        const fitQuebec = !rawSearch && !applyFilters._filtersActive && quebecLatLngs.length > 1;
+        setTimeout(() => map.fitBounds(fitQuebec ? L.latLngBounds(quebecLatLngs).pad(0.08) : clusterGroup.getBounds().pad(0.1)), 200);
     }
+}
+
+// ─── REFONTE 2026-11 : chiffres cliquables, panneau de la carte, lien direct ───
+
+// Ordre d'affichage des fiches : profils publics d'abord, les plus complets en
+// tete (photo, themes, presentation, formulaire rempli, lien externe) ; les
+// membres sans profil public a la fin. Une recherche garde son ordre de
+// pertinence parmi les profils publics.
+let listSort = 'complete';
+function completeness(m) {
+    return (m.photo ? 2 : 0) + (m.themes ? 1 : 0) + (m.projet ? 1 : 0) + (m.formComplete ? 1 : 0) + ((m.orcid || m.cv) ? 1 : 0);
+}
+function orderForDisplay(list, keepRelevance) {
+    const pub = list.filter(m => m.consent === 'oui'), pend = list.filter(m => m.consent !== 'oui');
+    // Tri stable : a completude egale, l'ordre alphabetique d'origine est conserve.
+    if (!keepRelevance && listSort === 'complete') pub.sort((a, b) => completeness(b) - completeness(a));
+    return pub.concat(pend);
+}
+
+// Regroupements de themes pour le bandeau « Portrait du reseau ». Les themes
+// sont du texte libre, en francais ou en anglais : chaque groupe reconnait les
+// deux. Les expressions s'appliquent au texte passe par fold() (sans accents,
+// en minuscules). Liste a revoir quand les mots-cles seront normalises.
+const THEME_GROUPS = [
+    { key: 'ia', fr: 'Intelligence artificielle', en: 'Artificial intelligence', re: /intelligence artificielle|artificial intelligence|\bia\b|machine learning|apprentissage (automatique|machine|profond)|deep learning|\bllm/ },
+    { key: 'sn', fr: 'Santé numérique', en: 'Digital health', re: /sante numerique|digital health|esante|e-sante|ehealth/ },
+    { key: 'img', fr: 'Imagerie', en: 'Imaging', re: /imagerie|imaging/ },
+    { key: 'gen', fr: 'Génomique', en: 'Genomics', re: /genomi|genetique|genetics?\b/ },
+    { key: 'readapt', fr: 'Réadaptation', en: 'Rehabilitation', re: /readaptation|rehabilitation/ },
+    { key: 'biostat', fr: 'Biostatistique', en: 'Biostatistics', re: /biostatisti|inference causale|causal inference/ },
+    { key: 'data', fr: 'Données de santé', en: 'Health data', re: /donnees de sante|health data|donnees massives|big data|science des donnees|data science/ },
+    { key: 'ethique', fr: 'Éthique et gouvernance', en: 'Ethics and governance', re: /ethique|ethics|gouvernance|governance/ },
+    { key: 'neuro', fr: 'Neurosciences', en: 'Neuroscience', re: /neuroscien|neuroimag/ },
+    { key: 'epi', fr: 'Épidémiologie', en: 'Epidemiology', re: /epidemiolog/ },
+    { key: 'mental', fr: 'Santé mentale', en: 'Mental health', re: /sante mentale|mental health|psychiatr/ },
+    { key: 'vieil', fr: 'Vieillissement', en: 'Aging', re: /vieillissement|\baging\b|ageing|\baine(e)?s?\b|geriatr/ },
+    { key: 'onco', fr: 'Oncologie', en: 'Oncology', re: /oncolog|cancer/ },
+    { key: 'ligne', fr: 'Première ligne', en: 'Primary care', re: /premiere ligne|primary care|soins primaires/ },
+    { key: 'tele', fr: 'Télésanté', en: 'Telehealth', re: /telesante|telehealth|telemedecine|telemedicine|telereadaptation|telerehab/ },
+    { key: 'sp', fr: 'Santé publique', en: 'Public health', re: /sante publique|public health|sante des populations|population health/ },
+    { key: 'interop', fr: 'Interopérabilité', en: 'Interoperability', re: /interoperab/ }
+];
+function themeLabel(key) { const g = THEME_GROUPS.find(x => x.key === key); return g ? (currentLang === 'en' ? g.en : g.fr) : key; }
+function memberThemeKeys(m) {
+    if (!m._themeKeys) { const t = fold(m.themes || ''); m._themeKeys = t ? THEME_GROUPS.filter(g => g.re.test(t)).map(g => g.key) : []; }
+    return m._themeKeys;
+}
+
+// Filtre pose par un clic sur un chiffre du bandeau ou sur un etablissement du
+// panneau de la carte : { kind: 'theme' | 'inst', value }. Un second clic sur
+// le meme chiffre le retire.
+let statFilter = null;
+function statFilterMatch(m) {
+    if (!statFilter) return true;
+    if (statFilter.kind === 'inst') return (m.institutions || []).includes(statFilter.value);
+    return memberThemeKeys(m).includes(statFilter.value);
+}
+function setStatFilter(kind, value) {
+    statFilter = (statFilter && statFilter.kind === kind && statFilter.value === value) ? null : { kind: kind, value: value };
+    applyFilters();
+    saveHash();
+}
+function statFilterLabel() {
+    if (!statFilter) return '';
+    return statFilter.kind === 'inst' ? shortInst(statFilter.value) : themeLabel(statFilter.value);
+}
+function renderStatChip() {
+    const el = document.getElementById('statChip');
+    if (!el) return;
+    el.classList.toggle('hidden', !statFilter);
+    if (!statFilter) { el.textContent = ''; return; }
+    el.title = tr(statFilter.kind === 'inst' ? 'chip_inst' : 'chip_theme');
+    el.innerHTML = `<span>${esc(statFilterLabel())}</span><button type="button" aria-label="${tr('chip_remove')}" onclick="setStatFilter(statFilter.kind, statFilter.value)">×</button>`;
+}
+
+// Nom court d'un etablissement pour les chiffres et le panneau : le sigle entre
+// parentheses a la fin, ou le sigle place avant « - », sinon le nom complet.
+function shortInst(n) {
+    let m = n.match(/\(([^)]+)\)\s*$/); if (m) return m[1];
+    m = n.match(/^([A-ZÉ][A-Za-zÉé-]{1,11}) - /); if (m) return m[1];
+    return n.replace(/^Santé Québec – /, '');
+}
+function fmtPct(x) { return Math.round(x) + (currentLang === 'fr' ? ' %' : '%'); }
+function topInstitutions(members, k) {
+    const c = {};
+    members.forEach(m => new Set(m.institutions || []).forEach(i => { if (i && !/non divulgu/i.test(i)) c[i] = (c[i] || 0) + 1; }));
+    return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, k);
+}
+function statTokenHtml(kind, value, figure, label, title) {
+    const on = !!(statFilter && statFilter.kind === kind && statFilter.value === value);
+    return `<button type="button" class="stat-token" data-stat-kind="${kind}" data-stat-value="${esc(value)}" aria-pressed="${on}"${title ? ` title="${esc(title)}"` : ''}><strong>${figure}</strong><span>${esc(label)}</span></button>`;
+}
+
+function renderStatsBand() {
+    const band = document.getElementById('statsBand');
+    if (!band || !allMembers.length) return;
+    // Types d'adhesion : tous les membres, y compris ceux sans profil public
+    const types = [['regulier', 'regular_pl'], ['etudiant', 'student_pl'], ['partenaire', 'partner_pl']].map(([t, k]) => ({
+        t: t, label: tr(k), n: allMembers.filter(m => m.typeNorm === t).length + (excludedStats[t] || 0)
+    }));
+    const total = types.reduce((s, x) => s + x.n, 0) || 1;
+    document.getElementById('statsTypesBar').innerHTML = types.map(x => `<div class="seg seg-${x.t}" style="flex:${x.n} 1 0"></div>`).join('');
+    document.getElementById('statsTypesLegend').innerHTML = types.map(x => `<span style="flex:${x.n} 1 0">${esc(x.label)} <strong>${x.n}</strong> · ${fmtPct(100 * x.n / total)}</span>`).join('');
+    // Themes et etablissements : profils publics seulement
+    const pub = allMembers.filter(m => m.consent === 'oui');
+    const withThemes = pub.filter(m => m.themes);
+    const tc = {};
+    withThemes.forEach(m => memberThemeKeys(m).forEach(k => { tc[k] = (tc[k] || 0) + 1; }));
+    const topThemes = Object.entries(tc).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    document.getElementById('statsThemesSub').textContent = tr('stats_themes_sub').replace('{n}', withThemes.length);
+    document.getElementById('statsThemes').innerHTML = topThemes.map(([k, n]) => statTokenHtml('theme', k, fmtPct(100 * n / (withThemes.length || 1)), themeLabel(k))).join('');
+    document.getElementById('statsInsts').innerHTML = topInstitutions(pub, 6).map(([name, n]) => statTokenHtml('inst', name, n, shortInst(name), name)).join('');
+    const open = !band.classList.contains('closed');
+    document.getElementById('statsToggleLabel').textContent = tr(open ? 'stats_hide' : 'stats_show');
+    document.getElementById('statsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+// Panneau en verre sur la carte : resume de ce qui est affiche (region,
+// etablissement ou theme choisi, sinon tout le reseau) et etablissements les
+// plus representes dans cette selection.
+function renderMapPanel() {
+    const el = document.getElementById('mapPanel');
+    if (!el) return;
+    const pub = filteredMembers.filter(m => m.consent === 'oui');
+    const regions = (msState && msState.filterRegion) || [];
+    const hasSearch = !!document.getElementById('searchInput').value.trim();
+    let kicker = tr('panel_all_kicker'), title = tr('panel_all');
+    if (statFilter) { kicker = tr(statFilter.kind === 'inst' ? 'chip_inst' : 'chip_theme'); title = statFilterLabel(); }
+    else if (regions.length === 1) { kicker = tr('panel_region'); title = translateFilterValue('filterRegion', regions[0]); }
+    else if (hasSearch || applyFilters._filtersActive) { kicker = tr('panel_selection'); title = tr('panel_selection_title'); }
+    const rows = (statFilter && statFilter.kind === 'inst') ? [] : topInstitutions(pub, 5);
+    const list = rows.length ? `<div class="panel-list"><div class="panel-list-title">${tr('panel_top_insts')}</div>${rows.map(([name, n]) => `<button type="button" class="panel-row" data-stat-kind="inst" data-stat-value="${esc(name)}" title="${esc(name)}"><span>${esc(shortInst(name))}</span><strong>${n}</strong></button>`).join('')}</div>` : '';
+    el.innerHTML = `<div><div class="kicker">${esc(kicker)}</div><h2>${esc(title)}</h2><div class="count"><strong>${pub.length}</strong> ${tr('panel_public')}</div></div>${list}<button type="button" class="panel-cta" onclick="document.getElementById('profils').scrollIntoView({behavior:'smooth',block:'start'})">${tr('panel_see')}</button>`;
+}
+
+// Clics delegues : chiffre du bandeau, ligne du panneau de la carte, actions des fiches.
+// Les noms passent par des attributs data-* (echappes), jamais par du code en ligne.
+document.addEventListener('click', function(e) {
+    const t = e.target.closest('[data-stat-kind]');
+    if (t) { setStatFilter(t.dataset.statKind, t.dataset.statValue); return; }
+    const o = e.target.closest('[data-member-open]');
+    if (o) { showMemberPopup(o.dataset.memberOpen); return; }
+    const g = e.target.closest('[data-member-graph]');
+    if (g) showInGraph(g.dataset.memberGraph);
+});
+// Bandeau repliable ; l'etat est memorise dans le navigateur
+(function() {
+    const band = document.getElementById('statsBand'), btn = document.getElementById('statsToggle');
+    if (!band || !btn) return;
+    try { if (localStorage.getItem('rsn-stats-closed') === '1') band.classList.add('closed'); } catch (e) {}
+    btn.addEventListener('click', function() {
+        band.classList.toggle('closed');
+        try { localStorage.setItem('rsn-stats-closed', band.classList.contains('closed') ? '1' : '0'); } catch (e) {}
+        renderStatsBand();
+    });
+    const sel = document.getElementById('listSort');
+    if (sel) sel.addEventListener('change', function() { listSort = sel.value; applyFilters(); });
+})();
+
+// Lien direct vers une fiche : /membre/prenom-nom. Le chemin est pret pour un
+// referencement futur (une adresse par profil). Deux homonymes recoivent un
+// suffixe -2, -3 dans l'ordre alphabetique de la liste.
+function slugify(s) { return fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function buildSlugs() {
+    const seen = {};
+    allMembers.forEach(m => {
+        const s = slugify([m.prenom, m.nom].filter(Boolean).join(' ') || m.name) || 'membre';
+        seen[s] = (seen[s] || 0) + 1;
+        m.slug = seen[s] > 1 ? s + '-' + seen[s] : s;
+    });
+}
+function memberPath(m) { return '/membre/' + m.slug; }
+function setMemberUrl(m) { try { history.replaceState(null, '', (m ? memberPath(m) : '/') + location.hash); } catch (e) {} }
+function openMemberFromPath() {
+    const mm = location.pathname.match(/^\/membre\/([^\/]+)\/?$/);
+    if (!mm) return;
+    let slug = mm[1];
+    try { slug = decodeURIComponent(slug); } catch (e) {}
+    const m = allMembers.find(x => x.slug === slug && x.consent === 'oui');
+    if (m) showMemberPopup(m.name); else setMemberUrl(null);
+}
+function buildModalActions(m) {
+    const row = document.createElement('div');
+    row.className = 'modal-actions';
+    const graph = document.createElement('button');
+    graph.type = 'button'; graph.className = 'primary';
+    graph.innerHTML = GRAPH_ICON + '<span></span>';
+    graph.querySelector('span').textContent = tr('card_graph');
+    graph.onclick = function() { showInGraph(m.name); };
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.textContent = tr('copy_link');
+    copy.onclick = function() {
+        const url = location.origin + memberPath(m);
+        const done = function() { copy.textContent = tr('link_copied'); setTimeout(function() { copy.textContent = tr('copy_link'); }, 2000); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function() { window.prompt(tr('copy_link'), url); });
+        else window.prompt(tr('copy_link'), url);
+    };
+    row.appendChild(graph); row.appendChild(copy);
+    return row;
+}
+
+// « Voir ses connexions » : bascule sur le graphe et centre la personne des que
+// le placement du graphe est termine.
+function showInGraph(name) {
+    const m = allMembers.find(x => x.name === name);
+    if (!m) return;
+    closeMemberPopup();
+    if (currentView !== 'connexions') setView('connexions');
+    const hero = document.getElementById('hero');
+    if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    let tries = 0;
+    (function focusWhenReady() {
+        if (currentView !== 'connexions') return;
+        if (_connexionsNetwork && _connexionsState && _connexionsCalm) {
+            const node = _connexionsState.nodes.find(n => n._ref === m);
+            if (node) {
+                _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
+                _connexionsNetwork.focus(node.id, { scale: 1.2, animation: { duration: 600, easingFunction: 'easeInOutCubic' } });
+                _connexionsNetwork.selectNodes([node.id]);
+            }
+            return;
+        }
+        if (++tries < 150) setTimeout(focusWhenReady, 200);
+    })();
 }
 
 // ─── URL HASH STATE ───
 function saveHash() {
     const p = new URLSearchParams();
-    if (currentView !== 'cards') p.set('v', currentView);
+    if (currentView === 'connexions') p.set('v', 'connexions');
+    if (statFilter) p.set('sf', statFilter.kind + ':' + statFilter.value);
     const s = document.getElementById('searchInput').value.trim();
     if (s) p.set('q', s);
     if (currentLang !== 'fr') p.set('lang', currentLang);
@@ -3652,13 +4151,17 @@ function restoreHash() {
     });
     // Sort
     if (p.get('sort')) { sortCol = p.get('sort'); sortDir = p.get('dir') || 'asc'; }
+    // Refonte 2026-11 : chiffre cliquable du bandeau (theme ou etablissement)
+    const sf = p.get('sf');
+    if (sf && /^(theme|inst):./.test(sf)) statFilter = { kind: sf.slice(0, sf.indexOf(':')), value: sf.slice(sf.indexOf(':') + 1) };
     // Apply filters first (sets filteredMembers)
     applyFilters();
     // Page (after filters so we know page count)
     if (p.get('p')) { const pg = parseInt(p.get('p')); const tp = Math.ceil(filteredMembers.length / CONFIG.PER_PAGE); if (pg >= 1 && pg <= tp) currentPage = pg; }
     // View
     const v = p.get('v');
-    if (v === 'table' || v === 'map' || v === 'connexions') setView(v);
+    // Refonte 2026-11 : les anciens liens #v=cards, #v=table et #v=map ouvrent la carte.
+    if (v === 'connexions') setView('connexions');
     else render();
 }
 
