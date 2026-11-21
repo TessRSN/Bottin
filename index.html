@@ -707,6 +707,10 @@
         .profile-modal .pm-help { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rsn-border); font-size: 0.8rem; color: var(--muted-strong); }
         .pm-help a { color: var(--rsn-secondary); }
         [data-theme="dark"] .pm-help a { color: var(--rsn-accent); }
+        /* Lien du sous-titre vers le site du RSN */
+        .header-site { display: inline-flex; align-items: center; gap: 0.25rem; color: inherit; text-decoration: none; }
+        .header-site:hover span { text-decoration: underline; text-underline-offset: 3px; }
+        .header-site svg { width: 11px; height: 11px; }
         /* ─── Lot 7 (2026-11-21) ─── */
         /* Fenetre d'un etablissement sur la carte : couleurs lisibles sur le verre, clair et sombre */
         .pt-regulier { color: #1f5fa8; }
@@ -717,9 +721,37 @@
         [data-theme="dark"] .pt-partenaire { color: #68d391; }
         .map-member-link:hover { color: var(--rsn-accent); }
         .popup-names { scrollbar-width: thin; scrollbar-color: rgba(130,140,160,0.7) transparent; }
-        /* Plus de petit triangle sous la fenetre : en verre, il laissait une jointure visible */
+        /* Petit triangle sous la fenetre, sans jointure visible (Tess y tient, 2026-11-21).
+           La jointure venait de trois choses : Leaflet fait chevaucher le triangle et la
+           fenetre d'un pixel (deux couches translucides l'une sur l'autre = une ligne plus
+           foncee), la fenetre avait un filet de bordure qui traversait la jonction, et le
+           triangle portait sa propre ombre. Ici : pas de chevauchement, pas de filet, pas
+           d'ombre sur le triangle, et le meme verre (fond et flou) des deux cotes. */
+        /* Solution retenue : le triangle fait partie du meme element que la fenetre.
+           Le triangle de Leaflet est masque ; la fenetre est prolongee de 12 px vers le
+           bas et un masque n'en laisse voir qu'un triangle centre (plus les deux coins
+           arrondis du bas). Un seul element = un seul verre, donc aucune jointure
+           possible. L'ombre, que le masque couperait, est portee par un cadre vide
+           place derriere (.leaflet-popup::before). */
         .leaflet-popup-tip-container { display: none; }
-        .leaflet-popup { margin-bottom: 12px; }
+        .leaflet-popup { margin-bottom: 6px; }
+        .leaflet-popup::before { content: ''; position: absolute; z-index: -1; left: 0; right: 0; top: 0; bottom: 12px; border-radius: 10px; box-shadow: var(--glass-shadow); pointer-events: none; }
+        .leaflet-popup-content-wrapper {
+            --r: 10px; --t: 12px;
+            border: 0; box-shadow: none; border-radius: var(--r) var(--r) 0 0; padding-bottom: calc(1px + var(--t));
+            -webkit-mask:
+                linear-gradient(#000 0 0) top / 100% calc(100% - var(--t) - var(--r)) no-repeat,
+                linear-gradient(#000 0 0) left var(--r) bottom var(--t) / calc(100% - 2 * var(--r)) var(--r) no-repeat,
+                radial-gradient(circle at 100% 0, #000 calc(var(--r) - 0.5px), transparent var(--r)) left 0 bottom var(--t) / var(--r) var(--r) no-repeat,
+                radial-gradient(circle at 0 0, #000 calc(var(--r) - 0.5px), transparent var(--r)) right 0 bottom var(--t) / var(--r) var(--r) no-repeat,
+                conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) bottom center / calc(2 * var(--t)) var(--t) no-repeat;
+            mask:
+                linear-gradient(#000 0 0) top / 100% calc(100% - var(--t) - var(--r)) no-repeat,
+                linear-gradient(#000 0 0) left var(--r) bottom var(--t) / calc(100% - 2 * var(--r)) var(--r) no-repeat,
+                radial-gradient(circle at 100% 0, #000 calc(var(--r) - 0.5px), transparent var(--r)) left 0 bottom var(--t) / var(--r) var(--r) no-repeat,
+                radial-gradient(circle at 0 0, #000 calc(var(--r) - 0.5px), transparent var(--r)) right 0 bottom var(--t) / var(--r) var(--r) no-repeat,
+                conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) bottom center / calc(2 * var(--t)) var(--t) no-repeat;
+        }
         /* « Mettre à jour mon profil » : verre aussi transparent que les fenetres de la carte */
         #profileOverlay { background: rgba(15,30,55,0.2); }
         .member-modal.profile-modal { background: var(--glass-bg); -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%); }
@@ -770,7 +802,9 @@
         <img class="header-logo" src="/logo-rsn-blanc.webp" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
-            <p data-i18n="subtitle">Réseau santé numérique</p>
+            <!-- Le nom du reseau mene au site du RSN (demande de Tess, 2026-11-21). Un bouton
+                 de plus dans le bandeau le faisait passer sur deux lignes. -->
+            <p><a class="header-site" href="https://rsn.quebec/" target="_blank" rel="noopener" data-i18n-title="site_link_title" title="Ouvrir le site du Réseau santé numérique"><span data-i18n="subtitle">Réseau santé numérique</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a></p>
         </div>
     </div>
     <div class="header-search" id="searchBox">
@@ -944,7 +978,7 @@
 
 <!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
      A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 7 · 21 nov. 2026</div>
+<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 8 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -1002,6 +1036,7 @@ const I18N = {
         news_new: 'Nouveau membre', news_updated: 'Profil mis à jour',
         map_world: 'Monde', map_world_title: 'Voir tous les membres, y compris hors Québec',
         subtitle: 'Réseau santé numérique',
+        site_link_title: 'Ouvrir le site du Réseau santé numérique',
         popup_see_1: 'Voir ce profil', popup_see_n: 'Voir ces {n} profils',
         pm_title: 'Mettre à jour mon profil', pm_desc: 'Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.',
         pm_placeholder: 'votre.email@institution.ca', pm_btn: 'Envoyer', pm_sending: 'Envoi...',
@@ -1116,6 +1151,7 @@ const I18N = {
         news_new: 'New member', news_updated: 'Profile updated',
         map_world: 'World', map_world_title: 'See all members, including outside Quebec',
         subtitle: 'Digital Health Network',
+        site_link_title: 'Open the Digital Health Network website',
         popup_see_1: 'See this profile', popup_see_n: 'See these {n} profiles',
         pm_title: 'Update my profile', pm_desc: 'Enter your institutional email to receive a secure edit link.',
         pm_placeholder: 'your.email@institution.ca', pm_btn: 'Send', pm_sending: 'Sending...',
