@@ -1067,7 +1067,7 @@ const I18N = {
         map_world: 'Monde', map_world_title: 'Voir tous les membres, y compris hors Québec',
         subtitle: 'Réseau santé numérique',
         site_link_title: 'Ouvrir le site du Réseau santé numérique',
-        ss_themes: 'Thèmes', ss_insts: 'Établissements', ss_people: 'Personnes', ss_profiles: 'profils',
+        ss_themes: 'Thèmes', ss_insts: 'Établissements', ss_people: 'Personnes', ss_profiles: 'profils', ss_profile: 'profil',
         list_pending: 'membres sans profil public', list_pending_go: 'Les voir',
         footer_funding: 'Financé par le Fonds de recherche du Québec – Santé', footer_nav: 'Liens du réseau',
         footer_carto: 'Cartographie des plateformes', footer_privacy: 'Politique de confidentialité',
@@ -1186,7 +1186,7 @@ const I18N = {
         map_world: 'World', map_world_title: 'See all members, including outside Quebec',
         subtitle: 'Digital Health Network',
         site_link_title: 'Open the Digital Health Network website',
-        ss_themes: 'Themes', ss_insts: 'Institutions', ss_people: 'People', ss_profiles: 'profiles',
+        ss_themes: 'Themes', ss_insts: 'Institutions', ss_people: 'People', ss_profiles: 'profiles', ss_profile: 'profile',
         list_pending: 'members without a public profile', list_pending_go: 'See them',
         footer_funding: 'Funded by the Fonds de recherche du Québec – Santé', footer_nav: 'Network links',
         footer_carto: 'Platform cartography', footer_privacy: 'Privacy policy',
@@ -4419,7 +4419,7 @@ function renderSuggestions() {
     let html = '', last = '';
     _suggestItems.forEach((it, i) => {
         if (it.kind !== last) { html += `<div class="ss-group">${esc(groupLabel[it.kind])}</div>`; last = it.kind; }
-        const right = it.kind === 'person' ? esc(it.sub || '') : `${it.count} ${tr('ss_profiles')}`;
+        const right = it.kind === 'person' ? esc(it.sub || '') : `${it.count} ${tr(it.count > 1 ? 'ss_profiles' : 'ss_profile')}`;
         html += `<button type="button" class="ss-item" role="option" data-suggest="${i}"><span>${esc(it.label)}</span><small>${right}</small></button>`;
     });
     box.innerHTML = html;
