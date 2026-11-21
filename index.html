@@ -707,6 +707,23 @@
         .profile-modal .pm-help { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rsn-border); font-size: 0.8rem; color: var(--muted-strong); }
         .pm-help a { color: var(--rsn-secondary); }
         [data-theme="dark"] .pm-help a { color: var(--rsn-accent); }
+        /* ─── Lot 7 (2026-11-21) ─── */
+        /* Fenetre d'un etablissement sur la carte : couleurs lisibles sur le verre, clair et sombre */
+        .pt-regulier { color: #1f5fa8; }
+        .pt-etudiant { color: #8a5a00; }
+        .pt-partenaire { color: #1c6b41; }
+        [data-theme="dark"] .pt-regulier { color: #90cdf4; }
+        [data-theme="dark"] .pt-etudiant { color: #f6c452; }
+        [data-theme="dark"] .pt-partenaire { color: #68d391; }
+        .map-member-link:hover { color: var(--rsn-accent); }
+        .popup-names { scrollbar-width: thin; scrollbar-color: rgba(130,140,160,0.7) transparent; }
+        /* Plus de petit triangle sous la fenetre : en verre, il laissait une jointure visible */
+        .leaflet-popup-tip-container { display: none; }
+        .leaflet-popup { margin-bottom: 12px; }
+        /* « Mettre à jour mon profil » : verre aussi transparent que les fenetres de la carte */
+        #profileOverlay { background: rgba(15,30,55,0.2); }
+        .member-modal.profile-modal { background: var(--glass-bg); -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%); }
+        [data-theme="dark"] .member-modal.profile-modal { background: var(--glass-bg); }
         /* Bandeau « Portrait du réseau » plus compact : texte et marges reduits */
         .stats-head { min-height: 44px; padding: 0.3rem 2rem; }
         .stats-head .t { font-size: 0.9rem; }
@@ -927,7 +944,7 @@
 
 <!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
      A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 6 · 21 nov. 2026</div>
+<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 7 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -2842,7 +2859,13 @@ function applyConnexionsFiltersToGraph() {
   // Pendant le calcul du placement (stabilisation), on ne centre pas : le fit
   // de fin de stabilisation annulerait le zoom ; le gestionnaire
   // stabilizationIterationsDone rappelle cette fonction une fois le graphe pose.
-  if (queryNorm && _connexionsNetwork && _connexionsCalm) {
+  // Correctif 2026-11-21 : aucun recadrage anime tant que le graphe est cache
+  // (sa zone de dessin mesure alors 0 px et le cadrage part sur une taille
+  // fausse). Dans ce cas la cle n'est pas memorisee, pour que le cadrage se
+  // fasse au prochain appel, une fois le graphe affiche.
+  const graphBox = document.getElementById('connexionsContainer');
+  const graphVisible = !!graphBox && !graphBox.classList.contains('hidden');
+  if (queryNorm && _connexionsNetwork && _connexionsCalm && graphVisible) {
     let foundId;
     if (ranked) {
       for (const m of ranked) { const id = nodeIdByMember.get(m); if (id !== undefined) { foundId = id; break; } }
@@ -2857,16 +2880,18 @@ function applyConnexionsFiltersToGraph() {
       _connexionsNetwork.focus(foundId, { scale: 1.2, animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
       _connexionsNetwork.selectNodes([foundId]);
     }
-  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && changed && visibleIds.length) {
+  } else if (!queryNorm && _connexionsNetwork && _connexionsCalm && changed && visibleIds.length && graphVisible) {
     // Recherche effacee ou filtres changes : on deselectionne et on recadre
     // sur les membres visibles (tout le graphe si aucun filtre).
     _connexionsNetwork.unselectAll();
     _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
     const fitOpts = { animation: { duration: 500, easingFunction: 'easeInOutCubic' } };
-    if (filtersActive) fitOpts.nodes = visibleIds;
-    _connexionsNetwork.fit(fitOpts);
+    // Avec des filtres : cadrage sur les membres restants. Sans filtre (recherche
+    // effacee) : retour a la vue de depart rapprochee, comme le bouton « Recentrer ».
+    if (filtersActive) { fitOpts.nodes = visibleIds; _connexionsNetwork.fit(fitOpts); }
+    else connexionsHomeFit(true);
   }
-  applyConnexionsFiltersToGraph._lastKey = key;
+  if (graphVisible) applyConnexionsFiltersToGraph._lastKey = key;
 }
 
 function renderConnexions() {
@@ -2899,7 +2924,10 @@ function renderConnexions() {
 
   loading.classList.remove('hidden');
   container.classList.add('hidden');
-  const schedule = window.requestIdleCallback || function(cb){ return setTimeout(cb, 50); };
+  // Correctif 2026-11-21 : delai maximal de 400 ms. Sans lui, la suite attendait
+  // un moment de repos du navigateur qui peut ne jamais venir pendant que le
+  // graphe s'anime, et le message « Calcul des connexions… » restait affiche.
+  const schedule = window.requestIdleCallback ? function(cb){ return window.requestIdleCallback(cb, { timeout: 400 }); } : function(cb){ return setTimeout(cb, 50); };
   schedule(function(){
     loading.classList.add('hidden');
     container.classList.remove('hidden');
@@ -2977,18 +3005,8 @@ function buildAndShowConnexionsGraph() {
       node.color = typeColor(hex);
       node.borderWidth = 0;
     }
-    // Refonte 2026-11 : anneau de couleur autour des nouveaux membres et des
-    // profils mis a jour (memes couleurs que les mentions des fiches).
-    const newsHex = NEWS_HEX[m.news] || null;
-    if (newsHex) {
-      node.borderWidth = 4;
-      node.borderWidthSelected = 6;
-      node.color = Object.assign({}, node.color, {
-        border: newsHex,
-        highlight: { background: hex, border: newsHex },
-        hover: { background: connexionsRgba(hex, 0.85), border: newsHex },
-      });
-    }
+    // (Les nouveaux membres et les profils mis a jour recoivent un anneau
+    // exterieur, dessine apres le graphe : voir connexionsDrawNewsRings.)
     return node;
   });
   // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
@@ -3048,6 +3066,7 @@ function buildAndShowConnexionsGraph() {
   // Le zoom (recherche qui centre un membre, molette) change l'echelle : on
   // readapte le plafond de vitesse pour que le mouvement reste lent a l'ecran.
   _connexionsNetwork.on('zoom', connexionsOnZoom);
+  _connexionsNetwork.on('afterDrawing', connexionsDrawNewsRings);
   // Forcer setSize + redraw apres que le container soit visible.
   setTimeout(function(){
     if (_connexionsNetwork && graphEl) {
@@ -3149,7 +3168,12 @@ function renderHero() {
     updateViewSwitch();
     if (currentView === 'connexions') {
         mc.classList.add('hidden');
-        if (typeof renderConnexions === 'function') renderConnexions();
+        // Correctif 2026-11-21 : si le graphe est deja construit et affiche, on
+        // ne le cache plus pour le « recalculer » a chaque recherche ou filtre :
+        // applyFilters() applique ensuite recherche et filtres au graphe en place.
+        const ready = _connexionsCache && _connexionsCache.members === allMembers && _connexionsNetwork;
+        if (ready && co && !co.classList.contains('hidden')) { if (col) col.classList.add('hidden'); }
+        else if (typeof renderConnexions === 'function') renderConnexions();
     } else {
         if (co) co.classList.add('hidden');
         if (col) col.classList.add('hidden');
@@ -4006,9 +4030,9 @@ function renderMap() {
         const types = { regulier: 0, etudiant: 0, partenaire: 0 };
         data.members.forEach(m => { if (types[m.typeNorm] !== undefined) types[m.typeNorm]++; });
         let typeParts = [];
-        if (types.regulier) typeParts.push(`<span style="color:var(--rsn-tag-regulier)">${types.regulier} ${types.regulier>1?tr('map_regulars'):tr('map_regular')}</span>`);
-        if (types.etudiant) typeParts.push(`<span style="color:var(--rsn-tag-etudiant)">${types.etudiant} ${types.etudiant>1?tr('map_students_s'):tr('map_student_s')}</span>`);
-        if (types.partenaire) typeParts.push(`<span style="color:var(--rsn-tag-partenaire)">${types.partenaire} ${types.partenaire>1?tr('map_partners_s'):tr('map_partner_s')}</span>`);
+        if (types.regulier) typeParts.push(`<span class="pt-regulier">${types.regulier} ${types.regulier>1?tr('map_regulars'):tr('map_regular')}</span>`);
+        if (types.etudiant) typeParts.push(`<span class="pt-etudiant">${types.etudiant} ${types.etudiant>1?tr('map_students_s'):tr('map_student_s')}</span>`);
+        if (types.partenaire) typeParts.push(`<span class="pt-partenaire">${types.partenaire} ${types.partenaire>1?tr('map_partners_s'):tr('map_partner_s')}</span>`);
         // Deterministic jitter based on institution name
         const h = hashStr(inst);
         const lat = data.coords[0] + ((h % 1000) / 1000 - 0.5) * 0.004;
@@ -4024,7 +4048,7 @@ function renderMap() {
         // Build member names list for popup
         // No artificial slice — show all members with scroll if needed
         const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span>${newsMention(m)}</div>`).join('');
-        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div><button type="button" class="popup-see" data-stat-kind="inst" data-stat-value="${esc(inst)}">${n > 1 ? tr('popup_see_n').replace('{n}', n) : tr('popup_see_1')}</button>`, { maxWidth: 300 });
+        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div class="popup-names" style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div><button type="button" class="popup-see" data-stat-kind="inst" data-stat-value="${esc(inst)}">${n > 1 ? tr('popup_see_n').replace('{n}', n) : tr('popup_see_1')}</button>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
         if (lat >= 44.5 && lat <= 49 && lng >= -77.5 && lng <= -66) quebecLatLngs.push([lat, lng]);
     });
@@ -4142,6 +4166,33 @@ function statFilterLabel() {
     if (!statFilter) return '';
     return statFilter.kind === 'inst' ? shortInst(statFilter.value) : themeLabel(statFilter.value);
 }
+// Anneau exterieur autour des nouveaux membres (rose) et des profils mis a
+// jour (violet), dessine apres chaque rendu du graphe. Il est trace a l'ecart
+// du point : les photos ont deja un contour de la couleur du type de membre,
+// et un contour colore de plus ne se distinguait pas (retour du 2026-11-21).
+// L'epaisseur et l'ecart sont compenses par le zoom pour rester visibles de loin.
+function connexionsDrawNewsRings(ctx) {
+    const st = _connexionsState, net = _connexionsNetwork;
+    if (!st || !net || !st.nodes) return;
+    if (!st.newsIds) st.newsIds = st.nodes.filter(n => n._ref && NEWS_HEX[n._ref.news]).map(n => n.id);
+    if (!st.newsIds.length) return;
+    const scale = net.getScale() || 1;
+    const lw = Math.max(2.5, 2.5 / scale), gap = Math.max(3, 3 / scale);
+    const pos = net.getPositions(st.newsIds);
+    ctx.save();
+    ctx.lineWidth = lw;
+    st.newsIds.forEach(function(id) {
+        const n = st.nodesDS.get(id), p = pos[id];
+        if (!n || !p || n.hidden) return;
+        ctx.globalAlpha = (typeof n.opacity === 'number' && n.opacity < 1) ? 0.35 : 1;
+        ctx.strokeStyle = NEWS_HEX[n._ref.news];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (n.size || 10) + (n.borderWidth || 0) / 2 + gap + lw / 2, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+    ctx.restore();
+}
+
 // Fenetre « Mettre a jour mon profil » : envoie le lien de modification par
 // courriel, comme magic-link.html (meme appel a /api/magic-link).
 function openProfileModal() {
