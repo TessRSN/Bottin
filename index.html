@@ -633,8 +633,11 @@
 
         /* ─── Fiche détaillée ─── */
         .member-overlay { background: rgba(15,30,55,0.38); }
-        .member-modal { max-width: 560px; border-radius: 14px; background: rgba(255,255,255,0.86); -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%); border: 1px solid var(--glass-border); }
-        [data-theme="dark"] .member-modal { background: rgba(22,32,52,0.88); }
+        /* Verre plus transparent depuis le 2026-11-21 (retour de Tess) ; le flou plus fort garde le texte lisible. */
+        .member-modal { max-width: 560px; border-radius: 14px; background: rgba(255,255,255,0.72); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); border: 1px solid var(--glass-border); }
+        [data-theme="dark"] .member-modal { background: rgba(22,32,52,0.74); }
+        /* Barre de defilement discrete : sans cela, une bande blanche borde le verre quand les barres sont toujours affichees. */
+        .member-modal { scrollbar-width: thin; scrollbar-color: rgba(120,132,155,0.55) transparent; }
         .modal-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--rsn-border); }
         .modal-actions button { display: inline-flex; align-items: center; gap: 0.4rem; height: 44px; padding: 0 0.9rem; border-radius: 8px; border: 1px solid var(--rsn-border); background: var(--rsn-card-bg); color: var(--ink); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
         .modal-actions button.primary { background: #1a365d; border-color: #1a365d; color: #fff; }
@@ -3287,16 +3290,39 @@ function renderListCounts() {
     // la place au bouton de retour vers les profils publics.
     const btn = !pend ? '' : (inPendingPages()
         ? `<button type="button" class="list-back" data-list-back>${tr('list_back')}</button>`
-        : ` <button type="button" id="listPendingGo">${tr('list_pending_go')}</button>`);
+        : (pub ? ` <button type="button" id="listPendingGo">${tr('list_pending_go')}</button>` : ''));
     el.innerHTML = `<strong>${pub}</strong> ${tr(pub > 1 ? 'panel_public' : 'list_public_one')}` + (pend ? ` · <strong>${pend}</strong> ${tr(pend > 1 ? 'list_pending' : 'list_pending_one')}` : '') + btn;
     const go = document.getElementById('listPendingGo');
     if (go) go.addEventListener('click', goToPending);
 }
-// Page ou commencent les membres sans profil public (regroupes a la fin de la
-// liste, voir orderForDisplay) ; 0 s'il n'y en a pas.
-function pendingStartPage() {
+// Decoupage en pages. Les membres sans profil public (regroupes a la fin de la
+// liste, voir orderForDisplay) commencent toujours sur une nouvelle page : apres
+// « Les voir », on ne veut pas tomber d'abord sur les derniers profils publics
+// (retour de Tess du 2026-11-21). La derniere page de profils publics peut donc
+// etre incomplete. Si tout tient sur une page, ou s'il n'y a qu'une des deux
+// sortes de fiches, la pagination reste ordinaire.
+function pageLayout() {
+    const n = filteredMembers.length, per = CONFIG.PER_PAGE;
     const idx = filteredMembers.findIndex(m => m.consent !== 'oui');
-    return idx < 0 ? 0 : Math.floor(idx / CONFIG.PER_PAGE) + 1;
+    const pub = idx < 0 ? n : idx;
+    const split = n > per && pub > 0 && pub < n;
+    const pubPages = split ? Math.ceil(pub / per) : 0;
+    return { pub, split, pubPages, total: split ? pubPages + Math.ceil((n - pub) / per) : Math.ceil(n / per) };
+}
+function totalPages() { return pageLayout().total; }
+// Position de la premiere fiche de la page p dans filteredMembers, et de celle qui suit la derniere.
+function pageRange(p) {
+    const L = pageLayout(), per = CONFIG.PER_PAGE, n = filteredMembers.length;
+    if (!L.split) return [(p - 1) * per, Math.min(p * per, n)];
+    if (p <= L.pubPages) return [(p - 1) * per, Math.min(p * per, L.pub)];
+    const s = L.pub + (p - L.pubPages - 1) * per;
+    return [s, Math.min(s + per, n)];
+}
+// Page ou commencent les membres sans profil public ; 0 s'il n'y en a pas.
+function pendingStartPage() {
+    const L = pageLayout();
+    if (L.pub >= filteredMembers.length) return 0;
+    return L.split ? L.pubPages + 1 : 1;
 }
 // Vrai quand la page affichee est au-dela des profils publics. Si tout tient
 // sur la premiere page, il n'y a rien d'ou revenir.
@@ -3317,7 +3343,7 @@ function render() {
     syncFilterNames();
     syncSearchClear();
 }
-function pgItems(){ const s=(currentPage-1)*CONFIG.PER_PAGE; return filteredMembers.slice(s,s+CONFIG.PER_PAGE); }
+function pgItems(){ const r=pageRange(currentPage); return filteredMembers.slice(r[0],r[1]); }
 function esc(s){ if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function trunc(s,n){ if(!s||s.length<=n)return s; return s.slice(0,n)+'…'; }
 // Display "Prénom NOM" with last name in uppercase to distinguish from
@@ -3429,7 +3455,7 @@ const GRAPH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 function renderCards() {
     const el = document.getElementById('cardsView'), items = pgItems();
     if (!items.length) { el.innerHTML = ''; return; }
-    const start = (currentPage - 1) * CONFIG.PER_PAGE;
+    const start = pageRange(currentPage)[0];
     el.innerHTML = items.map((m, i) => {
         const isPending = m.consent !== 'oui';
         const tag = `<span class="card-tag tag-${m.typeNorm}">${esc(translateType(m.type) || 'N/A')}</span>`;
@@ -3464,7 +3490,7 @@ function renderCards() {
 function togEx(id,btn){ const e=document.getElementById(id); e.classList.toggle('visible'); btn.textContent=e.classList.contains('visible')?tr('lbl_see_less'):tr('lbl_see_more'); }
 
 function renderPag() {
-    const el=document.getElementById('pagination'), tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE);
+    const el=document.getElementById('pagination'), tp=totalPages();
     if(tp<=1){el.innerHTML='';return;}
     let h=`<button class="page-btn" onclick="goP(${currentPage-1})" ${currentPage===1?'disabled':''}>${tr('prev')}</button>`;
     const pgs=new Set([1,tp]); for(let i=Math.max(1,currentPage-2);i<=Math.min(tp,currentPage+2);i++)pgs.add(i);
@@ -3472,7 +3498,7 @@ function renderPag() {
     h+=`<button class="page-btn" onclick="goP(${currentPage+1})" ${currentPage===tp?'disabled':''}>${tr('next')}</button>`;
     el.innerHTML=h;
 }
-function goP(p){ const tp=Math.ceil(filteredMembers.length/CONFIG.PER_PAGE); if(p<1||p>tp)return; currentPage=p; renderList(); saveHash(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
+function goP(p){ const tp=totalPages(); if(p<1||p>tp)return; currentPage=p; renderList(); saveHash(); window.scrollTo({top:document.querySelector('.content').offsetTop-10,behavior:'smooth'}); }
 function doSort(c){ if(sortCol===c){sortDir=sortDir==='asc'?'desc':'asc';}else{sortCol=c;sortDir='asc';} applyFilters(); saveHash(); }
 
 // ─── EVENTS ───
@@ -4708,7 +4734,7 @@ function restoreHash() {
     // Apply filters first (sets filteredMembers)
     applyFilters();
     // Page (after filters so we know page count)
-    if (p.get('p')) { const pg = parseInt(p.get('p')); const tp = Math.ceil(filteredMembers.length / CONFIG.PER_PAGE); if (pg >= 1 && pg <= tp) currentPage = pg; }
+    if (p.get('p')) { const pg = parseInt(p.get('p')); const tp = totalPages(); if (pg >= 1 && pg <= tp) currentPage = pg; }
     // View
     const v = p.get('v');
     // Refonte 2026-11 : les anciens liens #v=cards, #v=table et #v=map ouvrent la carte.
