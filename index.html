@@ -619,6 +619,14 @@
         .member-card.pending-consent { background: transparent; box-shadow: none; border-style: dashed; padding: 0.8rem 1rem; }
         .member-card.pending-consent .card-name { color: var(--muted-strong); }
         .consent-badge { border-radius: 5px; margin-top: 0.2rem; text-decoration: none; align-self: flex-start; }
+        /* Fiche sans profil public : le libelle a sa propre ligne, sous le nom et l'etiquette de type.
+           A cote de l'etiquette, il se coupait en deux des que celle-ci etait large (« Partenaire »). */
+        .member-card.pending-consent .card-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.3rem 0.75rem; align-items: start; }
+        .member-card.pending-consent .card-id { display: contents; }
+        .member-card.pending-consent .avatar { grid-area: 1 / 1 / 3 / 2; }
+        .member-card.pending-consent .card-name { grid-area: 1 / 2; }
+        .member-card.pending-consent .card-tag { grid-area: 1 / 3; }
+        .member-card.pending-consent .consent-badge { grid-area: 2 / 2 / 3 / 4; justify-self: start; margin-top: 0; }
         .cards-divider { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; margin-top: 0.6rem; padding-top: 1rem; border-top: 1px solid var(--rsn-border); font-size: 0.95rem; color: var(--ink); }
         .cards-divider a { color: var(--rsn-secondary); font-weight: 600; }
         [data-theme="dark"] .cards-divider a { color: var(--rsn-accent); }
@@ -722,6 +730,11 @@
         .list-counts button { min-height: 32px; margin-left: 0.3rem; padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--rsn-secondary); cursor: pointer; }
         [data-theme="dark"] .list-counts button { color: var(--rsn-accent); }
         .list-counts button:hover { text-decoration: underline; text-underline-offset: 3px; }
+        /* Bouton de retour aux profils publics, affiche sur les pages des membres sans profil public
+           (dans la ligne de decompte et dans le separateur, la ou « Les voir » fait arriver). */
+        .list-counts button.list-back, .cards-divider .list-back { min-height: 36px; margin-left: 0.5rem; padding: 0 0.75rem; border: 1px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); color: var(--ink); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+        .list-counts button.list-back:hover, .cards-divider .list-back:hover { border-color: var(--rsn-secondary); text-decoration: none; }
+        .cards-divider .list-back { margin-left: auto; }
         .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.6rem 2rem; padding: 1.1rem 2rem 1.3rem; border-top: 1px solid var(--rsn-border); background: var(--bar-bg); font-size: 0.85rem; color: var(--muted-strong); }
         .sf-brand { display: flex; flex-direction: column; gap: 2px; }
         .sf-brand strong { font-size: 0.92rem; color: var(--ink); }
@@ -1068,7 +1081,7 @@ const I18N = {
         subtitle: 'Réseau santé numérique',
         site_link_title: 'Ouvrir le site du Réseau santé numérique',
         ss_themes: 'Thèmes', ss_insts: 'Établissements', ss_people: 'Personnes', ss_profiles: 'profils', ss_profile: 'profil',
-        list_pending: 'membres sans profil public', list_pending_go: 'Les voir',
+        list_pending: 'membres sans profil public', list_pending_one: 'membre sans profil public', list_public_one: 'profil public', list_pending_go: 'Les voir', list_back: '← Retour aux profils publics',
         footer_funding: 'Financé par le Fonds de recherche du Québec – Santé', footer_nav: 'Liens du réseau',
         footer_carto: 'Cartographie des plateformes', footer_privacy: 'Politique de confidentialité',
         popup_see_1: 'Voir ce profil', popup_see_n: 'Voir ces {n} profils',
@@ -1187,7 +1200,7 @@ const I18N = {
         subtitle: 'Digital Health Network',
         site_link_title: 'Open the Digital Health Network website',
         ss_themes: 'Themes', ss_insts: 'Institutions', ss_people: 'People', ss_profiles: 'profiles', ss_profile: 'profile',
-        list_pending: 'members without a public profile', list_pending_go: 'See them',
+        list_pending: 'members without a public profile', list_pending_one: 'member without a public profile', list_public_one: 'public profile', list_pending_go: 'See them', list_back: '← Back to public profiles',
         footer_funding: 'Funded by the Fonds de recherche du Québec – Santé', footer_nav: 'Network links',
         footer_carto: 'Platform cartography', footer_privacy: 'Privacy policy',
         popup_see_1: 'See this profile', popup_see_n: 'See these {n} profiles',
@@ -3270,14 +3283,28 @@ function renderListCounts() {
     const el = document.getElementById('listCounts');
     if (!el) return;
     const pub = filteredMembers.filter(m => m.consent === 'oui').length, pend = filteredMembers.length - pub;
-    el.innerHTML = `<strong>${pub}</strong> ${tr('panel_public')}` + (pend ? ` · <strong>${pend}</strong> ${tr('list_pending')} <button type="button" id="listPendingGo">${tr('list_pending_go')}</button>` : '');
+    // Une fois sur les pages des membres sans profil public, « Les voir » laisse
+    // la place au bouton de retour vers les profils publics.
+    const btn = !pend ? '' : (inPendingPages()
+        ? `<button type="button" class="list-back" data-list-back>${tr('list_back')}</button>`
+        : ` <button type="button" id="listPendingGo">${tr('list_pending_go')}</button>`);
+    el.innerHTML = `<strong>${pub}</strong> ${tr(pub > 1 ? 'panel_public' : 'list_public_one')}` + (pend ? ` · <strong>${pend}</strong> ${tr(pend > 1 ? 'list_pending' : 'list_pending_one')}` : '') + btn;
     const go = document.getElementById('listPendingGo');
     if (go) go.addEventListener('click', goToPending);
 }
-function goToPending() {
+// Page ou commencent les membres sans profil public (regroupes a la fin de la
+// liste, voir orderForDisplay) ; 0 s'il n'y en a pas.
+function pendingStartPage() {
     const idx = filteredMembers.findIndex(m => m.consent !== 'oui');
-    if (idx < 0) return;
-    currentPage = Math.floor(idx / CONFIG.PER_PAGE) + 1;
+    return idx < 0 ? 0 : Math.floor(idx / CONFIG.PER_PAGE) + 1;
+}
+// Vrai quand la page affichee est au-dela des profils publics. Si tout tient
+// sur la premiere page, il n'y a rien d'ou revenir.
+function inPendingPages() { const p = pendingStartPage(); return p > 1 && currentPage >= p; }
+function goToPending() {
+    const p = pendingStartPage();
+    if (!p) return;
+    currentPage = p;
     renderList(); saveHash();
     const d = document.querySelector('.cards-divider');
     if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3407,8 +3434,9 @@ function renderCards() {
         const isPending = m.consent !== 'oui';
         const tag = `<span class="card-tag tag-${m.typeNorm}">${esc(translateType(m.type) || 'N/A')}</span>`;
         const prev = filteredMembers[start + i - 1];
+        const back = currentPage > 1 ? `<button type="button" class="list-back" data-list-back>${tr('list_back')}</button>` : '';
         const divider = (isPending && (i === 0 || (prev && prev.consent === 'oui')))
-            ? `<div class="cards-divider"><strong>${tr('pending_title')}</strong><a href="/magic-link.html">${tr('pending_cta')}</a></div>` : '';
+            ? `<div class="cards-divider"><strong>${tr('pending_title')}</strong><a href="/magic-link.html">${tr('pending_cta')}</a>${back}</div>` : '';
         if (isPending) {
             return `${divider}<div class="member-card pending-consent">
                 <div class="card-top">${avatarHtml(m, 'avatar-muted')}<div class="card-id"><div class="card-name">${displayName(m)}</div><a class="consent-badge badge-pending-consent" href="/magic-link.html">${tr('badge_pending_consent')}</a></div>${tag}</div>
@@ -4548,6 +4576,8 @@ document.addEventListener('click', function(e) {
         return;
     }
     if (t) { setStatFilter(t.dataset.statKind, t.dataset.statValue); return; }
+    // « Retour aux profils publics » depuis les pages des membres sans profil public
+    if (e.target.closest('[data-list-back]')) { goP(1); return; }
     const o = e.target.closest('[data-member-open]');
     if (o) { showMemberPopup(o.dataset.memberOpen); return; }
     const g = e.target.closest('[data-member-graph]');
