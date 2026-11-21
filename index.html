@@ -654,6 +654,29 @@
         .view-reset { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0 0.9rem; border-radius: 10px; color: var(--ink); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
         .view-reset svg { width: 16px; height: 16px; }
         #connexionsIntro { padding-left: 430px !important; }
+        /* ─── Lot 4 (2026-11-21) ─── */
+        /* « Recentrer » en bas a gauche : a cote du zoom sur la carte, dans le coin du graphe */
+        .view-reset { height: 40px; }
+        .graph-reset { position: absolute; left: 16px; bottom: 16px; z-index: 6; }
+        /* Graphe : le texte d'explication passe tout en bas, sous le graphe et ses reglages ;
+           le selecteur Carte | Connexions se pose ainsi sur le graphe comme sur la carte. */
+        #connexionsContainer > div:nth-child(2) { order: 1; }
+        #connexionsContainer > div:nth-child(3) { order: 2; }
+        #connexionsIntro { order: 3; min-height: 0; padding: 0.5rem 1rem !important; border-bottom: 0 !important; border-top: 1.5px solid var(--rsn-border); font-size: 0.78rem !important; }
+        /* Barre de filtres plus basse */
+        .controls { padding: 0.3rem 2rem; }
+        .ms-btn, .reset-btn, .stat-chip { height: 36px; }
+        .ms-btn { font-size: 0.82rem; padding: 0 0.65rem; }
+        .ms-btn::before { font-size: 0.78rem; }
+        .reset-btn { padding: 0 0.8rem; }
+        .stat-chip button { width: 30px; height: 30px; }
+        .results-count { font-size: 0.82rem; }
+        /* Mentions « Nouveau membre » et « Profil mis à jour » sur les fiches */
+        .news-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #1c5e3a; }
+        .news-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .news-maj { color: #1f5fa8; }
+        [data-theme="dark"] .news-badge { color: #86efac; }
+        [data-theme="dark"] .news-maj { color: #90cdf4; }
         /* Bandeau « Portrait du réseau » plus compact : texte et marges reduits */
         .stats-head { min-height: 44px; padding: 0.3rem 2rem; }
         .stats-head .t { font-size: 0.9rem; }
@@ -686,7 +709,7 @@
             .map-panel { position: static; width: auto; border-radius: 0; box-shadow: none; border-width: 1px 0; }
             .hero-bottom { position: static; padding: 0.6rem 1rem; }
             .teaser { width: 100%; margin-left: 0; }
-            #connexionsIntro { padding: 140px 1rem 0.65rem !important; }
+            .controls { padding: 0.3rem 1rem; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
@@ -699,7 +722,6 @@
         <img class="header-logo" src="/logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
-            <p>Réseau santé numérique</p>
         </div>
     </div>
     <div class="header-search" id="searchBox">
@@ -752,13 +774,13 @@
         <button type="button" data-view="map" class="active" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg><span data-i18n="view_map">Carte</span></button>
         <button type="button" data-view="connexions" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7.8l4 8.4M17 7.8l-4 8.4M8 6h8"/></svg><span data-i18n="view_connexions">Connexions</span></button>
     </div>
-    <!-- Retour a la vue d'ensemble de la carte ou du graphe -->
-    <button type="button" class="view-reset glass" id="heroReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span data-i18n="hero_reset">Recentrer</span></button>
     </div>
     <div id="mapContainer">
         <div id="mapView"></div>
-        <aside class="map-panel glass" id="mapPanel"></aside>
         <div class="hero-bottom">
+            <!-- Retour a la vue d'ensemble, en bas a gauche a cote du zoom -->
+            <button type="button" class="view-reset glass js-hero-reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span data-i18n="hero_reset">Recentrer</span></button>
+            <button type="button" class="view-reset glass hidden" id="mapWorld" data-i18n-title="map_world_title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span data-i18n="map_world">Monde</span></button>
             <div class="map-pill glass"><span class="map-legend-dot" style="background:#a855f7"></span><span class="map-stats" id="mapStats">—</span><span id="mapCoverage" class="hidden">—</span></div>
             <button type="button" class="teaser glass" data-view="connexions">
                 <svg viewBox="0 0 104 76" width="104" height="76" aria-hidden="true">
@@ -783,6 +805,7 @@
       <div style="position:relative;flex:1;min-height:0;display:flex">
         <div id="connexionsGraph" style="position:relative;background:var(--rsn-bg);flex:1;width:100%;min-height:0"></div>
         <!-- Phase 2j v7: message pendant le calcul du placement (physique hors ecran) -->
+        <button type="button" class="view-reset glass graph-reset js-hero-reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span data-i18n="hero_reset">Recentrer</span></button>
         <div id="connexionsStabilizing" class="hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:11;background:var(--rsn-card-bg);color:var(--rsn-muted);padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;box-shadow:var(--shadow-sm);pointer-events:none" data-i18n="connexions_loading">Calcul des connexions…</div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;padding:0.6rem 1rem;border-top:1.5px solid var(--rsn-border);font-size:0.78rem;flex-wrap:wrap">
@@ -853,7 +876,7 @@
 
 <!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
      A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 3 · 21 nov. 2026</div>
+<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 4 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -908,6 +931,8 @@ const I18N = {
     fr: {
         // Refonte 2026-11
         view_switch_label: 'Choisir la vue', teaser_link: 'Voir les connexions', search_clear: 'Effacer la recherche', hero_reset: 'Recentrer',
+        news_new: 'Nouveau membre', news_updated: 'Profil mis à jour',
+        map_world: 'Monde', map_world_title: 'Voir tous les membres, y compris hors Québec',
         members_lc: 'membres', insts_lc: 'établissements',
         stats_title: 'Portrait du réseau', stats_show: 'Déplier', stats_hide: 'Replier',
         stats_types: "Types d'adhésion", stats_types_sub: 'Tous les membres',
@@ -1012,6 +1037,8 @@ const I18N = {
     en: {
         // Refonte 2026-11
         view_switch_label: 'Choose the view', teaser_link: 'See the connections', search_clear: 'Clear search', hero_reset: 'Reset view',
+        news_new: 'New member', news_updated: 'Profile updated',
+        map_world: 'World', map_world_title: 'See all members, including outside Quebec',
         members_lc: 'members', insts_lc: 'institutions',
         stats_title: 'Network at a glance', stats_show: 'Expand', stats_hide: 'Collapse',
         stats_types: 'Membership types', stats_types_sub: 'All members',
@@ -1266,7 +1293,8 @@ const CONFIG = {
         orcid: 'ORCID', cv: 'CV / LinkedIn',
         evaluateur: 'Évaluateur du RSN - nouv. formulaire',
         profilPublic: 'Autorisez-vous le RSN à vous créer un profil de membre public',
-        photo: 'Photo' // Phase 3a: adresse du relais /api/photo (vide si pas de photo)
+        photo: 'Photo', // Phase 3a: adresse du relais /api/photo (vide si pas de photo)
+        nouveaute: 'Nouveauté' // Refonte 2026-11 : « nouveau », « maj » ou vide (calcule par /api/export)
     }
 };
 
@@ -1473,6 +1501,7 @@ function loadMembers(data) {
             orcid: (m[C.orcid]||'').trim(),
             cv: (m[C.cv]||'').trim(),
             photo: (m[C.photo]||'').trim(),
+            news: (m[C.nouveaute]||'').trim(), // 'nouveau', 'maj' ou ''
             reseau: (m[C.reseau]||'').trim(),
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
@@ -2813,7 +2842,7 @@ function renderConnexions() {
 
 function buildAndShowConnexionsGraph() {
   if (_connexionsCache && _connexionsCache.members === allMembers && _connexionsNetwork) {
-    _connexionsNetwork.fit({ animation: false });
+    connexionsHomeFit(false);
     applyConnexionsFiltersToGraph(); // reapplique les filtres au cas ou ils ont change
     return;
   }
@@ -2928,7 +2957,7 @@ function buildAndShowConnexionsGraph() {
   _connexionsCalm = false;
   _connexionsNetwork.once('stabilizationIterationsDone', function () {
     if (!_connexionsNetwork) return;
-    _connexionsNetwork.fit({ animation: false });
+    connexionsHomeFit(false);
     connexionsApplyCalm();
     if (stabilizingEl) stabilizingEl.classList.add('hidden');
     // Phase 2j v8 (2026-09-15): si une recherche ou des filtres sont deja
@@ -3047,7 +3076,6 @@ function renderHero() {
         if (col) col.classList.add('hidden');
         mc.classList.remove('hidden');
         renderMap();
-        renderMapPanel();
     }
 }
 function renderList() {
@@ -3192,8 +3220,9 @@ function renderCards() {
         const instHtml = insts.slice(0, 2).map(x => esc(x)).join('<br>') + (insts.length > 2 ? ` <span title="${esc(insts.slice(2).join(' · '))}">+${insts.length - 2}</span>` : '');
         const themesHtml = m.themes ? `<div class="card-themes">${clampedTextHtml(m.themes, 150)}</div>` : '';
         const incomplete = !m.formComplete ? `<a class="consent-badge badge-incomplete-form" href="/magic-link.html">${tr('badge_incomplete_form')}</a>` : '';
+        const news = m.news === 'nouveau' ? `<span class="news-badge">${tr('news_new')}</span>` : m.news === 'maj' ? `<span class="news-badge news-maj">${tr('news_updated')}</span>` : '';
         return `${divider}<div class="member-card">
-            <div class="card-top">${avatarHtml(m)}<div class="card-id"><div class="card-name">${displayName(m)}</div><div class="card-institution">${instHtml}</div></div>${tag}</div>
+            <div class="card-top">${avatarHtml(m)}<div class="card-id">${news}<div class="card-name">${displayName(m)}</div><div class="card-institution">${instHtml}</div></div>${tag}</div>
             ${m.statut ? `<div class="card-statut">${esc(trStatut(m.statut))}</div>` : ''}
             ${themesHtml}
             ${focusChipsHtml(m, 3)}
@@ -3936,6 +3965,12 @@ function renderMap() {
         const fitQuebec = !rawSearch && !applyFilters._filtersActive && quebecLatLngs.length > 1;
         const home = fitQuebec ? L.latLngBounds(quebecLatLngs).pad(0.08) : clusterGroup.getBounds().pad(0.1);
         renderMap._home = home; // vue d'ensemble, reprise par le bouton « Recentrer »
+        // Bouton « Monde » : la vue d'arrivee etant cadree sur le Quebec, il montre
+        // d'un clic tous les marqueurs, y compris hors Quebec. Affiche seulement
+        // s'il y a des marqueurs en dehors du cadre d'arrivee.
+        renderMap._all = clusterGroup.getBounds().pad(0.1);
+        const worldBtn = document.getElementById('mapWorld');
+        if (worldBtn) worldBtn.classList.toggle('hidden', !(fitQuebec && quebecLatLngs.length < clusterGroup.getLayers().length));
         setTimeout(() => map.fitBounds(home), 200);
     }
 }
@@ -3952,8 +3987,10 @@ function completeness(m) {
 }
 function orderForDisplay(list, keepRelevance) {
     const pub = list.filter(m => m.consent === 'oui'), pend = list.filter(m => m.consent !== 'oui');
-    // Tri stable : a completude egale, l'ordre alphabetique d'origine est conserve.
-    if (!keepRelevance && listSort === 'complete') pub.sort((a, b) => completeness(b) - completeness(a));
+    // Nouveaux membres d'abord, puis profils mis a jour recemment, puis par completude.
+    // Tri stable : a rang egal, l'ordre alphabetique d'origine est conserve.
+    const rank = m => (m.news === 'nouveau' ? 200 : m.news === 'maj' ? 100 : 0) + completeness(m);
+    if (!keepRelevance && listSort === 'complete') pub.sort((a, b) => rank(b) - rank(a));
     return pub.concat(pend);
 }
 
@@ -4004,20 +4041,49 @@ function statFilterLabel() {
     if (!statFilter) return '';
     return statFilter.kind === 'inst' ? shortInst(statFilter.value) : themeLabel(statFilter.value);
 }
+// Vue de depart du graphe : centree sur les membres relies entre eux, puis
+// rapprochee (CONNEXIONS_HOME_ZOOM), pour arriver sur un graphe lisible plutot
+// que vu de tres loin. Le pourtour se retrouve en dezoomant ou en deplacant la
+// vue. Mesure du 2026-11-21 : cadrer seulement sur les membres relies ne
+// rapprochait presque pas (372 des 410 points sont relies), d'ou le facteur.
+const CONNEXIONS_HOME_ZOOM = 1.8;
+function connexionsHomeFit(animated) {
+    if (!_connexionsNetwork) return;
+    const opts = { animation: false };
+    try {
+        const st = _connexionsState;
+        if (st && st.edgesDS && st.nodesDS) {
+            const linked = new Set();
+            st.edgesDS.forEach(function(e) { if (!e.hidden) { linked.add(e.from); linked.add(e.to); } });
+            const ids = st.nodesDS.getIds().filter(function(id) { const n = st.nodesDS.get(id); return linked.has(id) && !(n && n.hidden); });
+            if (ids.length > 5) opts.nodes = ids;
+        }
+    } catch (e) {}
+    _connexionsNetwork.fit(opts);
+    _connexionsNetwork.moveTo({
+        scale: _connexionsNetwork.getScale() * CONNEXIONS_HOME_ZOOM,
+        animation: animated ? { duration: 500, easingFunction: 'easeInOutCubic' } : false
+    });
+}
+
 // Bouton « Recentrer » : retour a la vue d'ensemble de la carte (tous les
-// cercles de la selection) ou du graphe (tous les points).
+// cercles de la selection) ou a la vue de depart du graphe.
 function resetHeroView() {
     if (currentView === 'connexions') {
         if (!_connexionsNetwork) return;
         _connexionsNetwork.unselectAll();
         _connexionsNetwork.once('animationFinished', connexionsApplyCalm);
-        _connexionsNetwork.fit({ animation: { duration: 500, easingFunction: 'easeInOutCubic' } });
+        connexionsHomeFit(true);
     } else if (map && renderMap._home) {
         map.closePopup();
         map.fitBounds(renderMap._home);
     }
 }
-(function() { const b = document.getElementById('heroReset'); if (b) b.addEventListener('click', resetHeroView); })();
+document.querySelectorAll('.js-hero-reset').forEach(function(b) { b.addEventListener('click', resetHeroView); });
+(function() {
+    const w = document.getElementById('mapWorld');
+    if (w) w.addEventListener('click', function() { if (map && renderMap._all) { map.closePopup(); map.fitBounds(renderMap._all); } });
+})();
 
 // Nom de chaque filtre ecrit dans son bouton (« Région : Toutes »), relu a
 // chaque rendu pour suivre la langue ; croix d'effacement de la recherche
@@ -4088,24 +4154,6 @@ function renderStatsBand() {
     const open = !band.classList.contains('closed');
     document.getElementById('statsToggleLabel').textContent = tr(open ? 'stats_hide' : 'stats_show');
     document.getElementById('statsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-
-// Panneau en verre sur la carte : resume de ce qui est affiche (region,
-// etablissement ou theme choisi, sinon tout le reseau) et etablissements les
-// plus representes dans cette selection.
-function renderMapPanel() {
-    const el = document.getElementById('mapPanel');
-    if (!el) return;
-    const pub = filteredMembers.filter(m => m.consent === 'oui');
-    const regions = (msState && msState.filterRegion) || [];
-    const hasSearch = !!document.getElementById('searchInput').value.trim();
-    let kicker = tr('panel_all_kicker'), title = tr('panel_all');
-    if (statFilter) { kicker = tr(statFilter.kind === 'inst' ? 'chip_inst' : 'chip_theme'); title = statFilterLabel(); }
-    else if (regions.length === 1) { kicker = tr('panel_region'); title = translateFilterValue('filterRegion', regions[0]); }
-    else if (hasSearch || applyFilters._filtersActive) { kicker = tr('panel_selection'); title = tr('panel_selection_title'); }
-    const rows = (statFilter && statFilter.kind === 'inst') ? [] : topInstitutions(pub, 5);
-    const list = rows.length ? `<div class="panel-list"><div class="panel-list-title">${tr('panel_top_insts')}</div>${rows.map(([name, n]) => `<button type="button" class="panel-row" data-stat-kind="inst" data-stat-value="${esc(name)}" title="${esc(name)}"><span>${esc(shortInst(name))}</span><strong>${n}</strong></button>`).join('')}</div>` : '';
-    el.innerHTML = `<div><div class="kicker">${esc(kicker)}</div><h2>${esc(title)}</h2><div class="count"><strong>${pub.length}</strong> ${tr('panel_public')}</div></div>${list}<button type="button" class="panel-cta" onclick="document.getElementById('profils').scrollIntoView({behavior:'smooth',block:'start'})">${tr('panel_see')}</button>`;
 }
 
 // Clics delegues : chiffre du bandeau, ligne du panneau de la carte, actions des fiches.

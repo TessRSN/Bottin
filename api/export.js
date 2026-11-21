@@ -243,7 +243,21 @@ const HEADERS = [
   CSV_COL.projet, CSV_COL.etudiants, CSV_COL.refere, CSV_COL.droitVote,
   CSV_COL.orcid, CSV_COL.cv, CSV_COL.evaluateur, CSV_COL.consent,
   CSV_COL.photo, // Phase 3a: adresse du relais photo (ajoutee en fin, index.html lit par nom)
+  CSV_COL.nouveaute, // Refonte 2026-11 : « nouveau » ou « maj » (ajoutee en fin, index.html lit par nom)
 ];
+
+// Refonte 2026-11 : mention affichee sur les fiches pour mettre en avant les
+// nouveaux membres et les profils recemment mis a jour. Seule la mention est
+// publiee, jamais la date. « nouveau » = fiche creee depuis moins de
+// NOUVEAU_JOURS ; « maj » = profil modifie par le membre depuis moins de MAJ_JOURS.
+const NOUVEAU_JOURS = 60;
+const MAJ_JOURS = 30;
+function nouveauteOf(m) {
+  const jours = d => { const t = d ? new Date(d).getTime() : NaN; return isNaN(t) ? Infinity : (Date.now() - t) / 86400000; };
+  if (jours(m.creeLe) <= NOUVEAU_JOURS) return 'nouveau';
+  if (jours(m.profilModifie) <= MAJ_JOURS) return 'maj';
+  return '';
+}
 
 // Sensitive columns masked for pending members
 const PLACEHOLDER = {
@@ -312,6 +326,7 @@ function memberToCSVRow(m, consent) {
     [CSV_COL.photo]: m.photoName
       ? `/api/photo?id=${String(m.id).replace(/-/g, '')}&v=${encodeURIComponent(m.photoName)}`
       : '',
+    [CSV_COL.nouveaute]: nouveauteOf(m),
   };
 
   return row;
@@ -323,7 +338,7 @@ function maskSensitive(row) {
     CSV_COL.email, CSV_COL.email2, CSV_COL.statut, CSV_COL.institution,
     CSV_COL.reseau, CSV_COL.themes, CSV_COL.projet,
     CSV_COL.etudiants, CSV_COL.refere, CSV_COL.orcid, CSV_COL.cv,
-    CSV_COL.evaluateur, CSV_COL.photo,
+    CSV_COL.evaluateur, CSV_COL.photo, CSV_COL.nouveaute,
   ];
   for (const col of sensitive) {
     row[col] = PLACEHOLDER[col] || '';
