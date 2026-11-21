@@ -68,12 +68,6 @@
         [data-theme="dark"] .header {
             background: linear-gradient(135deg, #0f1724 0%, #1a365d 100%);
         }
-        [data-theme="dark"] .members-table th {
-            background: #1a365d;
-        }
-        [data-theme="dark"] .members-table th:hover {
-            background: #2b6cb0;
-        }
         /* 2026-09-16 : fond distinct de la carte en mode sombre (avant #1e2a3a, invisible sur #1e2740) */
         [data-theme="dark"] .axe-chip { background: #2a4365; color: #90cdf4; }
         [data-theme="dark"] .principe-chip { background: #2d2a1a; color: #ecc94b; }
@@ -82,8 +76,6 @@
         [data-theme="dark"] .filter-group select { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .page-btn { background: var(--rsn-card-bg); color: var(--rsn-text); }
         [data-theme="dark"] .page-btn.active { background: var(--rsn-accent); border-color: var(--rsn-accent); color: #0f1724; }
-        [data-theme="dark"] .view-btn { background: var(--rsn-card-bg); color: #e2e8f0; }
-        [data-theme="dark"] .view-btn.active { background: var(--rsn-accent); color: #0f1724; border-color: var(--rsn-accent); }
         [data-theme="dark"] .reset-btn { background: var(--rsn-card-bg); color: var(--rsn-muted); }
         [data-theme="dark"] .upload-area { background: var(--rsn-card-bg); }
         [data-theme="dark"] .leaflet-popup-content-wrapper { background: var(--rsn-card-bg); color: var(--rsn-text); }
@@ -92,7 +84,6 @@
         [data-theme="dark"] .card-link { color: #0f172a; }
         [data-theme="dark"] .card-link:hover { color: var(--rsn-accent); background: transparent; }
         [data-theme="dark"] .card-email a { color: var(--rsn-accent); }
-        [data-theme="dark"] .ct { opacity: 0.9; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -167,22 +158,10 @@
         .cta-update { background: transparent; color: #fff; border-color: rgba(255,255,255,0.6); }
         .cta-update:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
 
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
         .stat { text-align: center; }
-        .stat-number { font-size: 1.5rem; font-weight: 700; }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; }
 
         /* ─── CONTROLS ─── */
         .controls { max-width: 1200px; margin: -1rem auto 0; padding: 0 1rem; position: relative; z-index: 10; }
-        .search-box { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 1rem 1.25rem; margin-bottom: 0.75rem; transition: background 0.3s; }
-        .search-input-wrapper { position: relative; }
-        .search-input-wrapper svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--rsn-muted); }
         .search-input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: 2px solid var(--rsn-border); border-radius: var(--radius); font-size: 1rem; outline: none; transition: border-color 0.2s, background 0.3s, color 0.3s; }
         .search-input:focus { border-color: var(--rsn-accent); }
         .search-input::placeholder { color: var(--rsn-muted); }
@@ -210,31 +189,8 @@
         [data-theme="dark"] .ms-panel { background: var(--rsn-card-bg); }
         [data-theme="dark"] .ms-item:hover { background: var(--rsn-light); }
 
-        .toolbar { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; }
         .results-count { font-size: 0.9rem; color: var(--rsn-muted); }
         .results-count strong { color: var(--rsn-text); }
-        /* 2026-09-16 : onglets de vue en barre pleine largeur, quatre boutons egaux,
-           plus grands et plus contrastes (avant : petit groupe gris aligne a droite). */
-        .toolbar { flex-direction: column; align-items: stretch; gap: 0.6rem; }
-        .toolbar > div:last-child { width: 100%; }
-        .view-toggle { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-        .view-btn { justify-content: center; padding: 0.7rem 1rem; border: 1.5px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); cursor: pointer; font-size: 0.95rem; font-weight: 600; color: var(--rsn-text); display: flex; align-items: center; gap: 0.4rem; transition: all 0.15s; font-family: inherit; }
-        .view-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-        .view-btn:hover { border-color: var(--rsn-accent); }
-        .view-btn.active { background: var(--rsn-primary); color: white; border-color: var(--rsn-primary); }
-        .view-btn .new-badge { font-size: 0.62rem; background: #d69e2e; color: #1a202c; border-radius: 999px; padding: 0.1rem 0.45rem; margin-left: 0.2rem; font-weight: 700; letter-spacing: 0.02em; }
-        /* Appel a la vue Connexions, au-dessus des cartes, jusqu'au premier clic sur Connexions */
-        .cta-graph { display: flex; gap: 1.25rem; align-items: center; background: linear-gradient(135deg, #1a365d, #2b6cb0); color: #fff; border-radius: 10px; padding: 1rem 1.25rem; margin: 0 auto 1.1rem; max-width: 1200px; }
-        .cta-graph img { width: 230px; max-width: 100%; height: auto; border-radius: 8px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.25); }
-        .cta-graph h3 { margin: 0 0 0.3rem; font-size: 1.1rem; color: #fff; }
-        .cta-graph p { margin: 0 0 0.7rem; font-size: 0.9rem; opacity: 0.92; line-height: 1.45; }
-        .cta-graph-btn { display: inline-block; background: #fff; color: #1a365d; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; font-family: inherit; }
-        .cta-graph-btn:hover { background: #ebf8ff; }
-        @media (max-width: 640px) {
-            .view-toggle { grid-template-columns: repeat(2, 1fr); }
-            .cta-graph { flex-direction: column; align-items: stretch; }
-            .cta-graph img { width: 100%; }
-        }
         .reset-btn { padding: 0.4rem 0.9rem; border: 1.5px solid var(--rsn-border); border-radius: 6px; background: var(--rsn-card-bg); color: var(--rsn-muted); cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
         .reset-btn:hover { border-color: var(--rsn-accent); color: var(--rsn-accent); }
 
@@ -265,9 +221,7 @@
         .card-details { display: flex; flex-direction: column; gap: 0.25rem; }
         .card-detail { font-size: 0.82rem; color: var(--rsn-text); display: flex; align-items: flex-start; gap: 0.4rem; }
         .card-detail .dl { font-weight: 600; color: var(--rsn-muted); min-width: 70px; flex-shrink: 0; }
-        .card-axes, .card-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
         .card-chips-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; align-items: center; }
-        .chip-label { font-size: 0.66rem; font-weight: 700; color: var(--rsn-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-right: -0.1rem; }
         .axe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: var(--rsn-light); color: var(--rsn-secondary); white-space: nowrap; }
         .principe-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #fefcbf; color: #975a16; white-space: nowrap; }
         .action-chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: #c6f6d5; color: #276749; white-space: nowrap; }
@@ -277,14 +231,6 @@
         .card-link::after { content: '\2197'; font-size: 0.8em; opacity: 0.85; }
         /* Survol : le bouton s'inverse, fond transparent et texte de la couleur d'accent */
         .card-link:hover { background: transparent; color: var(--rsn-accent); text-decoration: none; }
-        .card-expand-btn { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.78rem; padding: 0.2rem 0; margin-top: 0.3rem; }
-        .card-expand-btn:hover { text-decoration: underline; }
-        .card-extra { display: none; }
-        .card-extra.visible { display: block; margin-top: 0.5rem; }
-        .modal-projet-text { white-space: pre-line; }
-        .modal-projet-text.collapsed { max-height: 4.5em; overflow: hidden; position: relative; }
-        .modal-projet-text.collapsed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.5em; background: linear-gradient(transparent, var(--rsn-card-bg, #fff)); pointer-events: none; }
-        [data-theme="dark"] .modal-projet-text.collapsed::after { background: linear-gradient(transparent, #1e293b); }
         /* 2026-09-16 : blocs repliables sur les cartes — themes et presentation limites a
            ~3 lignes avec fondu et « Voir plus » ; puces limitees a 4 avec « +N ». */
         .card-clamp { position: relative; line-height: 1.5; }
@@ -296,20 +242,6 @@
         [data-theme="dark"] .chip-more { background: #2a4365; color: #90cdf4; }
         .chips-rest[hidden] { display: none; }
         .chips-rest { display: contents; }
-        .modal-projet-toggle { background: none; border: none; color: var(--rsn-accent); cursor: pointer; font-size: 0.8rem; padding: 0.15rem 0; margin-top: 0.1rem; }
-        .modal-projet-toggle:hover { text-decoration: underline; }
-
-        /* ─── TABLE ─── */
-        .table-wrapper { overflow-x: auto; background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); transition: background 0.3s; }
-        .members-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-        .members-table th { background: var(--rsn-primary); color: white; padding: 0.6rem 0.65rem; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; position: sticky; top: 0; cursor: pointer; white-space: nowrap; user-select: none; }
-        .members-table th:hover { background: var(--rsn-secondary); }
-        .members-table th .sa { margin-left: 0.2rem; opacity: 0.5; }
-        .members-table th.sorted .sa { opacity: 1; }
-        .members-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--rsn-border); vertical-align: top; }
-        .members-table tr:hover td { background: var(--rsn-light); }
-        .members-table tbody tr[data-member] { cursor: pointer; } /* 2026-09-16 : la ligne ouvre la fiche */
-        .members-table .ct { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 4px; color: white; }
 
         /* ─── PAGINATION ─── */
         .pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; }
@@ -334,8 +266,6 @@
 
         /* ─── MAP ─── */
         #mapView { height: 550px; border-radius: var(--radius); box-shadow: var(--shadow-sm); z-index: 1; }
-        .map-legend { background: var(--rsn-card-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.82rem; color: var(--rsn-muted); display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; transition: background 0.3s; }
-        .map-legend-item { display: flex; align-items: center; gap: 0.4rem; }
         .map-legend-dot { width: 12px; height: 12px; border-radius: 50%; }
         .map-stats { font-weight: 600; color: var(--rsn-text); }
         .leaflet-popup-content { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.85rem; line-height: 1.5; }
@@ -348,11 +278,7 @@
         .marker-cluster-custom div { background: rgba(168, 85, 247, 0.85); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
         /* ─── CONSENT BADGES ─── */
-        .member-card.pending-consent .card-details,
-        .member-card.pending-consent .card-email,
-        .member-card.pending-consent .card-chips-row,
-        .member-card.pending-consent .card-links,
-        .member-card.pending-consent .card-extra {
+        .member-card.pending-consent .card-details, .member-card.pending-consent .card-email, .member-card.pending-consent .card-chips-row, .member-card.pending-consent .card-links {
             filter: blur(5px);
             pointer-events: none;
             user-select: none;
@@ -385,25 +311,13 @@
             background: #3b0764;
             color: #d8b4fe;
         }
-        .consent-badges-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-        /* Table row pending */
-        .members-table tr.pending-consent td:not(:first-child):not(:last-child) {
-            filter: blur(4px);
-            user-select: none;
-        }
         .hidden { display: none !important; }
         @media (max-width: 768px) {
             .header-top { flex-direction: column; gap: 0.5rem; }
             .header-title h1 { font-size: 1.3rem; }
-            .stats-bar { gap: 1rem; }
             .filters-row { flex-direction: column; gap: 0.5rem; }
             .filter-group { min-width: 100%; }
             .cards-grid { grid-template-columns: 1fr; }
-            .toolbar { flex-wrap: wrap; gap: 0.5rem; }
             .header-controls { position: static; justify-content: center; margin-top: 0.75rem; }
         }
         /* ─── QR Modal ─── */
@@ -507,19 +421,6 @@
         .view-switch button.active { background: #1a365d; color: #fff; }
         [data-theme="dark"] .view-switch button.active { background: var(--rsn-accent); color: #0f1724; }
         .view-switch svg { width: 16px; height: 16px; }
-        .map-panel { position: absolute; top: 20px; right: 20px; z-index: 5; width: min(340px, calc(100% - 40px)); box-sizing: border-box; padding: 1.2rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.9rem; color: var(--rsn-text); }
-        .map-panel .kicker { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-strong); }
-        .map-panel h2 { margin: 0.15rem 0; font-size: 1.6rem; line-height: 1.15; color: var(--ink); }
-        .map-panel .count { font-size: 0.92rem; color: var(--muted-strong); }
-        .map-panel .count strong { color: var(--ink); }
-        .panel-list { display: flex; flex-direction: column; }
-        .panel-list-title { font-size: 0.8rem; font-weight: 600; color: var(--muted-strong); padding-bottom: 0.35rem; }
-        .panel-row { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; padding: 0.5rem 0; border: 0; border-top: 1px solid rgba(26,54,93,0.14); background: none; font: inherit; font-size: 0.88rem; color: var(--rsn-text); text-align: left; cursor: pointer; }
-        [data-theme="dark"] .panel-row { border-top-color: rgba(255,255,255,0.14); }
-        .panel-row:hover span { color: var(--rsn-accent); text-decoration: underline; text-underline-offset: 3px; }
-        .panel-row strong { color: var(--ink); }
-        .panel-cta { display: flex; align-items: center; justify-content: center; height: 46px; border: 0; border-radius: 8px; background: #1a365d; color: #fff; font: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; }
-        [data-theme="dark"] .panel-cta { background: var(--rsn-accent); color: #0f1724; }
         .hero-bottom { position: absolute; left: 64px; right: 20px; bottom: 30px; z-index: 5; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; pointer-events: none; }
         .hero-bottom > * { pointer-events: auto; }
         .map-pill { display: flex; align-items: center; gap: 0.5rem; min-height: 40px; box-sizing: border-box; padding: 0.35rem 0.9rem; border-radius: 8px; font-size: 0.82rem; color: var(--rsn-text); }
@@ -609,8 +510,8 @@
         .member-card .card-chips-row { margin-top: 0; }
         .member-card .card-chips-row > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
         /* Texte replie : fondu par masque, valable sur tout fond (fiche en verre comprise). */
-        .card-clamp.collapsed, .modal-projet-text.collapsed { -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
-        .card-clamp.collapsed::after, .modal-projet-text.collapsed::after { display: none; }
+        .card-clamp.collapsed { -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+        .card-clamp.collapsed::after { display: none; }
         .card-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 0.75rem; padding-top: 0.3rem; border-top: 1px solid var(--rsn-border); }
         .card-action { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0; border: 0; background: none; color: var(--rsn-secondary); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
         [data-theme="dark"] .card-action { color: var(--rsn-accent); }
@@ -820,7 +721,6 @@
             .stats-label { flex-basis: 100%; }
             .content { padding: 1.2rem 1rem 2rem; }
             #mapView { height: 420px; }
-            .map-panel { position: static; width: auto; border-radius: 0; box-shadow: none; border-width: 1px 0; }
             .hero-bottom { position: static; padding: 0.6rem 1rem; }
             .teaser { width: 100%; margin-left: 0; }
             .controls { padding: 0.3rem 1rem; }
@@ -1100,9 +1000,7 @@ const I18N = {
         stats_themes: 'Principaux thèmes', stats_themes_sub: 'Part des {n} profils avec thèmes',
         stats_insts: 'Principaux établissements', stats_insts_sub: 'Nombre de profils publics',
         chip_theme: 'Thème', chip_inst: 'Établissement', chip_remove: 'Retirer ce filtre',
-        panel_all_kicker: 'Réseau santé numérique', panel_all: 'Tous les membres',
-        panel_region: 'Région sélectionnée', panel_selection: 'Sélection actuelle', panel_selection_title: 'Résultats',
-        panel_public: 'profils publics', panel_top_insts: 'Établissements les plus représentés', panel_see: 'Voir les profils',
+        panel_public: 'profils publics',
         list_title: 'Profils', sort_label: 'Trier', sort_complete: "Profils complets d'abord", sort_name: 'Nom (A–Z)',
         card_open: 'Voir la fiche', card_graph: 'Voir ses connexions',
         copy_link: 'Copier le lien', link_copied: 'Lien copié',
@@ -1117,18 +1015,11 @@ const I18N = {
         filter_status: 'Statut', filter_focus: "Axe / Principe / Champ",
         all_m: 'Tous', all_f: 'Toutes', reset: 'Réinitialiser',
         members_shown: 'membre(s) affiché(s)',
-        view_cards: 'Profils', view_table: 'Tableau', view_map: 'Carte', view_connexions: 'Connexions',
-        view_new: 'Nouveau',
+        view_map: 'Carte', view_connexions: 'Connexions',
         cta_graph_title: 'Qui travaille sur les mêmes sujets que vous ?',
-        cta_graph_text: 'La carte des connexions relie les membres qui partagent des thèmes de recherche. Cliquez sur une personne pour voir les profils les plus proches du sien.',
-        cta_graph_btn: 'Explorer les connexions →',
         connexions_loading: 'Calcul des connexions…',
-        connexions_search_label: 'Rechercher',
-        connexions_search_placeholder: 'Rechercher un membre…',
-        connexions_legend_label: 'Légende',
         connexions_count_legend: '{N} membres, {L} connexions affichées',
         connexions_export_png: 'Exporter en image',
-        connexions_insights_title: 'Connexions inter-institutions à fort potentiel',
         connexions_pair_score: '{N} mots-clés en commun',
         connexions_strength_strong: 'Proximité forte : plusieurs mots-clés rares en commun',
         connexions_strength_medium: 'Proximité moyenne',
@@ -1153,10 +1044,6 @@ const I18N = {
         connexions_hide_isolated: 'Masquer les membres sans lien',
         similar_profiles_title: 'Profils proches',
         similar_profiles_show_criteria: 'Voir les mots-clés communs',
-        similar_profiles_btn: 'Voir les profils proches',
-        lbl_axis_short: 'Axes',
-        lbl_principle_short: 'Principes',
-        lbl_action_short: "Champs d'action",
         lbl_keywords: 'Mots-clés',
         no_results: 'Aucun membre trouvé',
         no_results_hint: 'Essayez de modifier vos critères de recherche ou vos filtres.',
@@ -1165,16 +1052,12 @@ const I18N = {
         upload_format: 'Format attendu : CSV exporté de la BD membres (encodage UTF-8)',
         // Card / table labels
         lbl_status: 'Statut', lbl_expertise: 'Thèmes', lbl_network: 'Réseau',
-        lbl_project: 'Présentation', lbl_students: 'Étudiants',
-        lbl_other_axes: 'Autres axes', lbl_other_principles: 'Autres principes',
-        lbl_other_actions: 'Autres actions',
+        lbl_project: 'Présentation',
         lbl_see_more: 'Voir plus', lbl_see_less: 'Voir moins',
         lbl_no_institution: 'Institution non renseignée',
         // Table headers
-        th_name: 'Nom', th_institution: 'Institution', th_email: 'Email',
-        th_status: 'Statut', th_type: 'Type', th_axis: 'Axe prioritaire',
+        th_axis: 'Axe prioritaire',
         th_principle: 'Principe', th_action: "Champ d'action",
-        th_expertise: 'Thèmes', th_links: 'Liens',
         lbl_website: 'Site web',
         // Map
         map_geolocated: 'membres géolocalisés',
@@ -1219,9 +1102,7 @@ const I18N = {
         stats_themes: 'Top themes', stats_themes_sub: 'Share of the {n} profiles with themes',
         stats_insts: 'Top institutions', stats_insts_sub: 'Number of public profiles',
         chip_theme: 'Theme', chip_inst: 'Institution', chip_remove: 'Remove this filter',
-        panel_all_kicker: 'Digital Health Network', panel_all: 'All members',
-        panel_region: 'Selected region', panel_selection: 'Current selection', panel_selection_title: 'Results',
-        panel_public: 'public profiles', panel_top_insts: 'Most represented institutions', panel_see: 'See the profiles',
+        panel_public: 'public profiles',
         list_title: 'Profiles', sort_label: 'Sort', sort_complete: 'Complete profiles first', sort_name: 'Name (A–Z)',
         card_open: 'View profile', card_graph: 'See connections',
         copy_link: 'Copy link', link_copied: 'Link copied',
@@ -1236,18 +1117,11 @@ const I18N = {
         filter_status: 'Status', filter_focus: 'Axis / Principle / Field',
         all_m: 'All', all_f: 'All', reset: 'Reset',
         members_shown: 'member(s) displayed',
-        view_cards: 'Profiles', view_table: 'Table', view_map: 'Map', view_connexions: 'Connections',
-        view_new: 'New',
+        view_map: 'Map', view_connexions: 'Connections',
         cta_graph_title: 'Who works on the same topics as you?',
-        cta_graph_text: 'The connections map links members who share research topics. Click on a person to see the profiles closest to theirs.',
-        cta_graph_btn: 'Explore the connections →',
         connexions_loading: 'Computing connections…',
-        connexions_search_label: 'Search',
-        connexions_search_placeholder: 'Search a member…',
-        connexions_legend_label: 'Legend',
         connexions_count_legend: '{N} members, {L} connections shown',
         connexions_export_png: 'Export as image',
-        connexions_insights_title: 'High-potential cross-institution pairs',
         connexions_pair_score: '{N} keywords in common',
         connexions_strength_strong: 'Strong match: several rare keywords in common',
         connexions_strength_medium: 'Medium match',
@@ -1272,10 +1146,6 @@ const I18N = {
         connexions_hide_isolated: 'Hide members without links',
         similar_profiles_title: 'Similar profiles',
         similar_profiles_show_criteria: 'View shared keywords',
-        similar_profiles_btn: 'View similar profiles',
-        lbl_axis_short: 'Axes',
-        lbl_principle_short: 'Principles',
-        lbl_action_short: 'Action fields',
         lbl_keywords: 'Keywords',
         no_results: 'No members found',
         no_results_hint: 'Try adjusting your search criteria or filters.',
@@ -1283,15 +1153,11 @@ const I18N = {
         upload_hint: 'drag a CSV file here or click to select',
         upload_format: 'Expected format: CSV exported from the members database (UTF-8 encoding)',
         lbl_status: 'Status', lbl_expertise: 'Themes', lbl_network: 'Network',
-        lbl_project: 'About', lbl_students: 'Students',
-        lbl_other_axes: 'Other axes', lbl_other_principles: 'Other principles',
-        lbl_other_actions: 'Other actions',
+        lbl_project: 'About',
         lbl_see_more: 'See more', lbl_see_less: 'See less',
         lbl_no_institution: 'Institution not provided',
-        th_name: 'Name', th_institution: 'Institution', th_email: 'Email',
-        th_status: 'Status', th_type: 'Type', th_axis: 'Primary axis',
+        th_axis: 'Primary axis',
         th_principle: 'Principle', th_action: 'Field of action',
-        th_expertise: 'Themes', th_links: 'Links',
         lbl_website: 'Website',
         map_geolocated: 'geolocated members',
         map_coverage: 'Coverage',
