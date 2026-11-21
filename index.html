@@ -707,10 +707,21 @@
         .profile-modal .pm-help { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rsn-border); font-size: 0.8rem; color: var(--muted-strong); }
         .pm-help a { color: var(--rsn-secondary); }
         [data-theme="dark"] .pm-help a { color: var(--rsn-accent); }
-        /* Lien du sous-titre vers le site du RSN */
-        .header-site { display: inline-flex; align-items: center; gap: 0.25rem; color: inherit; text-decoration: none; }
-        .header-site:hover span { text-decoration: underline; text-underline-offset: 3px; }
-        .header-site svg { width: 11px; height: 11px; }
+        /* ─── Lot 9 (2026-11-21) : suggestions de recherche, pied de page ─── */
+        .header { z-index: 30; }
+        .header-search { flex-basis: 260px; }
+        .search-suggest { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 40; padding: 6px; border-radius: 10px; max-height: 62vh; overflow-y: auto; color: var(--rsn-text); text-align: left; }
+        .ss-group { padding: 6px 10px 2px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-strong); }
+        .ss-item { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; width: 100%; min-height: 38px; padding: 4px 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 0.9rem; color: var(--rsn-text); text-align: left; cursor: pointer; }
+        .ss-item small { flex: none; font-size: 0.78rem; color: var(--muted-strong); white-space: nowrap; }
+        .ss-item:hover, .ss-item.active { background: rgba(43,108,176,0.16); }
+        .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.6rem 2rem; padding: 1.1rem 2rem 1.3rem; border-top: 1px solid var(--rsn-border); background: var(--bar-bg); font-size: 0.85rem; color: var(--muted-strong); }
+        .sf-brand { display: flex; flex-direction: column; gap: 2px; }
+        .sf-brand strong { font-size: 0.92rem; color: var(--ink); }
+        .sf-links { display: flex; flex-wrap: wrap; gap: 0.2rem 1.5rem; }
+        .sf-links a { display: inline-flex; align-items: center; min-height: 36px; font-weight: 600; color: var(--rsn-secondary); text-decoration: none; }
+        [data-theme="dark"] .sf-links a { color: var(--rsn-accent); }
+        .sf-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
         /* ─── Lot 7 (2026-11-21) ─── */
         /* Fenetre d'un etablissement sur la carte : couleurs lisibles sur le verre, clair et sombre */
         .pt-regulier { color: #1f5fa8; }
@@ -780,6 +791,7 @@
             .filters-row { flex-direction: row; flex-wrap: wrap; }
             .filter-group { flex: 1 1 auto; min-width: 0; }
             .results-count { margin-left: 0; }
+            .site-footer { padding: 1rem 1rem 3.2rem; }
             .stats-head { padding: 0.3rem 1rem; }
             .stats-body { padding: 0 1rem 0.5rem; }
             .stats-label { flex-basis: 100%; }
@@ -802,15 +814,15 @@
         <img class="header-logo" src="/logo-rsn-blanc.webp" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
-            <!-- Le nom du reseau mene au site du RSN (demande de Tess, 2026-11-21). Un bouton
-                 de plus dans le bandeau le faisait passer sur deux lignes. -->
-            <p><a class="header-site" href="https://rsn.quebec/" target="_blank" rel="noopener" data-i18n-title="site_link_title" title="Ouvrir le site du Réseau santé numérique"><span data-i18n="subtitle">Réseau santé numérique</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a></p>
+            <p data-i18n="subtitle">Réseau santé numérique</p>
         </div>
     </div>
     <div class="header-search" id="searchBox">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" id="searchInput" data-i18n-placeholder="search_placeholder" placeholder="Rechercher par nom, institution, thème, présentation...">
         <button type="button" class="search-clear hidden" id="searchClear" data-i18n-title="search_clear" aria-label="Effacer la recherche">×</button>
+        <!-- Suggestions pendant la saisie : themes, etablissements, personnes -->
+        <div class="search-suggest glass hidden" id="searchSuggest" role="listbox"></div>
     </div>
     <div class="header-cta-row">
         <button class="header-cta cta-join" onclick="window.location.href='/join.html'">
@@ -827,8 +839,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             <span id="langLabel">EN</span>
         </button>
-        <a class="header-btn" href="https://github.com/TessRSN/Bottin" target="_blank" rel="noopener" title="GitHub">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58 0-.28-.01-1.03-.02-2.03-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.19.7.8.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        <!-- Lien vers le site du reseau, a la place de l'icone GitHub (qui passe en pied de page) -->
+        <a class="header-btn" href="https://rsn.quebec/" target="_blank" rel="noopener" data-i18n-title="site_link_title" title="Ouvrir le site du Réseau santé numérique">rsn.quebec
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
         </a>
         <button class="header-btn" id="btnTheme" onclick="toggleTheme()">
             <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -960,6 +973,18 @@
     <div id="pagination" class="pagination"></div>
 </div>
 
+<!-- Pied de page (2026-11-21) : site du reseau, cartographie, contact, politique de confidentialite, code source -->
+<footer class="site-footer">
+    <div class="sf-brand"><strong data-i18n="subtitle">Réseau santé numérique</strong><span data-i18n="footer_funding">Financé par le Fonds de recherche du Québec – Santé</span></div>
+    <nav class="sf-links" data-i18n-title="footer_nav" aria-label="Liens du réseau">
+        <a href="https://rsn.quebec/" target="_blank" rel="noopener">rsn.quebec</a>
+        <a href="https://cartographie.rsn.quebec/" target="_blank" rel="noopener" data-i18n="footer_carto">Cartographie des plateformes</a>
+        <a href="https://rsn.quebec/politique-de-confidentialite/" target="_blank" rel="noopener" data-i18n="footer_privacy">Politique de confidentialité</a>
+        <a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a>
+        <a href="https://github.com/TessRSN/Bottin" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</footer>
+
 <!-- Refonte 2026-11 : « Mettre a jour mon profil » en fenetre de verre. Meme envoi que
      magic-link.html, qui reste en place (liens deja envoyes, navigateurs sans JavaScript). -->
 <div class="member-overlay" id="profileOverlay" onclick="if(event.target===this)closeProfileModal()">
@@ -978,7 +1003,7 @@
 
 <!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
      A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 8 · 21 nov. 2026</div>
+<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 9 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -1037,6 +1062,9 @@ const I18N = {
         map_world: 'Monde', map_world_title: 'Voir tous les membres, y compris hors Québec',
         subtitle: 'Réseau santé numérique',
         site_link_title: 'Ouvrir le site du Réseau santé numérique',
+        ss_themes: 'Thèmes', ss_insts: 'Établissements', ss_people: 'Personnes', ss_profiles: 'profils',
+        footer_funding: 'Financé par le Fonds de recherche du Québec – Santé', footer_nav: 'Liens du réseau',
+        footer_carto: 'Cartographie des plateformes', footer_privacy: 'Politique de confidentialité',
         popup_see_1: 'Voir ce profil', popup_see_n: 'Voir ces {n} profils',
         pm_title: 'Mettre à jour mon profil', pm_desc: 'Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.',
         pm_placeholder: 'votre.email@institution.ca', pm_btn: 'Envoyer', pm_sending: 'Envoi...',
@@ -1152,6 +1180,9 @@ const I18N = {
         map_world: 'World', map_world_title: 'See all members, including outside Quebec',
         subtitle: 'Digital Health Network',
         site_link_title: 'Open the Digital Health Network website',
+        ss_themes: 'Themes', ss_insts: 'Institutions', ss_people: 'People', ss_profiles: 'profiles',
+        footer_funding: 'Funded by the Fonds de recherche du Québec – Santé', footer_nav: 'Network links',
+        footer_carto: 'Platform cartography', footer_privacy: 'Privacy policy',
         popup_see_1: 'See this profile', popup_see_n: 'See these {n} profiles',
         pm_title: 'Update my profile', pm_desc: 'Enter your institutional email to receive a secure edit link.',
         pm_placeholder: 'your.email@institution.ca', pm_btn: 'Send', pm_sending: 'Sending...',
@@ -4318,6 +4349,87 @@ document.querySelectorAll('.js-hero-reset').forEach(function(b) { b.addEventList
 (function() {
     const w = document.getElementById('mapWorld');
     if (w) w.addEventListener('click', function() { if (map && renderMap._all) { map.closePopup(); map.fitBounds(renderMap._all); } });
+})();
+
+// ─── Suggestions de recherche (2026-11-21) ───
+// Pendant la saisie, une liste propose des themes, des etablissements et des
+// personnes. Choisir un theme ou un etablissement pose le meme filtre que les
+// chiffres du bandeau ; choisir une personne ouvre sa fiche. La touche Entree
+// sans choix garde la recherche libre habituelle. Seuls les profils publics
+// alimentent les suggestions.
+let _suggestCache = null, _suggestItems = [], _suggestActive = -1;
+function suggestData() {
+    if (_suggestCache && _suggestCache.members === allMembers) return _suggestCache;
+    const pub = allMembers.filter(m => m.consent === 'oui');
+    const themeCounts = {};
+    pub.forEach(m => memberThemeKeys(m).forEach(k => { themeCounts[k] = (themeCounts[k] || 0) + 1; }));
+    _suggestCache = { members: allMembers, pub: pub, themeCounts: themeCounts, insts: topInstitutions(pub, 9999) };
+    return _suggestCache;
+}
+function buildSuggestions(q) {
+    const fq = fold(q).trim();
+    if (fq.length < 2 || !allMembers.length) return [];
+    const d = suggestData(), out = [];
+    THEME_GROUPS.filter(g => d.themeCounts[g.key] && (fold(g.fr).includes(fq) || fold(g.en).includes(fq) || g.re.test(fq)))
+        .sort((a, b) => d.themeCounts[b.key] - d.themeCounts[a.key]).slice(0, 3)
+        .forEach(g => out.push({ kind: 'theme', value: g.key, label: themeLabel(g.key), count: d.themeCounts[g.key] }));
+    d.insts.filter(([name]) => fold(name).includes(fq)).slice(0, 4)
+        .forEach(([name, n]) => out.push({ kind: 'inst', value: name, label: name, count: n }));
+    const tokens = fq.split(/\s+/).filter(Boolean);
+    d.pub.filter(m => { const words = fold([m.prenom, m.nom].filter(Boolean).join(' ')).split(/[\s-]+/); return tokens.every(t => words.some(w => w.indexOf(t) === 0)); }).slice(0, 5)
+        .forEach(m => out.push({ kind: 'person', value: m.name, label: [m.prenom, m.nom].filter(Boolean).join(' ') || m.name, sub: shortInst((m.institutions || [])[0] || '') }));
+    return out;
+}
+function renderSuggestions() {
+    const box = document.getElementById('searchSuggest'), input = document.getElementById('searchInput');
+    if (!box || !input) return;
+    _suggestItems = buildSuggestions(input.value);
+    _suggestActive = -1;
+    if (!_suggestItems.length) { box.classList.add('hidden'); box.textContent = ''; return; }
+    const groupLabel = { theme: tr('ss_themes'), inst: tr('ss_insts'), person: tr('ss_people') };
+    let html = '', last = '';
+    _suggestItems.forEach((it, i) => {
+        if (it.kind !== last) { html += `<div class="ss-group">${esc(groupLabel[it.kind])}</div>`; last = it.kind; }
+        const right = it.kind === 'person' ? esc(it.sub || '') : `${it.count} ${tr('ss_profiles')}`;
+        html += `<button type="button" class="ss-item" role="option" data-suggest="${i}"><span>${esc(it.label)}</span><small>${right}</small></button>`;
+    });
+    box.innerHTML = html;
+    box.classList.remove('hidden');
+}
+function hideSuggestions() { const box = document.getElementById('searchSuggest'); if (box) box.classList.add('hidden'); _suggestActive = -1; }
+function chooseSuggestion(i) {
+    const it = _suggestItems[i], input = document.getElementById('searchInput');
+    if (!it) return;
+    hideSuggestions();
+    if (it.kind === 'person') { showMemberPopup(it.value); return; }
+    input.value = '';
+    statFilter = { kind: it.kind, value: it.value };
+    applyFilters(); saveHash();
+}
+(function() {
+    const input = document.getElementById('searchInput'), box = document.getElementById('searchSuggest');
+    if (!input || !box) return;
+    input.setAttribute('autocomplete', 'off');
+    input.addEventListener('input', renderSuggestions);
+    input.addEventListener('focus', function() { if (input.value) renderSuggestions(); });
+    input.addEventListener('blur', function() { setTimeout(hideSuggestions, 180); });
+    input.addEventListener('keydown', function(e) {
+        if (box.classList.contains('hidden')) return;
+        const items = box.querySelectorAll('.ss-item');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            _suggestActive = (_suggestActive + (e.key === 'ArrowDown' ? 1 : -1) + items.length + (_suggestActive < 0 && e.key === 'ArrowUp' ? 1 : 0)) % items.length;
+            items.forEach((el, k) => el.classList.toggle('active', k === _suggestActive));
+            if (items[_suggestActive]) items[_suggestActive].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' && _suggestActive >= 0) {
+            e.preventDefault(); chooseSuggestion(_suggestActive);
+        } else if (e.key === 'Escape') { hideSuggestions(); }
+    });
+    // mousedown plutot que click : le champ perd le focus avant le clic et la liste se fermerait
+    box.addEventListener('mousedown', function(e) {
+        const b = e.target.closest('[data-suggest]');
+        if (b) { e.preventDefault(); chooseSuggestion(parseInt(b.dataset.suggest, 10)); }
+    });
 })();
 
 // Nom de chaque filtre ecrit dans son bouton (« Région : Toutes »), relu a
