@@ -436,9 +436,9 @@
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
     <!-- Refonte 2026-11 (branche refonte-accueil) : ces regles passent apres les
-         styles d'origine et les remplacent. Les regles d'origine devenues
-         inutiles (onglets, tableau, barre de chiffres du bandeau) sont a
-         retirer avant la fusion dans main. -->
+         styles d'origine et les remplacent. Mis en ligne le 2026-11-21. Les regles
+         d'origine devenues inutiles (onglets, tableau, barre de chiffres du
+         bandeau) restent a retirer : nettoyage sans effet visible. -->
     <style id="refonte">
         :root {
             --glass-bg: rgba(255,255,255,0.62);
@@ -715,6 +715,13 @@
         .ss-item { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; width: 100%; min-height: 38px; padding: 4px 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 0.9rem; color: var(--rsn-text); text-align: left; cursor: pointer; }
         .ss-item small { flex: none; font-size: 0.78rem; color: var(--muted-strong); white-space: nowrap; }
         .ss-item:hover, .ss-item.active { background: rgba(43,108,176,0.16); }
+        .list-head { justify-content: flex-start; gap: 0.4rem 1.2rem; }
+        .list-sort { margin-left: auto; }
+        .list-counts { font-size: 0.88rem; color: var(--muted-strong); }
+        .list-counts strong { color: var(--ink); }
+        .list-counts button { min-height: 32px; margin-left: 0.3rem; padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--rsn-secondary); cursor: pointer; }
+        [data-theme="dark"] .list-counts button { color: var(--rsn-accent); }
+        .list-counts button:hover { text-decoration: underline; text-underline-offset: 3px; }
         .site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.6rem 2rem; padding: 1.1rem 2rem 1.3rem; border-top: 1px solid var(--rsn-border); background: var(--bar-bg); font-size: 0.85rem; color: var(--muted-strong); }
         .sf-brand { display: flex; flex-direction: column; gap: 2px; }
         .sf-brand strong { font-size: 0.92rem; color: var(--ink); }
@@ -957,6 +964,8 @@
     </div>
     <div class="list-head">
         <h2 data-i18n="list_title">Profils</h2>
+        <!-- Combien de profils publics et de membres sans profil public dans la liste, avec un saut vers ces derniers -->
+        <span class="list-counts" id="listCounts"></span>
         <label class="list-sort"><span data-i18n="sort_label">Trier</span>
             <select id="listSort">
                 <option value="complete" data-i18n="sort_complete">Profils complets d'abord</option>
@@ -1000,10 +1009,6 @@
         <p class="pm-help"><span data-i18n="pm_help_before">Vous avez changé d’adresse courriel récemment et n’avez plus accès à l’ancienne ? Contactez-nous à </span><a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a><span data-i18n="pm_help_after"> pour que nous mettions à jour votre courriel principal.</span></p>
     </div>
 </div>
-
-<!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
-     A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 9 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -1063,6 +1068,7 @@ const I18N = {
         subtitle: 'Réseau santé numérique',
         site_link_title: 'Ouvrir le site du Réseau santé numérique',
         ss_themes: 'Thèmes', ss_insts: 'Établissements', ss_people: 'Personnes', ss_profiles: 'profils',
+        list_pending: 'membres sans profil public', list_pending_go: 'Les voir',
         footer_funding: 'Financé par le Fonds de recherche du Québec – Santé', footer_nav: 'Liens du réseau',
         footer_carto: 'Cartographie des plateformes', footer_privacy: 'Politique de confidentialité',
         popup_see_1: 'Voir ce profil', popup_see_n: 'Voir ces {n} profils',
@@ -1181,6 +1187,7 @@ const I18N = {
         subtitle: 'Digital Health Network',
         site_link_title: 'Open the Digital Health Network website',
         ss_themes: 'Themes', ss_insts: 'Institutions', ss_people: 'People', ss_profiles: 'profiles',
+        list_pending: 'members without a public profile', list_pending_go: 'See them',
         footer_funding: 'Funded by the Fonds de recherche du Québec – Santé', footer_nav: 'Network links',
         footer_carto: 'Platform cartography', footer_privacy: 'Privacy policy',
         popup_see_1: 'See this profile', popup_see_n: 'See these {n} profiles',
@@ -3252,6 +3259,28 @@ function renderList() {
     renderCards();
     document.getElementById('emptyState').classList.toggle('hidden', filteredMembers.length > 0);
     renderPag();
+    renderListCounts();
+}
+// Ligne a cote du titre « Profils » : nombre de profils publics et de membres
+// sans profil public dans la liste affichee. Ces derniers sont regroupes a la
+// fin (souvent bien des pages plus loin) : « Les voir » y mene directement,
+// pour qu'une personne qui ne se trouve pas comprenne qu'il lui reste a
+// completer son profil.
+function renderListCounts() {
+    const el = document.getElementById('listCounts');
+    if (!el) return;
+    const pub = filteredMembers.filter(m => m.consent === 'oui').length, pend = filteredMembers.length - pub;
+    el.innerHTML = `<strong>${pub}</strong> ${tr('panel_public')}` + (pend ? ` · <strong>${pend}</strong> ${tr('list_pending')} <button type="button" id="listPendingGo">${tr('list_pending_go')}</button>` : '');
+    const go = document.getElementById('listPendingGo');
+    if (go) go.addEventListener('click', goToPending);
+}
+function goToPending() {
+    const idx = filteredMembers.findIndex(m => m.consent !== 'oui');
+    if (idx < 0) return;
+    currentPage = Math.floor(idx / CONFIG.PER_PAGE) + 1;
+    renderList(); saveHash();
+    const d = document.querySelector('.cards-divider');
+    if (d) d.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function render() {
     renderHero();
