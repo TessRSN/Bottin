@@ -10,7 +10,7 @@
  *                      synced to all selected institutions.
  */
 const {
-  getProfile, updateProfile,
+  getProfile, updateProfile, renewMembership,
   findInstitutionByName, createInstitution, setMemberInstitutionRelation,
   uploadMemberPhoto, removeMemberPhoto,
 } = require('../lib/notion');
@@ -29,6 +29,11 @@ const EDITABLE_FIELDS = [
   'evaluateur',       // Phase 2i (2026-05-04): Oui/Non/Incertain
   'openalex',         // Phase 3d (2026-09-14): fiche auteur OpenAlex choisie (format verifie dans updateProfile)
 ];
+
+// Meme convention que api/renew.js (date du jour en UTC)
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 module.exports = async function handler(req, res) {
   // CORS
@@ -154,7 +159,26 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      return res.status(200).json({ ok: true, message: 'Profile updated', photoError });
+      // 4) 2026-11-21 : enregistrer son profil vaut renouvellement de l'adhesion
+      // (decision de Tess). Un membre qui met son profil a jour est actif : il
+      // n'a plus a retrouver le courriel de rappel, souvent perdu dans les
+      // indesirables. Meme effet que le lien de renouvellement : date de debut
+      // = aujourd'hui, echeance dans deux ans, rappels remis a zero. Pas de
+      // courriel de confirmation : la page d'edition affiche la nouvelle date.
+      // Reserve aux fiches approuvees (une candidature en attente n'a rien a
+      // renouveler). Un echec ici ne fait pas echouer l'enregistrement.
+      let renewedUntil = null;
+      try {
+        const current = await getProfile(payload.pageId);
+        if (current.workflow === 'Approuvé') {
+          const renewal = await renewMembership(payload.pageId, todayISO());
+          renewedUntil = renewal.dateRenouvellement;
+        }
+      } catch (renewErr) {
+        console.error('[profile] Renewal on save failed:', renewErr.message);
+      }
+
+      return res.status(200).json({ ok: true, message: 'Profile updated', photoError, renewedUntil });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

@@ -56,6 +56,7 @@
   .btn-add-inst:hover { background:rgba(66,153,225,.1); }
   .field-hint { font-size:.78rem; color:var(--muted); margin-bottom:.4rem; line-height:1.4; }
   .actions { display:flex; gap:1rem; justify-content:center; margin-top:1.5rem; }
+  .renew-note { margin:1.5rem 0 -0.75rem; text-align:center; font-size:.9rem; line-height:1.5; color:var(--text); opacity:.85; }
   .btn { padding:.7rem 2rem; border:none; border-radius:var(--radius); font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; }
   .btn-primary { background:var(--primary); color:#fff; }
   .btn-primary:hover { opacity:.85; }
@@ -264,6 +265,9 @@
     <p class="nl-footer" id="nl_footer">Si vous êtes déjà abonné·e, Mailchimp vous le signalera simplement.</p>
   </div>
 
+  <!-- 2026-11-21 : enregistrer son profil renouvelle l'adhesion (voir api/profile.js).
+       Affichee seulement pour une fiche approuvee. -->
+  <p class="renew-note" id="renew_note" style="display:none">En enregistrant, vous confirmez rester membre du RSN : votre adhésion est renouvelée pour deux ans.</p>
   <div class="actions">
     <a href="/" class="btn btn-secondary" style="text-decoration:none" id="cancelBtn">Annuler</a>
     <button class="btn btn-primary" onclick="save()" id="saveBtn">Enregistrer</button>
@@ -368,6 +372,8 @@ function t(key) {
       l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
       l_consent_withdraw_post:'.',
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
+      renew_note:'En enregistrant, vous confirmez rester membre du RSN : votre adhésion est renouvelée pour deux ans.',
+      msg_renewed:"Votre adhésion au RSN est renouvelée jusqu'au {date}.",
       nl_title:'Infolettre du RSN',
       nl_text:'Recevez les actualités du réseau, les appels à communication et les événements à venir. Facultatif, désabonnement en un clic.',
       nl_email_placeholder:'Votre adresse courriel',
@@ -468,6 +474,8 @@ function t(key) {
       l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
       l_consent_withdraw_post:'.',
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
+      renew_note:'By saving, you confirm that you remain an RSN member: your membership is renewed for two years.',
+      msg_renewed:'Your RSN membership is renewed until {date}.',
       nl_title:'RSN newsletter',
       nl_text:'Network news, calls for abstracts and upcoming events. Optional, one-click unsubscribe.',
       nl_email_placeholder:'Your email address',
@@ -550,7 +558,7 @@ function applyI18n() {
    'l_prenom','l_nom','l_email','l_email2',
    'l_themes','l_reseau','l_projet','l_etudiants','l_evaluateur',
    'l_axes','l_principes','l_champs','l_consent',
-   'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn',
+   'opt_yes','opt_no','opt_pending','saveBtn','cancelBtn','addInstBtn','renew_note',
    'nl_title','nl_text','nl_btn','nl_done','nl_footer','l_cv','h_cv','l_photo','h_photo',
    'h_themes','h_projet','l_orcid','h_orcid','h_reseau','h_themes_pick',
    // Bloc consentement (fragments a id propre -> textContent uniquement)
@@ -878,6 +886,8 @@ async function init() {
     profile = result.data;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('form').style.display = 'block';
+    // 2026-11-21 : la phrase sur le renouvellement ne concerne que les fiches approuvees
+    document.getElementById('renew_note').style.display = (profile.workflow === 'Approuvé') ? 'block' : 'none';
     document.getElementById('f_prenom').value = profile.prenom || '';
     document.getElementById('f_nom').value = profile.nom || '';
     document.getElementById('f_email').value = profile.email || '';
@@ -1108,7 +1118,18 @@ async function save() {
     } else if (saveResult && saveResult.photoError) {
       showMsg(t('msg_photo_error'), 'error');
     } else {
-      showMsg(t('msg_success'), 'success');
+      // 2026-11-21 : l'enregistrement a renouvele l'adhesion ; on affiche la nouvelle
+      // echeance dans le message, juste avant le dernier paragraphe (« Une question ? »).
+      let okMsg = t('msg_success');
+      if (saveResult && saveResult.renewedUntil) {
+        const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(saveResult.renewedUntil);
+        const dateTxt = d
+          ? new Date(+d[1], +d[2] - 1, +d[3]).toLocaleDateString(lang === 'en' ? 'en-CA' : 'fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })
+          : saveResult.renewedUntil;
+        const line = t('msg_renewed').replace('{date}', dateTxt), k = okMsg.lastIndexOf('\n\n');
+        okMsg = k >= 0 ? okMsg.slice(0, k) + '\n\n' + line + okMsg.slice(k) : okMsg + '\n\n' + line;
+      }
+      showMsg(okMsg, 'success');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
