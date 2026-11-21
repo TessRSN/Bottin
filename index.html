@@ -677,6 +677,36 @@
         .news-maj { color: #1f5fa8; }
         [data-theme="dark"] .news-badge { color: #86efac; }
         [data-theme="dark"] .news-maj { color: #90cdf4; }
+        /* ─── Lot 5 (2026-11-21) ─── */
+        .header-logo { height: 40px; }
+        /* Mentions : rose pour « Nouveau membre », violet pour « Profil mis à jour », partout (fiches, carte, graphe) */
+        .news-badge { color: #c2255c; }
+        .news-maj { color: #6741d9; }
+        [data-theme="dark"] .news-badge { color: #f783ac; }
+        [data-theme="dark"] .news-maj { color: #b197fc; }
+        .news-inline { margin-left: 0.3rem; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: #c2255c; white-space: nowrap; }
+        .news-inline.news-maj { color: #6741d9; }
+        [data-theme="dark"] .news-inline { color: #f783ac; }
+        [data-theme="dark"] .news-inline.news-maj { color: #b197fc; }
+        /* Fenetre d'un etablissement sur la carte : lien vers ses profils */
+        .popup-see { display: block; width: 100%; margin-top: 8px; height: 36px; border: 0; border-radius: 8px; background: #1a365d; color: #fff; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+        [data-theme="dark"] .popup-see { background: var(--rsn-accent); color: #0f1724; }
+        /* Fenetre « Mettre à jour mon profil » */
+        .profile-modal { max-width: 460px; }
+        .profile-modal h2 { margin: 0 0 0.4rem; padding-right: 2rem; font-size: 1.25rem; color: var(--ink); }
+        .profile-modal p { margin: 0; font-size: 0.9rem; line-height: 1.5; }
+        .pm-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.9rem 0 0.6rem; }
+        .pm-row input { flex: 1 1 220px; min-width: 0; height: 44px; padding: 0 0.8rem; border: 1.5px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); color: var(--rsn-text); font: inherit; font-size: 0.95rem; }
+        .pm-row input:focus { outline: none; border-color: var(--rsn-accent); }
+        .pm-row button { height: 44px; padding: 0 1.1rem; border: 0; border-radius: 8px; background: #1a365d; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+        [data-theme="dark"] .pm-row button { background: var(--rsn-accent); color: #0f1724; }
+        .pm-row button:disabled { opacity: 0.6; cursor: default; }
+        .pm-msg { margin-bottom: 0.6rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.86rem; line-height: 1.45; }
+        .pm-msg.success { background: #d6f2e1; color: #1c5e3a; }
+        .pm-msg.error { background: #fde2e2; color: #9b1c1c; }
+        .profile-modal .pm-help { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rsn-border); font-size: 0.8rem; color: var(--muted-strong); }
+        .pm-help a { color: var(--rsn-secondary); }
+        [data-theme="dark"] .pm-help a { color: var(--rsn-accent); }
         /* Bandeau « Portrait du réseau » plus compact : texte et marges reduits */
         .stats-head { min-height: 44px; padding: 0.3rem 2rem; }
         .stats-head .t { font-size: 0.9rem; }
@@ -719,9 +749,11 @@
 <!-- Refonte 2026-11 : bandeau mince, logo a gauche, recherche dans le bandeau -->
 <div class="header">
     <div class="header-top">
-        <img class="header-logo" src="/logo-rsn.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
+        <!-- Logo sans le texte « Réseau santé numérique » : le nom du réseau est écrit sous le titre, traduit en anglais -->
+        <img class="header-logo" src="/logo-rsn-sans-texte.png" alt="Logo RSN" title="Retour à l'accueil du bottin" onclick="goHome()" onerror="this.style.display='none'">
         <div class="header-title">
             <h1 data-i18n="title">Bottin des membres</h1>
+            <p data-i18n="subtitle">Réseau santé numérique</p>
         </div>
     </div>
     <div class="header-search" id="searchBox">
@@ -734,7 +766,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
             <span data-i18n="cta_join">Devenir membre</span>
         </button>
-        <button class="header-cta cta-update" onclick="window.location.href='/magic-link.html'">
+        <button class="header-cta cta-update" onclick="openProfileModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span data-i18n="cta_update">Mettre à jour mon profil</span>
         </button>
@@ -813,6 +845,9 @@
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(43,108,176,0.6)"></span> <span data-i18n="regular">Régulier</span></div>
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(214,158,46,0.6)"></span> <span data-i18n="student">Étudiant</span></div>
         <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:12px;height:12px;border-radius:50%;background:rgba(56,161,105,0.6)"></span> <span data-i18n="partner">Partenaire</span></div>
+        <!-- Refonte 2026-11 : anneaux des nouveaux membres et des profils mis a jour -->
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:7px;height:7px;border-radius:50%;border:3px solid #d6336c"></span> <span data-i18n="news_new">Nouveau membre</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem"><span style="width:7px;height:7px;border-radius:50%;border:3px solid #7048e8"></span> <span data-i18n="news_updated">Profil mis à jour</span></div>
         <!-- Phase 2j v7: densite du graphe (seuil de score) + masquage des isoles -->
         <label style="display:flex;align-items:center;gap:0.4rem;color:var(--rsn-muted);margin-left:auto;cursor:pointer"><span data-i18n="connexions_density_label">Liens : tous ↔ les plus forts</span><input type="range" id="connexionsMinScore" min="4" max="15" step="1" value="4" style="width:110px;margin:0;cursor:pointer"></label>
         <label style="display:flex;align-items:center;gap:0.3rem;color:var(--rsn-muted);cursor:pointer"><input type="checkbox" id="connexionsHideIsolated" style="margin:0;cursor:pointer"><span data-i18n="connexions_hide_isolated">Masquer les membres sans lien</span></label>
@@ -874,9 +909,25 @@
     <div id="pagination" class="pagination"></div>
 </div>
 
+<!-- Refonte 2026-11 : « Mettre a jour mon profil » en fenetre de verre. Meme envoi que
+     magic-link.html, qui reste en place (liens deja envoyes, navigateurs sans JavaScript). -->
+<div class="member-overlay" id="profileOverlay" onclick="if(event.target===this)closeProfileModal()">
+    <div class="member-modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+        <button class="member-modal-close" onclick="closeProfileModal()" data-i18n-title="pm_close" aria-label="Fermer">&times;</button>
+        <h2 id="pmTitle" data-i18n="pm_title">Mettre à jour mon profil</h2>
+        <p data-i18n="pm_desc">Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.</p>
+        <div class="pm-row">
+            <input type="email" id="pmEmail" autocomplete="email" data-i18n-placeholder="pm_placeholder" placeholder="votre.email@institution.ca" aria-labelledby="pmTitle">
+            <button type="button" id="pmSend" data-i18n="pm_btn">Envoyer</button>
+        </div>
+        <div id="pmMsg" class="pm-msg hidden" role="status"></div>
+        <p class="pm-help"><span data-i18n="pm_help_before">Vous avez changé d’adresse courriel récemment et n’avez plus accès à l’ancienne ? Contactez-nous à </span><a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a><span data-i18n="pm_help_after"> pour que nous mettions à jour votre courriel principal.</span></p>
+    </div>
+</div>
+
 <!-- Etiquette de l'apercu de test : dit quelle version de la branche est affichee.
      A RETIRER AVANT LA FUSION DANS MAIN. -->
-<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 4 · 21 nov. 2026</div>
+<div id="previewStamp" style="position:fixed;left:12px;bottom:12px;z-index:9999;pointer-events:none;padding:0.3rem 0.7rem;border-radius:8px;background:#1a365d;color:#fff;font-size:0.75rem;font-weight:600;box-shadow:0 6px 18px rgba(18,35,63,0.3)">Aperçu de test · lot 5 · 21 nov. 2026</div>
 
 <div class="upload-zone">
     <div class="upload-area" id="uploadArea">
@@ -933,6 +984,14 @@ const I18N = {
         view_switch_label: 'Choisir la vue', teaser_link: 'Voir les connexions', search_clear: 'Effacer la recherche', hero_reset: 'Recentrer',
         news_new: 'Nouveau membre', news_updated: 'Profil mis à jour',
         map_world: 'Monde', map_world_title: 'Voir tous les membres, y compris hors Québec',
+        subtitle: 'Réseau santé numérique',
+        popup_see_1: 'Voir ce profil', popup_see_n: 'Voir ces {n} profils',
+        pm_title: 'Mettre à jour mon profil', pm_desc: 'Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.',
+        pm_placeholder: 'votre.email@institution.ca', pm_btn: 'Envoyer', pm_sending: 'Envoi...',
+        pm_success: 'Si votre courriel est dans notre base, vous recevrez un lien de modification dans les prochaines minutes. Vérifiez vos courriels indésirables.',
+        pm_error: 'Une erreur est survenue. Veuillez réessayer.', pm_invalid: 'Veuillez entrer un courriel valide.',
+        pm_help_before: 'Vous avez changé d’adresse courriel récemment et n’avez plus accès à l’ancienne ? Contactez-nous à ',
+        pm_help_after: ' pour que nous mettions à jour votre courriel principal.', pm_close: 'Fermer',
         members_lc: 'membres', insts_lc: 'établissements',
         stats_title: 'Portrait du réseau', stats_show: 'Déplier', stats_hide: 'Replier',
         stats_types: "Types d'adhésion", stats_types_sub: 'Tous les membres',
@@ -1039,6 +1098,14 @@ const I18N = {
         view_switch_label: 'Choose the view', teaser_link: 'See the connections', search_clear: 'Clear search', hero_reset: 'Reset view',
         news_new: 'New member', news_updated: 'Profile updated',
         map_world: 'World', map_world_title: 'See all members, including outside Quebec',
+        subtitle: 'Digital Health Network',
+        popup_see_1: 'See this profile', popup_see_n: 'See these {n} profiles',
+        pm_title: 'Update my profile', pm_desc: 'Enter your institutional email to receive a secure edit link.',
+        pm_placeholder: 'your.email@institution.ca', pm_btn: 'Send', pm_sending: 'Sending...',
+        pm_success: 'If your email is in our database, you will receive an edit link shortly. Check your spam folder.',
+        pm_error: 'An error occurred. Please try again.', pm_invalid: 'Please enter a valid email.',
+        pm_help_before: 'Have you recently changed your email and no longer have access to the old one? Contact us at ',
+        pm_help_after: ' so we can update your primary email.', pm_close: 'Close',
         members_lc: 'members', insts_lc: 'institutions',
         stats_title: 'Network at a glance', stats_show: 'Expand', stats_hide: 'Collapse',
         stats_types: 'Membership types', stats_types_sub: 'All members',
@@ -2910,6 +2977,18 @@ function buildAndShowConnexionsGraph() {
       node.color = typeColor(hex);
       node.borderWidth = 0;
     }
+    // Refonte 2026-11 : anneau de couleur autour des nouveaux membres et des
+    // profils mis a jour (memes couleurs que les mentions des fiches).
+    const newsHex = NEWS_HEX[m.news] || null;
+    if (newsHex) {
+      node.borderWidth = 4;
+      node.borderWidthSelected = 6;
+      node.color = Object.assign({}, node.color, {
+        border: newsHex,
+        highlight: { background: hex, border: newsHex },
+        hover: { background: connexionsRgba(hex, 0.85), border: newsHex },
+      });
+    }
     return node;
   });
   // Phase 2j v3: edges plus visibles en dark mode (gris plus clair)
@@ -3944,8 +4023,8 @@ function renderMap() {
         });
         // Build member names list for popup
         // No artificial slice — show all members with scroll if needed
-        const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span></div>`).join('');
-        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div>`, { maxWidth: 300 });
+        const namesList = data.members.map(m => `<div class="map-member-link" style="font-size:0.78rem;padding:1px 0;" data-member="${esc(m.name)}">${displayName(m)}<span style="color:var(--rsn-muted);font-size:0.7rem;margin-left:0.3rem">${esc(translateType(m.type)||'')}</span>${newsMention(m)}</div>`).join('');
+        marker.bindPopup(`<div class="popup-inst-name">${esc(inst)}</div><div class="popup-count">${n} <span style="font-size:0.8rem;font-weight:400;color:var(--rsn-muted)">${n>1?tr('map_members'):tr('map_member')}</span></div><div class="popup-type-row">${typeParts.join(' · ')}</div><div style="margin-top:6px;max-height:240px;overflow-y:auto;border-top:1px solid var(--rsn-border);padding-top:4px;">${namesList}</div><button type="button" class="popup-see" data-stat-kind="inst" data-stat-value="${esc(inst)}">${n > 1 ? tr('popup_see_n').replace('{n}', n) : tr('popup_see_1')}</button>`, { maxWidth: 300 });
         clusterGroup.addLayer(marker);
         if (lat >= 44.5 && lat <= 49 && lng >= -77.5 && lng <= -66) quebecLatLngs.push([lat, lng]);
     });
@@ -4027,10 +4106,32 @@ function memberThemeKeys(m) {
 // panneau de la carte : { kind: 'theme' | 'inst', value }. Un second clic sur
 // le meme chiffre le retire.
 let statFilter = null;
+// Nom d'etablissement tel qu'il figure au catalogue (meme rapprochement que
+// la carte), pour qu'un clic sur un cercle garde exactement les memes personnes.
+function canonicalInst(inst) {
+    if (!inst || typeof GEOCODE !== 'object' || !GEOCODE) return inst;
+    if (GEOCODE[inst]) return inst;
+    const norm = s => s.replace(/[‘’′]/g, "'").replace(/[“”]/g, '"');
+    const ni = norm(inst);
+    if (GEOCODE[ni]) return ni;
+    const lower = ni.toLowerCase();
+    for (const key of Object.keys(GEOCODE)) {
+        const nk = norm(key).toLowerCase();
+        if (lower.includes(nk) || nk.includes(lower)) return key;
+    }
+    return inst;
+}
 function statFilterMatch(m) {
     if (!statFilter) return true;
-    if (statFilter.kind === 'inst') return (m.institutions || []).includes(statFilter.value);
+    if (statFilter.kind === 'inst') return (m.institutions || []).some(i => i === statFilter.value || canonicalInst(i) === statFilter.value);
     return memberThemeKeys(m).includes(statFilter.value);
+}
+// Mention « Nouveau membre » / « Profil mis à jour » a cote d'un nom (fenetre d'un etablissement sur la carte)
+const NEWS_HEX = { nouveau: '#d6336c', maj: '#7048e8' };
+function newsMention(m) {
+    if (m.news === 'nouveau') return ` <span class="news-inline">${tr('news_new')}</span>`;
+    if (m.news === 'maj') return ` <span class="news-inline news-maj">${tr('news_updated')}</span>`;
+    return '';
 }
 function setStatFilter(kind, value) {
     statFilter = (statFilter && statFilter.kind === kind && statFilter.value === value) ? null : { kind: kind, value: value };
@@ -4041,6 +4142,37 @@ function statFilterLabel() {
     if (!statFilter) return '';
     return statFilter.kind === 'inst' ? shortInst(statFilter.value) : themeLabel(statFilter.value);
 }
+// Fenetre « Mettre a jour mon profil » : envoie le lien de modification par
+// courriel, comme magic-link.html (meme appel a /api/magic-link).
+function openProfileModal() {
+    const o = document.getElementById('profileOverlay');
+    if (!o) { window.location.href = '/magic-link.html'; return; }
+    const msg = document.getElementById('pmMsg');
+    msg.className = 'pm-msg hidden'; msg.textContent = '';
+    o.classList.add('active');
+    setTimeout(function() { const i = document.getElementById('pmEmail'); if (i) i.focus(); }, 60);
+}
+function closeProfileModal() { const o = document.getElementById('profileOverlay'); if (o) o.classList.remove('active'); }
+async function sendProfileLink() {
+    const input = document.getElementById('pmEmail'), btn = document.getElementById('pmSend'), msg = document.getElementById('pmMsg');
+    const show = function(key, type) { msg.textContent = tr(key); msg.className = 'pm-msg ' + type; };
+    const email = input.value.trim();
+    if (!email || !email.includes('@')) { show('pm_invalid', 'error'); return; }
+    btn.disabled = true; btn.textContent = tr('pm_sending');
+    try {
+        const resp = await fetch('/api/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, lang: currentLang }) });
+        show(resp.ok ? 'pm_success' : 'pm_error', resp.ok ? 'success' : 'error');
+    } catch (e) { show('pm_error', 'error'); }
+    btn.disabled = false; btn.textContent = tr('pm_btn');
+}
+(function() {
+    const btn = document.getElementById('pmSend'), input = document.getElementById('pmEmail');
+    if (!btn || !input) return;
+    btn.addEventListener('click', sendProfileLink);
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendProfileLink(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeProfileModal(); });
+})();
+
 // Vue de depart du graphe : centree sur les membres relies entre eux, puis
 // rapprochee (CONNEXIONS_HOME_ZOOM), pour arriver sur un graphe lisible plutot
 // que vu de tres loin. Le pourtour se retrouve en dezoomant ou en deplacant la
@@ -4059,11 +4191,27 @@ function connexionsHomeFit(animated) {
             if (ids.length > 5) opts.nodes = ids;
         }
     } catch (e) {}
+    // La zone de dessin suit d'abord la taille reelle de son cadre (ecran etroit,
+    // vue qui vient d'etre affichee), sinon le cadrage se fait sur une taille perimee.
+    try {
+        const r = document.getElementById('connexionsGraph').getBoundingClientRect();
+        if (r.width && r.height) _connexionsNetwork.setSize(r.width + 'px', r.height + 'px');
+    } catch (e) {}
     _connexionsNetwork.fit(opts);
-    _connexionsNetwork.moveTo({
+    // Centre sur le point moyen des membres relies (la ou le graphe est dense),
+    // et non sur le milieu du rectangle qui les contient : sur un ecran etroit,
+    // ce milieu peut tomber dans une zone presque vide.
+    const move = {
         scale: _connexionsNetwork.getScale() * CONNEXIONS_HOME_ZOOM,
         animation: animated ? { duration: 500, easingFunction: 'easeInOutCubic' } : false
-    });
+    };
+    try {
+        const P = _connexionsNetwork.getPositions(opts.nodes || _connexionsState.nodesDS.getIds());
+        let sx = 0, sy = 0, k = 0;
+        for (const id in P) { sx += P[id].x; sy += P[id].y; k++; }
+        if (k) move.position = { x: sx / k, y: sy / k };
+    } catch (e) {}
+    _connexionsNetwork.moveTo(move);
 }
 
 // Bouton « Recentrer » : retour a la vue d'ensemble de la carte (tous les
@@ -4159,7 +4307,18 @@ function renderStatsBand() {
 // Clics delegues : chiffre du bandeau, ligne du panneau de la carte, actions des fiches.
 // Les noms passent par des attributs data-* (echappes), jamais par du code en ligne.
 document.addEventListener('click', function(e) {
+    // « Mettre a jour mon profil » : les liens vers /magic-link.html ouvrent la fenetre de verre
+    const ml = e.target.closest('a[href="/magic-link.html"]');
+    if (ml && document.getElementById('profileOverlay')) { e.preventDefault(); openProfileModal(); return; }
     const t = e.target.closest('[data-stat-kind]');
+    // « Voir ces profils » dans la fenetre d'un etablissement de la carte : pose le
+    // filtre (sans bascule) et descend aux fiches.
+    if (t && t.classList.contains('popup-see')) {
+        statFilter = { kind: t.dataset.statKind, value: t.dataset.statValue };
+        applyFilters(); saveHash();
+        document.getElementById('profils').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
     if (t) { setStatFilter(t.dataset.statKind, t.dataset.statValue); return; }
     const o = e.target.closest('[data-member-open]');
     if (o) { showMemberPopup(o.dataset.memberOpen); return; }

@@ -250,8 +250,8 @@ const HEADERS = [
 // nouveaux membres et les profils recemment mis a jour. Seule la mention est
 // publiee, jamais la date. « nouveau » = fiche creee depuis moins de
 // NOUVEAU_JOURS ; « maj » = profil modifie par le membre depuis moins de MAJ_JOURS.
-const NOUVEAU_JOURS = 60;
-const MAJ_JOURS = 30;
+const NOUVEAU_JOURS = 15; // durees choisies par Tess le 2026-11-21
+const MAJ_JOURS = 15;
 function nouveauteOf(m) {
   const jours = d => { const t = d ? new Date(d).getTime() : NaN; return isNaN(t) ? Infinity : (Date.now() - t) / 86400000; };
   if (jours(m.creeLe) <= NOUVEAU_JOURS) return 'nouveau';
