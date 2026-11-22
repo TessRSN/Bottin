@@ -488,7 +488,9 @@
         .list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 1rem; }
         .list-head h2 { margin: 0; font-size: 1.3rem; color: var(--ink); }
         .list-sort { display: flex; align-items: center; gap: 0.5rem; font-size: 0.86rem; color: var(--muted-strong); }
-        .list-sort select { height: 44px; padding: 0 0.75rem; border: 1px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg); color: var(--rsn-text); font: inherit; font-size: 0.88rem; }
+        /* Fleche dessinee par la page : celle du navigateur colle au bord droit et ne se regle pas (retour de Tess, 2026-11-21). */
+        .list-sort select { height: 44px; padding: 0 2.4rem 0 0.85rem; border: 1px solid var(--rsn-border); border-radius: 8px; background: var(--rsn-card-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%234a5568' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.95rem center / 11px auto; -webkit-appearance: none; appearance: none; color: var(--rsn-text); font: inherit; font-size: 0.88rem; cursor: pointer; }
+        [data-theme="dark"] .list-sort select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23cbd5e0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); }
         .cards-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.1rem; }
         .member-card { border: 1px solid var(--rsn-border); border-radius: 10px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; box-shadow: 0 1px 2px rgba(18,35,63,0.05); }
         .member-card:hover { transform: none; }
