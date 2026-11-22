@@ -1,0 +1,29 @@
+# Bottin des membres du Réseau santé numérique (RSN) — https://bottin.rsn.quebec
+#
+# Les moteurs de recherche peuvent parcourir le bottin et les profils publics.
+# Sous /api/, seuls les points d'accès dont la page a besoin pour s'afficher
+# restent ouverts (données publiques, établissements, photos).
+User-agent: *
+Allow: /
+Disallow: /api/
+Allow: /api/export
+Allow: /api/institutions
+Allow: /api/photo
+Disallow: /edit.html
+Disallow: /renew.html
+Disallow: /magic-link.html
+Disallow: /backups.html
+
+# Robots qui collectent des pages pour entraîner des modèles d'IA : refusés.
+# Le consentement des membres porte sur le bottin et les moteurs de recherche,
+# pas sur cet usage. (Cette consigne n'est suivie que par les robots qui la respectent.)
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: CCBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: meta-externalagent
+Disallow: /
+
+Sitemap: https://bottin.rsn.quebec/sitemap.xml

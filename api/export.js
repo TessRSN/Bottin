@@ -4,13 +4,26 @@
  * Applies consent rules identical to prepare_public_csv.py
  *
  * Called by Vercel cron daily or on-demand
+ *
+ * Référencement (2026-11) — deux autres sorties publiques, sur la même fonction
+ * parce que le projet est au plafond de 12 fonctions (voir vercel.json) :
+ *   GET /membre/<slug>  → /api/export?view=membre&slug=<slug> : page de profil
+ *   GET /sitemap.xml    → /api/export?view=sitemap           : plan de site
+ * Ni l'une ni l'autre n'envoie de courriel ni n'écrit dans Notion.
  */
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const {
   getAllMembers, getAllInstitutions, markAcceptanceEmailSent,
   setMemberCheckbox, archiveMemberPage,
+  findApprovedMembersByName, getInstitutionNames,
   CSV_COL,
 } = require('../lib/notion');
+const {
+  isPublicMember, assignSlugs, isValidSlug, slugLookupTokens,
+  renderMemberPage, renderNotFoundPage, renderSitemap,
+} = require('../lib/public-page');
 const {
   sendAcceptanceEmail,
   sendRenewalReminder60j, sendRenewalReminder30j,
@@ -244,6 +257,7 @@ const HEADERS = [
   CSV_COL.orcid, CSV_COL.cv, CSV_COL.evaluateur, CSV_COL.consent,
   CSV_COL.photo, // Phase 3a: adresse du relais photo (ajoutee en fin, index.html lit par nom)
   CSV_COL.nouveaute, // Refonte 2026-11 : « nouveau » ou « maj » (ajoutee en fin, index.html lit par nom)
+  CSV_COL.slug, // Referencement 2026-11 : fin de l'adresse /membre/<slug> (ajoutee en fin, index.html lit par nom)
 ];
 
 // Refonte 2026-11 : mention affichee sur les fiches pour mettre en avant les
@@ -327,6 +341,8 @@ function memberToCSVRow(m, consent) {
       ? `/api/photo?id=${String(m.id).replace(/-/g, '')}&v=${encodeURIComponent(m.photoName)}`
       : '',
     [CSV_COL.nouveaute]: nouveauteOf(m),
+    // Pose par assignSlugs sur les seuls membres publics ; vide pour les autres.
+    [CSV_COL.slug]: m.slug || '',
   };
 
   return row;
@@ -338,7 +354,7 @@ function maskSensitive(row) {
     CSV_COL.email, CSV_COL.email2, CSV_COL.statut, CSV_COL.institution,
     CSV_COL.reseau, CSV_COL.themes, CSV_COL.projet,
     CSV_COL.etudiants, CSV_COL.refere, CSV_COL.orcid, CSV_COL.cv,
-    CSV_COL.evaluateur, CSV_COL.photo, CSV_COL.nouveaute,
+    CSV_COL.evaluateur, CSV_COL.photo, CSV_COL.nouveaute, CSV_COL.slug,
   ];
   for (const col of sensitive) {
     row[col] = PLACEHOLDER[col] || '';
@@ -346,11 +362,99 @@ function maskSensitive(row) {
   return row;
 }
 
+// ─── PAGE DE PROFIL (/membre/<slug>) ───────────────────────────────
+// index.html est joint a la fonction par « includeFiles » dans vercel.json.
+// Il ne change pas pendant la vie d'un deploiement : lu une fois par instance.
+let indexHtmlCache = null;
+async function loadIndexHtml(req) {
+  if (indexHtmlCache) return indexHtmlCache;
+  for (const file of [path.join(__dirname, '..', 'index.html'), path.join(process.cwd(), 'index.html')]) {
+    try {
+      const html = fs.readFileSync(file, 'utf8');
+      if (html.includes('id="memberOverlay"')) { indexHtmlCache = html; return html; }
+    } catch (err) { /* essai suivant */ }
+  }
+  // Secours si le fichier n'a pas ete joint : la page servie par le site lui-meme.
+  const host = String((req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '');
+  if (host === 'bottin.rsn.quebec' || /^[a-z0-9-]+\.vercel\.app$/.test(host)) {
+    const r = await fetch(`https://${host}/index.html`);
+    const html = r.ok ? await r.text() : '';
+    if (html.includes('id="memberOverlay"')) { indexHtmlCache = html; return html; }
+  }
+  throw new Error('index.html introuvable');
+}
+
+// Lecture complete gardee quelques minutes par instance : elle ne sert qu'au
+// secours de findPublicMemberBySlug, et evite qu'une serie d'adresses
+// inexistantes relise tout Notion a chaque fois.
+let allPublicCache = { at: 0, list: null };
+async function allPublicMembers() {
+  if (allPublicCache.list && Date.now() - allPublicCache.at < 5 * 60 * 1000) return allPublicCache.list;
+  const list = assignSlugs((await getAllMembers()).filter(isPublicMember));
+  allPublicCache = { at: Date.now(), list };
+  return list;
+}
+
+// Retrouve le membre public d'un slug. D'abord par une recherche sur le nom
+// (une requete Notion, ~0,2 s) ; si elle ne donne rien (nom d'un seul mot,
+// caractere que Notion ne rapproche pas), par la lecture complete (~3 s).
+async function findPublicMemberBySlug(slug) {
+  const tokens = slugLookupTokens(slug);
+  if (tokens) {
+    const found = assignSlugs((await findApprovedMembersByName(tokens.first, tokens.last)).filter(isPublicMember))
+      .find(m => m.slug === slug);
+    if (found) return found;
+  }
+  return (await allPublicMembers()).find(m => m.slug === slug) || null;
+}
+
+async function serveMemberPage(req, res) {
+  let indexHtml;
+  try {
+    indexHtml = await loadIndexHtml(req);
+  } catch (err) {
+    console.error('[membre] ' + err.message);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Location', '/');
+    return res.status(302).end();
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  try {
+    const slug = String((req.query && req.query.slug) || '').toLowerCase();
+    const member = isValidSlug(slug) ? await findPublicMemberBySlug(slug) : null;
+    if (!member) {
+      // Pas (ou plus) de profil public a cette adresse : 404, pour que les
+      // moteurs retirent la page. Le visiteur voit l'accueil du bottin.
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
+      return res.status(404).send(renderNotFoundPage(indexHtml));
+    }
+    // Meme regle que l'export : le nom des etablissements lies prime sur le champ texte.
+    if (member.institutionIds && member.institutionIds.length) {
+      const names = await getInstitutionNames(member.institutionIds);
+      if (names.length) member.institution = names.join('; ');
+    }
+    const page = renderMemberPage(indexHtml, member);
+    if (page.missing.length) console.error('[membre] Repères absents de index.html : ' + page.missing.join(', '));
+    // Gardee par le CDN 2 minutes, puis servie encore 5 minutes pendant qu'elle
+    // se rafraichit : un retrait de consentement disparait d'ici au plus 7 minutes.
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120, stale-while-revalidate=300');
+    return res.status(200).send(page.html);
+  } catch (err) {
+    // Notion indisponible, etc. : la page d'accueil telle quelle, qui ouvrira
+    // la fiche elle-meme une fois ses donnees chargees.
+    console.error('[membre] Erreur :', err.message);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(indexHtml);
+  }
+}
+
 module.exports = async function handler(req, res) {
   const handlerStart = Date.now(); // sert au budget de temps de la campagne (maxDuration 60 s)
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  const view = String((req.query && req.query.view) || '');
+  if (view === 'membre') return serveMemberPage(req, res);
 
   try {
     const members = await getAllMembers();
@@ -386,6 +490,16 @@ module.exports = async function handler(req, res) {
       // En cas d'erreur (Notion down sur la DB Institutions), on log et on
       // continue avec le champ texte — le bottin reste fonctionnel.
       console.error('[export] Failed to resolve institution relation:', err.message);
+    }
+
+    // Referencement : adresse de la fiche de chaque membre public (colonne « Slug »).
+    const publicMembers = assignSlugs(members.filter(isPublicMember));
+
+    // Plan de site : sorti ici, avant l'export CSV et les courriels du cron.
+    if (view === 'sitemap') {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400');
+      return res.status(200).send(renderSitemap(publicMembers));
     }
 
     const publicRows = [];
@@ -450,6 +564,9 @@ module.exports = async function handler(req, res) {
 
     // If the client's cached version matches the current content, return 304 (no body)
     const ifNoneMatch = req.headers['if-none-match'];
+    // Le CSV alimente la page ; les moteurs doivent pouvoir le lire pour
+    // afficher le bottin, mais pas le proposer comme resultat de recherche.
+    res.setHeader('X-Robots-Tag', 'noindex');
     if (ifNoneMatch && ifNoneMatch === etag) {
       res.setHeader('ETag', etag);
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');

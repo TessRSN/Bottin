@@ -234,7 +234,8 @@
       <ul>
         <li id="l_consent_use1">apparaître sur le bottin public du RSN ;</li>
         <li id="l_consent_use2">être associées à votre institution et à vos projets ;</li>
-        <li id="l_consent_use3">faciliter le réseautage et la collaboration entre membres.</li>
+        <li id="l_consent_use3">faciliter le réseautage et la collaboration entre membres ;</li>
+        <li id="l_consent_use4">être repérables dans les moteurs de recherche (Google, Bing, etc.), pour que l'on puisse vous trouver par votre nom ou votre expertise.</li>
       </ul>
       <p><strong id="l_consent_newsletter_bold">Infolettre :</strong><span id="l_consent_newsletter_rest"> l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pouvez vous y abonner en un clic dans le bloc Infolettre ci-dessous, et vous désabonner à tout moment.</span></p>
       <div class="field" style="margin:1rem 0 0 0">
@@ -245,7 +246,7 @@
           <option value="" id="opt_pending">Je déciderai plus tard</option>
         </select>
       </div>
-      <p class="consent-footer"><span id="l_consent_withdraw_pre">Vous pouvez retirer ou modifier votre consentement à tout moment en changeant votre réponse ci-dessus, ou en écrivant à </span><a href="mailto:rsn.gestion@rimuhc.ca" id="l_consent_withdraw_link2">rsn.gestion@rimuhc.ca</a><span id="l_consent_withdraw_post">.</span></p>
+      <p class="consent-footer"><span id="l_consent_withdraw_pre">Vous pouvez retirer ou modifier votre consentement à tout moment en changeant votre réponse ci-dessus, ou en écrivant à </span><a href="mailto:rsn.gestion@rimuhc.ca" id="l_consent_withdraw_link2">rsn.gestion@rimuhc.ca</a><span id="l_consent_withdraw_post">. Si vous retirez votre consentement, votre profil disparaît du bottin immédiatement ; son retrait des résultats des moteurs de recherche peut prendre quelques semaines.</span></p>
     </div>
   </div>
 
@@ -365,12 +366,13 @@ function t(key) {
       l_consent_uses_intro:'Ces informations seront utilisées pour :',
       l_consent_use1:'apparaître sur le bottin public du RSN ;',
       l_consent_use2:'être associées à votre institution et à vos projets ;',
-      l_consent_use3:'faciliter le réseautage et la collaboration entre membres.',
+      l_consent_use3:'faciliter le réseautage et la collaboration entre membres ;',
+      l_consent_use4:"être repérables dans les moteurs de recherche (Google, Bing, etc.), pour que l'on puisse vous trouver par votre nom ou votre expertise.",
       l_consent_newsletter_bold:'Infolettre :',
       l_consent_newsletter_rest:" l'abonnement à nos communications par courriel (infolettre, activités, événements) est facultatif. Vous pouvez vous y abonner en un clic dans le bloc Infolettre ci-dessous, et vous désabonner à tout moment.",
       l_consent_withdraw_pre:'Vous pouvez retirer ou modifier votre consentement à tout moment en changeant votre réponse ci-dessus, ou en écrivant à ',
       l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
-      l_consent_withdraw_post:'.',
+      l_consent_withdraw_post:". Si vous retirez votre consentement, votre profil disparaît du bottin immédiatement ; son retrait des résultats des moteurs de recherche peut prendre quelques semaines.",
       saveBtn:'Enregistrer', cancelBtn:'Annuler', saving:'Enregistrement...', langBtn:'EN',
       renew_note:'En enregistrant, vous confirmez rester membre du RSN : votre adhésion est renouvelée pour deux ans.',
       msg_renewed:"Votre adhésion au RSN est renouvelée jusqu'au {date}.",
@@ -467,12 +469,13 @@ function t(key) {
       l_consent_uses_intro:'This information will be used to:',
       l_consent_use1:'appear on the public RSN directory;',
       l_consent_use2:'be associated with your institution and your projects;',
-      l_consent_use3:'facilitate networking and collaboration between members.',
+      l_consent_use3:'facilitate networking and collaboration between members;',
+      l_consent_use4:"be discoverable in search engines (Google, Bing, etc.), so that people can find you by name or expertise.",
       l_consent_newsletter_bold:'Newsletter:',
       l_consent_newsletter_rest:' subscribing to our email communications (newsletter, activities, events) is optional. You can subscribe in one click in the Newsletter block below, and unsubscribe at any time.',
       l_consent_withdraw_pre:'You can withdraw or modify your consent at any time by changing your answer above, or by writing to ',
       l_consent_withdraw_link2:'rsn.gestion@rimuhc.ca',
-      l_consent_withdraw_post:'.',
+      l_consent_withdraw_post:". If you withdraw your consent, your profile is removed from the directory immediately; it can take a few weeks for it to disappear from search engine results.",
       saveBtn:'Save', cancelBtn:'Cancel', saving:'Saving...', langBtn:'FR',
       renew_note:'By saving, you confirm that you remain an RSN member: your membership is renewed for two years.',
       msg_renewed:'Your RSN membership is renewed until {date}.',
@@ -563,7 +566,7 @@ function applyI18n() {
    'h_themes','h_projet','l_orcid','h_orcid','h_reseau','h_themes_pick',
    // Bloc consentement (fragments a id propre -> textContent uniquement)
    'l_consent_title','l_consent_intro','l_consent_fields','l_consent_uses_intro',
-   'l_consent_use1','l_consent_use2','l_consent_use3','l_consent_newsletter_bold','l_consent_newsletter_rest',
+   'l_consent_use1','l_consent_use2','l_consent_use3','l_consent_use4','l_consent_newsletter_bold','l_consent_newsletter_rest',
    'l_consent_withdraw_pre','l_consent_withdraw_link2','l_consent_withdraw_post'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t(id); });
   // Aide statut avec lien vers les definitions du FRQ (identique au formulaire d'inscription)

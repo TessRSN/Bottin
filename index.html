@@ -24,6 +24,8 @@
     <meta name="twitter:title" content="Bottin du Réseau santé numérique">
     <meta name="twitter:description" content="Profils, carte et connexions : trouvez qui travaille sur les mêmes sujets que vous en santé numérique au Québec.">
     <meta name="twitter:image" content="https://bottin.rsn.quebec/og-image-v3.png">
+    <!-- Referencement 2026-11 : donnees schema.org de l'accueil. Sur une page /membre/<slug>, le serveur les remplace par celles du profil (lib/public-page.js). -->
+    <script type="application/ld+json" id="ldHome">{"@context":"https://schema.org","@type":"WebSite","name":"Bottin des membres du Réseau santé numérique","alternateName":"Bottin du RSN","url":"https://bottin.rsn.quebec/","inLanguage":"fr-CA","description":"Profils, carte et connexions des membres du Réseau santé numérique (RSN), au Québec.","publisher":{"@type":"Organization","name":"Réseau santé numérique (RSN)","url":"https://rsn.quebec/"}}</script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <!-- Phase 2j (2026-05-04): vis-network pour la vue Connexions (graphe de proximite). -->
     <link rel="stylesheet" href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css"/>
@@ -513,7 +515,7 @@
         .card-clamp.collapsed { -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
         .card-clamp.collapsed::after { display: none; }
         .card-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 0.75rem; padding-top: 0.3rem; border-top: 1px solid var(--rsn-border); }
-        .card-action { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0; border: 0; background: none; color: var(--rsn-secondary); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+        .card-action { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0; border: 0; background: none; color: var(--rsn-secondary); text-decoration: none; font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
         [data-theme="dark"] .card-action { color: var(--rsn-accent); }
         .card-action:hover { text-decoration: underline; text-underline-offset: 3px; }
         .card-action svg { width: 15px; height: 15px; }
@@ -1334,7 +1336,8 @@ const CONFIG = {
         evaluateur: 'Évaluateur du RSN - nouv. formulaire',
         profilPublic: 'Autorisez-vous le RSN à vous créer un profil de membre public',
         photo: 'Photo', // Phase 3a: adresse du relais /api/photo (vide si pas de photo)
-        nouveaute: 'Nouveauté' // Refonte 2026-11 : « nouveau », « maj » ou vide (calcule par /api/export)
+        nouveaute: 'Nouveauté', // Refonte 2026-11 : « nouveau », « maj » ou vide (calcule par /api/export)
+        slug: 'Slug' // Referencement 2026-11 : fin de l'adresse /membre/<slug> des fiches publiques (calcule par /api/export)
     }
 };
 
@@ -1542,6 +1545,7 @@ function loadMembers(data) {
             cv: (m[C.cv]||'').trim(),
             photo: (m[C.photo]||'').trim(),
             news: (m[C.nouveaute]||'').trim(), // 'nouveau', 'maj' ou ''
+            slug: (m[C.slug]||'').trim(), // adresse de la fiche, fournie par le serveur pour les membres publics
             reseau: (m[C.reseau]||'').trim(),
             etudiants: (m[C.etudiants]||'').trim(),
             evaluateur: (m[C.evaluateur]||'').trim(),
@@ -3347,7 +3351,7 @@ function renderCards() {
             ${focusChipsHtml(m, 3)}
             ${incomplete}
             <div class="card-foot">
-                <button type="button" class="card-action" data-member-open="${esc(m.name)}">${tr('card_open')}</button>
+                <a class="card-action" href="${esc(memberPath(m))}" data-member-open="${esc(m.name)}">${tr('card_open')}</a>
                 <button type="button" class="card-action" data-member-graph="${esc(m.name)}">${GRAPH_ICON}${tr('card_graph')}</button>
             </div>
         </div>`;
@@ -3632,10 +3636,15 @@ function showMemberPopup(name) {
     }
 
     document.getElementById('memberOverlay').classList.add('active');
+    // Referencement 2026-11 : l'onglet porte le nom de la personne, comme la page servie a /membre/<slug>
+    // (le titre deja pose par le serveur pour cette personne, plus precis, est conserve)
+    const fullName = [m.prenom, m.nom].filter(Boolean).join(' ');
+    if (m.consent === 'oui' && document.title.indexOf(fullName + ' — ') !== 0) document.title = fullName + ' — ' + SITE_TITLE_SHORT;
 }
 function closeMemberPopup() {
     document.getElementById('memberOverlay').classList.remove('active');
     if (/^\/membre\//.test(location.pathname)) setMemberUrl(null); // l'adresse revient a l'accueil
+    document.title = SITE_TITLE;
 }
 
 // ─── Connexions : fenetre d'explication de la methode (Phase 2j v7) ───
@@ -4471,7 +4480,14 @@ document.addEventListener('click', function(e) {
     // « Retour aux profils publics » depuis les pages des membres sans profil public
     if (e.target.closest('[data-list-back]')) { goP(1); return; }
     const o = e.target.closest('[data-member-open]');
-    if (o) { showMemberPopup(o.dataset.memberOpen); return; }
+    if (o) {
+        // « Voir la fiche » est un lien vers /membre/<slug> : un clic simple ouvre
+        // la fiche sur place ; Cmd/Ctrl-clic ou clic du milieu suivent le lien.
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+        e.preventDefault();
+        showMemberPopup(o.dataset.memberOpen);
+        return;
+    }
     const g = e.target.closest('[data-member-graph]');
     if (g) showInGraph(g.dataset.memberGraph);
 });
@@ -4493,14 +4509,21 @@ document.addEventListener('click', function(e) {
 // referencement futur (une adresse par profil). Deux homonymes recoivent un
 // suffixe -2, -3 dans l'ordre alphabetique de la liste.
 function slugify(s) { return fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+// Referencement 2026-11 : l'adresse d'une fiche publique est calculee par le
+// serveur (colonne « Slug » du CSV, voir lib/public-page.js), parce que c'est
+// lui qui sert la page /membre/<slug> aux moteurs de recherche. Le calcul
+// ci-dessous ne sert plus que de repli, si la colonne manque.
 function buildSlugs() {
     const seen = {};
+    allMembers.forEach(m => { if (m.slug) seen[m.slug] = 1; });
     allMembers.forEach(m => {
+        if (m.slug) return;
         const s = slugify([m.prenom, m.nom].filter(Boolean).join(' ') || m.name) || 'membre';
         seen[s] = (seen[s] || 0) + 1;
         m.slug = seen[s] > 1 ? s + '-' + seen[s] : s;
     });
 }
+const SITE_TITLE = 'Bottin des membres — RSN', SITE_TITLE_SHORT = 'Bottin du RSN';
 function memberPath(m) { return '/membre/' + m.slug; }
 function setMemberUrl(m) { try { history.replaceState(null, '', (m ? memberPath(m) : '/') + location.hash); } catch (e) {} }
 function openMemberFromPath() {
@@ -4509,7 +4532,15 @@ function openMemberFromPath() {
     let slug = mm[1];
     try { slug = decodeURIComponent(slug); } catch (e) {}
     const m = allMembers.find(x => x.slug === slug && x.consent === 'oui');
-    if (m) showMemberPopup(m.name); else setMemberUrl(null);
+    if (m) { showMemberPopup(m.name); return; }
+    // Aucun profil public a cette adresse. Si le serveur avait deja ouvert une
+    // fiche dans la page (copie gardee quelques minutes par le reseau de
+    // diffusion, alors que la personne vient de retirer son consentement), on la retire.
+    const modal = document.getElementById('memberModalContent');
+    while (modal.childNodes.length > 1 && modal.lastChild.className !== 'member-modal-close') modal.removeChild(modal.lastChild);
+    document.getElementById('memberOverlay').classList.remove('active');
+    document.title = SITE_TITLE;
+    setMemberUrl(null);
 }
 function buildModalActions(m) {
     const row = document.createElement('div');

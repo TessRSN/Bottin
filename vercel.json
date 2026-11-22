@@ -9,11 +9,15 @@
       "schedule": "0 3 * * 0"
     }
   ],
+  "functions": {
+    "api/export.js": { "includeFiles": "index.html" }
+  },
   "rewrites": [
     { "source": "/api/backup-manual", "destination": "/api/backups?action=manual" },
     { "source": "/api/list-backups", "destination": "/api/backups?action=list" },
     { "source": "/api/download-backup", "destination": "/api/backups?action=download" },
-    { "source": "/membre/:slug", "destination": "/index.html" }
+    { "source": "/membre/:slug", "destination": "/api/export?view=membre&slug=:slug" },
+    { "source": "/sitemap.xml", "destination": "/api/export?view=sitemap" }
   ],
   "headers": [
     {
