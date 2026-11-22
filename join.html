@@ -105,18 +105,68 @@
   .pause-notice { margin-bottom:1.25rem; padding:1rem 1.25rem; background:#fef3c7; border-left:4px solid #d97706; color:#78350f; font-size:.9rem; line-height:1.5; border-radius:var(--radius); }
   [data-theme="dark"] .pause-notice { background:#451a03; color:#fef3c7; }
   .pause-notice a { color:inherit; font-weight:600; text-decoration:underline; }
+
+  /* ─── Habillage aligne sur l'accueil du bottin (2026-11-21, retour de Tess) : meme bandeau
+     et meme logo blanc, zone de formulaire plus large, coins et couleurs du bottin. ─── */
+  :root { --ink:#1a365d; --radius:8px; }
+  [data-theme="dark"] { --ink:#e2e8f0; }
+  body { padding:0; }
+  .site-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.7rem 1.5rem; padding:.8rem 2rem; background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 100%); color:#fff; }
+  [data-theme="dark"] .site-header { background:linear-gradient(135deg,#0f1724 0%,#1a365d 100%); }
+  .sh-brand { display:flex; align-items:center; gap:.9rem; color:#fff; text-decoration:none; }
+  .sh-brand:hover .sh-logo { opacity:.85; }
+  .sh-logo { height:40px; width:auto; }
+  .sh-title { display:flex; flex-direction:column; line-height:1.25; }
+  .sh-title strong { font-size:1.05rem; font-weight:700; }
+  .sh-title span { font-size:.78rem; opacity:.9; }
+  .sh-controls { display:flex; align-items:center; gap:.5rem; }
+  .sh-btn, .site-header .lang-toggle, .site-header .theme-toggle { position:static; display:inline-flex; align-items:center; justify-content:center; gap:.35rem; height:44px; min-width:44px; padding:0 .8rem; border-radius:8px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.15); color:#fff; font:inherit; font-size:.8rem; font-weight:600; text-decoration:none; cursor:pointer; }
+  .sh-btn:hover, .site-header .lang-toggle:hover, .site-header .theme-toggle:hover { background:rgba(255,255,255,.25); }
+  .site-header .theme-toggle svg { width:14px; height:14px; }
+  .container { max-width:960px; margin:1.6rem auto 3rem; padding:0 1.25rem; }
+  .header { text-align:left; margin-bottom:1.2rem; }
+  h1 { font-size:1.5rem; color:var(--ink); }
+  .subtitle { font-size:.9rem; margin-bottom:1.2rem; }
+  .intro { border:1px solid var(--border); border-left:3px solid var(--primary); border-radius:8px; font-size:.9rem; }
+  .card { border:1px solid var(--border); border-radius:10px; padding:1.4rem 1.6rem; box-shadow:0 1px 2px rgba(18,35,63,.05); margin-bottom:1.1rem; }
+  .section-title { color:var(--ink); font-size:1rem; }
+  .field-hint a { color:var(--primary); } /* sans cela, bleu par defaut du navigateur, illisible en mode sombre */
+  input, textarea, select { border-width:1px; border-radius:8px; }
+  .btn { border-radius:8px; min-height:44px; }
+  .btn-primary { background:#1a365d; }
+  [data-theme="dark"] .btn-primary { background:var(--primary); color:#0f1724; }
+  /* Ecran large : le titre de chaque bloc a gauche, ses champs a droite. */
+  @media (min-width:860px) {
+    .card { display:grid; grid-template-columns:210px minmax(0,1fr); column-gap:2rem; }
+    .card > .section-title { grid-column:1; grid-row:1 / span 40; align-self:start; margin:0; padding:0; border-bottom:0; line-height:1.35; }
+    .card > :not(.section-title) { grid-column:2; min-width:0; }
+    .card:not(:has(> .section-title)) { display:block; }
+  }
+  @media (max-width:600px) {
+    .site-header { padding:.7rem 1rem; }
+    .container { padding:0 .9rem; margin-top:1.1rem; }
+    .sh-back-label { display:none; }
+  }
 </style>
 </head>
 <body>
-<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
-  <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-  <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-</button>
-<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+<header class="site-header">
+  <a class="sh-brand" href="/" id="brandLink" title="Retour au bottin">
+    <img class="sh-logo" src="/logo-rsn-blanc.webp" alt="Logo RSN" onerror="this.style.display='none'">
+    <span class="sh-title"><strong id="brandTitle">Bottin des membres</strong><span id="brandSub">Réseau santé numérique</span></span>
+  </a>
+  <div class="sh-controls">
+    <a class="sh-btn" href="/"><span aria-hidden="true">←</span><span class="sh-back-label" id="backLink">Retour au bottin</span></a>
+    <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
 
 <div class="container" id="formContainer">
   <div class="header">
-    <img src="/L_RSN_FR_RGB.png" alt="RSN" onerror="this.style.display='none'">
     <h1 id="title">Devenir membre du RSN</h1>
     <p class="subtitle" id="subtitle">Formulaire d'inscription au Réseau de santé numérique</p>
   </div>
@@ -497,7 +547,7 @@ var I18N = {
     opt_no: 'Non, ne pas afficher mon profil',
     cancelBtn: 'Annuler', nextBtn: 'Suivant', backBtn: 'Retour',
     submitBtn: 'Soumettre ma candidature', submitting: 'Envoi en cours...',
-    langBtn: 'EN',
+    langBtn: 'EN', brandTitle: 'Bottin des membres', brandSub: 'Réseau santé numérique', backLink: 'Retour au bottin',
     success_title: 'Candidature envoyée !',
     success_msg: 'Merci pour votre intérêt envers le RSN. Votre candidature sera examinée par notre équipe. Vous recevrez une confirmation par courriel une fois votre profil approuvé.',
     success_btn: 'Retour au bottin',
@@ -623,7 +673,7 @@ var I18N = {
     opt_no: 'No, do not display my profile',
     cancelBtn: 'Cancel', nextBtn: 'Next', backBtn: 'Back',
     submitBtn: 'Submit my application', submitting: 'Submitting...',
-    langBtn: 'FR',
+    langBtn: 'FR', brandTitle: 'Member Directory', brandSub: 'Digital Health Network', backLink: 'Back to the directory',
     success_title: 'Application submitted!',
     success_msg: 'Thank you for your interest in the RSN. Your application will be reviewed by our team. You will receive an email confirmation once your profile is approved.',
     success_btn: 'Back to the directory',
@@ -659,7 +709,7 @@ function setWithRequired(id, text, required) {
 
 function applyI18n() {
   // Simple text elements
-  var textKeys = ['title','subtitle','langBtn','success_title','success_msg','success_btn',
+  var textKeys = ['title','subtitle','langBtn','brandTitle','brandSub','backLink','success_title','success_msg','success_btn',
     'nl_title','nl_text','nl_btn','nl_done','nl_footer','pause_text'];
   textKeys.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = t(id); });
   var nlEmail = document.getElementById('nl_email');
