@@ -2,23 +2,33 @@
 
 **[bottin.rsn.quebec](https://bottin.rsn.quebec/)**
 
-> *In English:* an open member directory for a research network. Members appear as profile cards, on a map of institutions, and on a "connections" graph that links people working on similar topics. Members update their own profile through a one-click email link, with keyword suggestions drawn from ORCID and OpenAlex. Data lives in Notion, the site runs on Vercel, emails go through Resend. Everything below is in French; the technical section at the end lists what you need to run your own copy.
+> *In English:* an open member directory for a research network. Members appear as profile cards, on a map of institutions, and on a "connections" graph that links people working on similar topics. Members update their own profile through a one-click email link, with keyword suggestions drawn from ORCID and OpenAlex. Each public profile has its own page that search engines can read (schema.org, sitemap), with no email address in it. Data lives in Notion, the site runs on Vercel, emails go through Resend. Everything below is in French; the technical section at the end lists what you need to run your own copy.
 
 Le bottin est le répertoire public des membres du [Réseau santé numérique](https://rsn.quebec/) (RSN), un réseau de recherche québécois financé par le Fonds de recherche du Québec. Il sert à une chose : **trouver les bonnes personnes**. Qui travaille en santé numérique au Québec, où, sur quels sujets, et avec qui.
 
 ## Ce que l'on y trouve
 
-### Des profils, une recherche et des filtres
+### Une carte, un portrait du réseau, une recherche
 
-Chaque membre a une fiche : statut, institution, thèmes de recherche, présentation, photo, liens ORCID et site web. La barre de recherche comprend les noms, les institutions, les thèmes et les présentations, en français comme en anglais. Quatre filtres croisent le type d'adhésion, la région, le statut et les axes du réseau. Une vue en tableau, triable, remplace les cartes quand on préfère une liste.
+L'accueil s'ouvre sur la carte des établissements ; un interrupteur la remplace par le graphe des connexions. Juste en dessous, le « portrait du réseau » résume qui compose le réseau : répartition des types d'adhésion, principaux thèmes, principaux établissements. Un clic sur l'un de ces chiffres filtre le bottin. La barre de recherche, dans le bandeau, comprend les noms, les institutions, les thèmes et les présentations, en français comme en anglais. Quatre filtres croisent le type d'adhésion, la région, le statut et les axes du réseau.
 
-![L'accueil du bottin : recherche, filtres, onglets et appel à la vue Connexions](img/readme-accueil.png)
+![L'accueil du bottin : recherche, filtres, carte des établissements et portrait du réseau](img/readme-accueil.png)
+
+### Des profils
+
+Chaque membre a une fiche : statut, institution, thèmes de recherche, présentation, photo, liens ORCID et site web. Les profils s'affichent en cartes, les plus complets d'abord ou par ordre alphabétique ; les nouveaux membres et les profils récemment mis à jour sont signalés. Les membres qui n'ont pas encore de profil public sont regroupés à part, à la suite des profils publics.
+
+![La liste des profils : compteurs, tri et premières cartes](img/readme-profils.png)
+
+Un clic ouvre la fiche complète, avec les profils les plus proches, un accès direct à ses connexions et un lien à copier pour la partager.
+
+<p align="center"><img src="img/readme-fiche.png" alt="La fiche d'un membre, ouverte par-dessus la carte" width="460"></p>
 
 ### Une carte des institutions
 
-Chaque membre est placé sur la carte à partir de son institution, de Montréal à Rimouski, avec des membres ailleurs au Canada et à l'international. Les filtres s'appliquent aussi à la carte.
+Chaque membre est placé sur la carte à partir de son institution, de Montréal à Rimouski, avec des membres ailleurs au Canada et à l'international (bouton « Monde »). Les cercles comptent les établissements d'un secteur ; en zoomant, chaque établissement apparaît, et un clic liste ses membres. Les filtres s'appliquent aussi à la carte.
 
-![La carte des institutions, centrée sur le Québec](img/readme-carte.png)
+![La carte zoomée sur Montréal : un cercle par établissement ou par groupe d'établissements](img/readme-carte.png)
 
 ### Des institutions référencées
 
@@ -26,26 +36,30 @@ Les institutions ne sont pas du texte libre : elles forment un catalogue à part
 
 ### Les connexions
 
-C'est la partie la plus originale. Un graphe relie les membres dont les profils partagent des mots-clés scientifiques distinctifs : plus deux personnes ont de mots rares en commun, plus le trait est épais. Un clic sur une personne ouvre sa fiche avec la liste de ses profils les plus proches et les mots-clés partagés. Le calcul se fait dans le navigateur, sans intelligence artificielle, à partir des thèmes et des présentations, et un bouton « ? » explique la méthode aux membres.
+C'est la partie la plus originale. Un graphe relie les membres dont les profils partagent des mots-clés scientifiques distinctifs : plus deux personnes ont de mots rares en commun, plus le trait est épais. Un clic sur une personne ouvre sa fiche avec la liste de ses profils les plus proches et les mots-clés partagés. Depuis chaque carte et chaque fiche, « Voir ses connexions » amène directement sur la personne dans le graphe. Le calcul se fait dans le navigateur, sans intelligence artificielle, à partir des thèmes et des présentations, et un bouton « ? » explique la méthode aux membres.
 
-<p align="center"><img src="img/campagne-connexions.gif" alt="La vue Connexions : la carte des membres, puis le zoom sur une personne et ses liens" width="600"></p>
+<p align="center"><img src="img/readme-connexions.gif" alt="La vue Connexions : le graphe des membres, puis le zoom sur une personne et ses liens" width="800"></p>
 
 ### Un profil qui se remplit presque tout seul
 
-Pour créer ou modifier son profil, un membre reçoit un lien par courriel, sans mot de passe. Le formulaire propose ses thèmes de recherche à partir de son identifiant ORCID, ou d'une recherche de ses publications par son nom dans OpenAlex ; la personne coche ce qui lui convient. Elle peut ajouter une photo, recadrée sur place. Toute modification passe par l'approbation de l'équipe du réseau avant d'apparaître.
+Pour créer ou modifier son profil, un membre reçoit un lien par courriel, sans mot de passe. Le formulaire propose ses thèmes de recherche à partir de son identifiant ORCID, ou d'une recherche de ses publications par son nom dans OpenAlex ; la personne coche ce qui lui convient. Elle peut ajouter une photo, recadrée sur place. Ses modifications sont publiées aussitôt : elle est la seule à pouvoir ouvrir ce lien.
 
-![Les thèmes proposés à partir d'un profil ORCID](img/campagne-suggestions.png)
+<p align="center"><img src="img/readme-suggestions.png" alt="Les thèmes proposés à partir d'un profil ORCID, à cocher" width="600"></p>
+
+### Une page par membre, trouvable dans les moteurs de recherche
+
+Chaque profil public a sa propre adresse, du type `bottin.rsn.quebec/membre/prenom-nom`, que l'on peut partager et que les moteurs de recherche savent lire : un titre et une description propres à la personne, et des données structurées [schema.org](https://schema.org) (nom, établissement, thèmes, liens). Un plan du site liste ces pages. Le fichier `robots.txt` accueille les moteurs de recherche et refuse les robots qui collectent des textes pour entraîner des modèles d'IA. Ce que le serveur envoie aux moteurs ne contient jamais de courriel, même pour les membres qui affichent le leur sur leur fiche.
 
 ### Le consentement, au centre
 
-C'est un bottin de personnes, soumis à la Loi 25 du Québec. Chaque membre décide si son profil est public. Sans réponse, seuls le nom, le type d'adhésion et les axes apparaissent, le reste est masqué ; en cas de refus, la personne n'apparaît pas du tout et n'est comptée que dans les totaux. Le courriel n'est affiché que si la personne l'a accepté, et elle peut retirer son consentement à tout moment depuis son profil.
+C'est un bottin de personnes, soumis à la Loi 25 du Québec. Chaque membre décide si son profil est public. Sans réponse, seuls le nom, le type d'adhésion et les axes apparaissent, le reste est masqué ; en cas de refus, la personne n'apparaît pas du tout et n'est comptée que dans les totaux. Le courriel n'est affiché que si la personne l'a accepté. Le formulaire précise qu'un profil public est aussi repérable dans les moteurs de recherche. La personne peut retirer son consentement à tout moment depuis son profil : sa page disparaît du bottin en quelques minutes, et des résultats des moteurs de recherche en quelques semaines, à leur rythme.
 
 ## Sur quoi ça repose
 
 | Brique | Rôle | Coût |
 |---|---|---|
 | [Notion](https://notion.so) | La base de données des membres et celle des institutions. L'équipe du réseau y approuve les demandes, corrige une fiche ou change un libellé sans toucher au code. | gratuit |
-| [Vercel](https://vercel.com) | Héberge le site et ses douze petites fonctions serveur : export des données, formulaires, liens par courriel, photos, sauvegardes, campagne. Deux tâches planifiées : l'une chaque matin, l'autre chaque semaine. | gratuit, forfait Hobby |
+| [Vercel](https://vercel.com) | Héberge le site et ses douze petites fonctions serveur : export des données, pages de profil pour les moteurs de recherche, formulaires, liens par courriel, photos, sauvegardes, campagne. Deux tâches planifiées : l'une chaque matin, l'autre chaque semaine. | gratuit, forfait Hobby |
 | [Resend](https://resend.com) | Envoie tous les courriels : lien de modification, confirmation d'inscription, acceptation, rappels de renouvellement, campagne. | gratuit jusqu'à 100 courriels par jour |
 | [ORCID](https://orcid.org) et [OpenAlex](https://openalex.org) | Sources publiques des suggestions de thèmes : mots-clés et publications d'un profil ORCID, thèmes et termes MeSH calculés par OpenAlex. Interrogés directement par le navigateur, sans compte. | gratuit |
 | [CARTO](https://carto.com/basemaps) et [OpenStreetMap](https://www.openstreetmap.org) | Le fond de carte. CARTO avec une clé gratuite ; OpenStreetMap en repli, sans clé. | gratuit |
@@ -93,9 +107,11 @@ photo-cropper.js    recadrage de la photo de profil
 api/                fonctions serveur (Vercel) : export, join, profile, magic-link,
                     email-change, renew, photo, institutions, backups, backup-auto,
                     campaign, membership-report
-lib/                accès Notion, courriels (Resend), jetons, campagne, photos, géocodage
+lib/                accès Notion, courriels (Resend), jetons, campagne, photos, géocodage,
+                    pages de profil et plan du site (public-page.js)
 img/                images du site et du README
-vercel.json         tâches planifiées, réécritures d'adresses, en-têtes
+vercel.json         tâches planifiées, réécritures d'adresses (dont /membre/… et /sitemap.xml), en-têtes
+robots.txt          consignes aux robots : moteurs de recherche admis, robots d'entraînement d'IA refusés
 BACKLOG.md          chantiers en cours et décisions de données
 ```
 
@@ -158,19 +174,30 @@ Un changement de variable ne prend effet qu'au déploiement suivant.
 
 L'export est aussi appelé en direct par le site à chaque visite, avec un cache par empreinte : les visiteurs voient toujours des données à jour.
 
+### Référencement
+
+Les pages de profil et le plan du site ne consomment aucune fonction supplémentaire : `vercel.json` réécrit `/membre/<slug>` et `/sitemap.xml` vers la fonction d'export (`/api/export?view=membre&slug=…` et `?view=sitemap`). Le rendu est dans `lib/public-page.js`.
+
+- La page d'un profil est `index.html`, joint à la fonction par `includeFiles`, dont l'en-tête est remplacé (titre, description, adresse canonique, Open Graph), avec un bloc JSON-LD `ProfilePage` / `Person` et la fiche déjà ouverte dans le HTML. Le site la reprend ensuite normalement.
+- Un slug inconnu, ou un profil qui n'est pas public, donne une page 404 marquée `noindex`.
+- Le slug (`prenom-nom`, sans accents) est calculé par le serveur et publié dans la colonne « Slug » de l'export. En cas d'homonymes, la fiche la plus ancienne garde l'adresse simple ; les suivantes reçoivent `-2`, `-3`.
+- La page est gardée en cache quelques minutes : un retrait de consentement est effectif en moins de dix minutes.
+- À adapter pour un autre réseau : `SITE` et `SITE_NAME` dans `lib/public-page.js`, l'adresse du plan de site dans `robots.txt`, et la validation Google Search Console (le fichier `google….html` à la racine et la balise `google-site-verification` de `index.html` sont ceux du RSN : remplacez-les par les vôtres).
+
 ### Mise en route
 
 1. Créer les deux bases Notion avec les propriétés ci-dessus, et y connecter l'intégration.
 2. Copier ce dépôt sur GitHub, l'importer dans Vercel, renseigner les variables, déployer.
 3. Dans Resend, vérifier le domaine d'envoi et ajuster `RESEND_FROM_EMAIL`.
-4. Adapter les textes propres au réseau : taxonomie des axes, principes et champs (dans `index.html`, `join.html`, `edit.html` et `api/membership-report.js`), courriels (`lib/email.js`), logo et images (`logo-rsn.png`, `og-image-v3.png`, `img/`).
-5. Tester : demander l'adhésion avec une adresse de test, approuver dans Notion, demander un lien de modification, modifier, approuver.
+4. Adapter les textes propres au réseau : taxonomie des axes, principes et champs (dans `index.html`, `join.html`, `edit.html` et `api/membership-report.js`), courriels (`lib/email.js`), logo et images (`logo-rsn-blanc.webp` pour les bandeaux, `og-image-v3.png` pour l'aperçu des partages, `img/`).
+5. Tester : demander l'adhésion avec une adresse de test, approuver dans Notion, demander un lien de modification, modifier, vérifier que le profil apparaît.
+6. Facultatif : déclarer le site dans [Google Search Console](https://search.google.com/search-console) et y soumettre `/sitemap.xml`. Les premières pages mettent de quelques jours à quelques semaines à apparaître dans les résultats.
 
 ### Limites à connaître
 
-- Vercel Hobby : au plus 12 fonctions serveur (toutes utilisées ici) et 2 tâches planifiées ; une fonction s'exécute au plus 60 secondes.
+- Vercel Hobby : au plus 12 fonctions serveur (toutes utilisées ici, d'où les pages de profil et le plan du site servis par la fonction d'export) et 2 tâches planifiées ; une fonction s'exécute au plus 60 secondes.
 - Resend gratuit : 100 courriels par jour, 3 000 par mois. Les envois automatiques sont plafonnés en conséquence.
-- Notion : environ 3 requêtes par seconde ; les scripts qui écrivent en série respectent une pause. Notion ne fixe pas de plafond au nombre de fiches sur un espace personnel gratuit ; un espace d'équipe gratuit est limité à un essai de 1 000 blocs, chaque fiche en comptant au moins un, donc prévoir le forfait Plus au-delà de quelques centaines de membres et d'institutions. La limite pratique est le temps de lecture : Notion livre 100 fiches par requête, et l'export lit toute la base à chaque passage. Avec 740 membres et 150 institutions, l'export prend 3 à 5 secondes ; il resterait sous la limite de 60 secondes jusqu'à plusieurs milliers de fiches, mais le fichier envoyé au navigateur grossirait d'autant.
+- Notion : environ 3 requêtes par seconde ; les scripts qui écrivent en série respectent une pause. Notion ne fixe pas de plafond au nombre de fiches sur un espace personnel gratuit ; un espace d'équipe gratuit est limité à un essai de 1 000 blocs, chaque fiche en comptant au moins un, donc prévoir le forfait Plus au-delà de quelques centaines de membres et d'institutions. La limite pratique est le temps de lecture : Notion livre 100 fiches par requête, et l'export lit toute la base à chaque passage. Avec environ 830 fiches et 150 institutions, l'export prend 3 à 5 secondes ; il resterait sous la limite de 60 secondes jusqu'à plusieurs milliers de fiches, mais le fichier envoyé au navigateur grossirait d'autant.
 - Nominatim : une requête par seconde au plus, et une adresse imprécise peut ne pas être trouvée ; l'institution est alors créée sans coordonnées, à compléter dans Notion.
 - Les fichiers Notion, dont les photos, ont des adresses temporaires : le site les sert par un relais qui les met en cache.
 
