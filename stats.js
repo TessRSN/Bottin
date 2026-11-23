@@ -16,7 +16,7 @@
    script tiers chargé à chaque visite. */
 (function () {
   'use strict';
-  var CODE = '';
+  var CODE = 'bottin-rsn';
   var HOST = 'bottin.rsn.quebec';
 
   // Les pages appellent rsnStats.view() sans se soucier de savoir si la mesure est active.
