@@ -29,3 +29,6 @@ generate_qr_flyers.py
 # Local tooling
 .claude/
 data/forgotten-members.js
+
+# Notes de travail internes (ne vont pas sur GitHub)
+notes-internes/
