@@ -15,61 +15,88 @@
   })();
 </script>
 <style>
-  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; }
-  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; }
+  /* Habillage aligne sur l'accueil et les formulaires (2026-11-23, retour de Tess) :
+     meme bandeau, meme logo blanc, memes coins et couleurs. */
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --ink:#1a365d; }
+  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --ink:#e2e8f0; }
   * { box-sizing:border-box; margin:0; }
-  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
-  .card { background:var(--card); border-radius:1rem; padding:2.5rem; max-width:420px; width:100%; box-shadow:0 4px 24px rgba(0,0,0,.1); text-align:center; }
-  h1 { font-size:1.3rem; margin-bottom:.5rem; color:var(--primary); }
-  p { font-size:.9rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.5; }
-  .input-group { display:flex; gap:.5rem; margin-bottom:1rem; }
-  input[type="email"] { flex:1; padding:.65rem 1rem; border:1.5px solid var(--border); border-radius:.5rem; font-size:.95rem; background:var(--card); color:var(--text); outline:none; }
-  input:focus { border-color:var(--primary); }
-  button { padding:.65rem 1.5rem; border:none; border-radius:.5rem; background:var(--primary); color:#fff; font-size:.95rem; font-weight:600; cursor:pointer; transition:opacity .2s; }
-  button:hover { opacity:.85; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  .msg { margin-top:1rem; padding:.75rem; border-radius:.5rem; font-size:.85rem; line-height:1.4; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+  .site-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.7rem 1.5rem; padding:.8rem 2rem; background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 100%); color:#fff; }
+  [data-theme="dark"] .site-header { background:linear-gradient(135deg,#0f1724 0%,#1a365d 100%); }
+  .sh-brand { display:flex; align-items:center; gap:.9rem; color:#fff; text-decoration:none; }
+  .sh-brand:hover .sh-logo { opacity:.85; }
+  .sh-logo { height:40px; width:auto; }
+  .sh-title { display:flex; flex-direction:column; line-height:1.25; }
+  .sh-title strong { font-size:1.05rem; font-weight:700; }
+  .sh-title span { font-size:.78rem; opacity:.9; }
+  .sh-controls { display:flex; align-items:center; gap:.5rem; }
+  .sh-btn { display:inline-flex; align-items:center; justify-content:center; gap:.35rem; height:44px; min-width:44px; padding:0 .8rem; border-radius:8px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.15); color:#fff; font:inherit; font-size:.8rem; font-weight:600; text-decoration:none; cursor:pointer; }
+  .sh-btn:hover { background:rgba(255,255,255,.25); }
+  .sh-btn svg { width:14px; height:14px; }
+  .page { max-width:560px; margin:0 auto; padding:clamp(1.5rem,8vh,4.5rem) 1.25rem 3rem; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.8rem 1.8rem 1.6rem; box-shadow:0 1px 2px rgba(18,35,63,.05); }
+  h1 { font-size:1.5rem; margin-bottom:.5rem; color:var(--ink); }
+  .lead { font-size:.9rem; color:var(--muted); margin-bottom:1.3rem; line-height:1.55; }
+  .input-group { display:flex; gap:.5rem; }
+  input[type="email"] { flex:1; min-width:0; min-height:44px; padding:.55rem .85rem; border:1px solid var(--border); border-radius:8px; font-size:.95rem; background:var(--card); color:var(--text); outline:none; transition:border .2s; }
+  input[type="email"]:focus { border-color:var(--primary); }
+  .btn-primary { min-height:44px; padding:.55rem 1.5rem; border:none; border-radius:8px; background:#1a365d; color:#fff; font:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:opacity .2s; }
+  [data-theme="dark"] .btn-primary { background:var(--primary); color:#0f1724; }
+  .btn-primary:hover { opacity:.85; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .msg { margin-top:1rem; padding:.75rem 1rem; border-radius:8px; font-size:.85rem; line-height:1.45; }
   .msg.success { background:#c6f6d5; color:#22543d; }
   .msg.error { background:#fed7d7; color:#9b2c2c; }
   [data-theme="dark"] .msg.success { background:#22543d; color:#c6f6d5; }
   [data-theme="dark"] .msg.error { background:#9b2c2c; color:#fed7d7; }
-  .top-controls { position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; }
-  .top-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; display:inline-flex; align-items:center; gap:.3rem; }
-  .top-btn:hover { color:var(--text); border-color:var(--primary); }
-  .top-btn svg { width:14px; height:14px; }
   .hidden { display:none !important; }
-  .back { display:inline-block; margin-top:1rem; font-size:.8rem; color:var(--muted); text-decoration:none; }
-  .back:hover { color:var(--primary); }
-  .help-box { margin-top:1.25rem; padding:.75rem 1rem; background:var(--bg); border-left:3px solid var(--primary); border-radius:.3rem; font-size:.8rem; color:var(--muted); line-height:1.5; text-align:left; }
+  .help-box { margin-top:1.4rem; padding:.8rem 1rem; background:var(--bg); border:1px solid var(--border); border-left:3px solid var(--primary); border-radius:8px; font-size:.82rem; color:var(--muted); line-height:1.55; }
   .help-box a { color:var(--primary); text-decoration:none; }
   .help-box a:hover { text-decoration:underline; }
+  @media (max-width:600px) {
+    .site-header { padding:.7rem 1rem; }
+    .page { padding-left:.9rem; padding-right:.9rem; }
+    .card { padding:1.3rem 1.2rem; }
+    .sh-back-label { display:none; }
+  }
+  @media (max-width:440px) {
+    .input-group { flex-direction:column; }
+  }
 </style>
 </head>
 <body>
-<div class="top-controls">
-  <button class="top-btn" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
-    <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-  </button>
-  <button class="top-btn" onclick="toggleLang()" id="langBtn">EN</button>
-</div>
-<div class="card">
-  <h1 id="title">Modifier mon profil</h1>
-  <p id="desc">Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.</p>
-
-  <div class="input-group">
-    <input type="email" id="email" placeholder="votre.email@institution.ca" autocomplete="email">
-    <button id="submit" onclick="send()">
-      <span id="btnText">Envoyer</span>
+<header class="site-header">
+  <a class="sh-brand" href="/" id="brandLink" title="Retour au bottin">
+    <img class="sh-logo" src="/logo-rsn-blanc.webp" alt="Logo RSN" onerror="this.style.display='none'">
+    <span class="sh-title"><strong id="brandTitle">Bottin des membres</strong><span id="brandSub">Réseau santé numérique</span></span>
+  </a>
+  <div class="sh-controls">
+    <a class="sh-btn" href="/"><span aria-hidden="true">←</span><span class="sh-back-label" id="backLink">Retour au bottin</span></a>
+    <button class="sh-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="sh-btn" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
   </div>
+</header>
 
-  <div id="msg" class="msg" style="display:none"></div>
+<main class="page">
+  <div class="card">
+    <h1 id="title">Modifier mon profil</h1>
+    <p class="lead" id="desc">Entrez votre courriel institutionnel pour recevoir un lien de modification sécurisé.</p>
 
-  <div class="help-box" id="helpBox"></div>
+    <div class="input-group">
+      <input type="email" id="email" placeholder="votre.email@institution.ca" autocomplete="email">
+      <button class="btn-primary" id="submit" onclick="send()">
+        <span id="btnText">Envoyer</span>
+      </button>
+    </div>
 
-  <a class="back" href="/" id="backLink">← Retour au bottin</a>
-</div>
+    <div id="msg" class="msg" role="status" style="display:none"></div>
+
+    <div class="help-box" id="helpBox"></div>
+  </div>
+</main>
 
 <script>
 const i18n = {
@@ -81,7 +108,10 @@ const i18n = {
     success: 'Si votre courriel est dans notre base, vous recevrez un lien de modification dans les prochaines minutes. Vérifiez vos courriels indésirables.',
     error: 'Une erreur est survenue. Veuillez réessayer.',
     invalid: 'Veuillez entrer un courriel valide.',
-    back: '← Retour au bottin',
+    back: 'Retour au bottin',
+    brandTitle: 'Bottin des membres',
+    brandSub: 'Réseau santé numérique',
+    placeholder: 'votre.email@institution.ca',
     lang: 'EN',
     help_before: 'Vous avez changé d’adresse courriel récemment et n’avez plus accès à l’ancienne ? Contactez-nous à ',
     help_after: ' pour que nous mettions à jour votre courriel principal.',
@@ -94,7 +124,10 @@ const i18n = {
     success: 'If your email is in our database, you will receive an edit link shortly. Check your spam folder.',
     error: 'An error occurred. Please try again.',
     invalid: 'Please enter a valid email.',
-    back: '← Back to directory',
+    back: 'Back to the directory',
+    brandTitle: 'Member Directory',
+    brandSub: 'Digital Health Network',
+    placeholder: 'your.email@institution.ca',
     lang: 'FR',
     help_before: 'Have you recently changed your email and no longer have access to the old one? Contact us at ',
     help_after: ' so we can update your primary email.',
@@ -110,6 +143,10 @@ function applyLang() {
   document.getElementById('desc').textContent = t('desc');
   document.getElementById('btnText').textContent = t('btn');
   document.getElementById('backLink').textContent = t('back');
+  document.getElementById('brandLink').title = t('back');
+  document.getElementById('brandTitle').textContent = t('brandTitle');
+  document.getElementById('brandSub').textContent = t('brandSub');
+  document.getElementById('email').placeholder = t('placeholder');
   document.getElementById('langBtn').textContent = t('lang');
 
   // Build the help-box with mailto link
@@ -150,7 +187,6 @@ function toggleTheme() {
 (function(){
   updateThemeIcons();
   applyLang();
-  document.getElementById('email').placeholder = lang === 'fr' ? 'votre.email@institution.ca' : 'your.email@institution.ca';
 })();
 
 async function send() {

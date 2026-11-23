@@ -15,38 +15,69 @@
 })();
 </script>
 <style>
-  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#cbd5e0; --error:#c53030; --success:#38a169; }
-  [data-theme="dark"] { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#60a5fa; --border:#334155; --error:#fca5a5; --success:#86efac; }
+  /* Habillage aligne sur l'accueil et les formulaires (2026-11-23, retour de Tess) :
+     meme bandeau, meme logo blanc, memes coins et couleurs. */
+  :root { --bg:#f7fafc; --card:#fff; --text:#1a202c; --muted:#718096; --primary:#2b6cb0; --border:#e2e8f0; --ink:#1a365d; --error:#c53030; --success:#2f855a; }
+  [data-theme="dark"] { --bg:#0f1724; --card:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --primary:#63b3ed; --border:#334155; --ink:#e2e8f0; --error:#fca5a5; --success:#86efac; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
-  .container { background:var(--card); border-radius:.75rem; padding:2.5rem 2rem; max-width:480px; width:100%; box-shadow:0 4px 20px rgba(0,0,0,0.08); }
-  h1 { color:var(--primary); margin:0 0 1.25rem; font-size:1.4rem; text-align:center; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; }
+  .site-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.7rem 1.5rem; padding:.8rem 2rem; background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 100%); color:#fff; }
+  [data-theme="dark"] .site-header { background:linear-gradient(135deg,#0f1724 0%,#1a365d 100%); }
+  .sh-brand { display:flex; align-items:center; gap:.9rem; color:#fff; text-decoration:none; }
+  .sh-brand:hover .sh-logo { opacity:.85; }
+  .sh-logo { height:40px; width:auto; }
+  .sh-title { display:flex; flex-direction:column; line-height:1.25; }
+  .sh-title strong { font-size:1.05rem; font-weight:700; }
+  .sh-title span { font-size:.78rem; opacity:.9; }
+  .sh-controls { display:flex; align-items:center; gap:.5rem; }
+  .sh-btn { display:inline-flex; align-items:center; justify-content:center; gap:.35rem; height:44px; min-width:44px; padding:0 .8rem; border-radius:8px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.15); color:#fff; font:inherit; font-size:.8rem; font-weight:600; text-decoration:none; cursor:pointer; }
+  .sh-btn:hover { background:rgba(255,255,255,.25); }
+  .sh-btn svg { width:14px; height:14px; }
+  .page { max-width:560px; margin:0 auto; padding:clamp(1.5rem,8vh,4.5rem) 1.25rem 3rem; }
+  .container { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1.8rem 1.8rem 1.4rem; box-shadow:0 1px 2px rgba(18,35,63,.05); }
+  h1 { color:var(--ink); margin:0 0 1.1rem; font-size:1.5rem; }
   p { margin:0 0 1rem; }
-  .info { background:rgba(43,108,176,.08); border-left:3px solid var(--primary); padding:.75rem 1rem; border-radius:.3rem; margin:1.25rem 0; font-size:.9rem; }
+  .container a:not(.btn) { color:var(--primary); }
+  .info { background:rgba(43,108,176,.08); border-left:3px solid var(--primary); padding:.75rem 1rem; border-radius:8px; margin:1.25rem 0; font-size:.9rem; }
+  [data-theme="dark"] .info { background:rgba(99,179,237,.12); }
   .info strong { color:var(--primary); }
-  .btn { display:block; width:100%; padding:.85rem 1.5rem; border-radius:.5rem; font-size:1rem; font-weight:600; cursor:pointer; border:none; transition:all .2s; margin-bottom:.5rem; }
-  .btn-primary { background:var(--primary); color:#fff; }
+  .btn { display:block; width:100%; min-height:44px; padding:.75rem 1.5rem; border-radius:8px; font:inherit; font-size:1rem; font-weight:600; cursor:pointer; border:none; transition:all .2s; margin-bottom:.5rem; text-decoration:none; text-align:center; }
+  .btn-primary { background:#1a365d; color:#fff; }
+  [data-theme="dark"] .btn-primary { background:var(--primary); color:#0f1724; }
   .btn-primary:hover:not(:disabled) { opacity:.9; }
   .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
   .btn-secondary { background:transparent; color:var(--muted); border:1px solid var(--border); }
   .btn-secondary:hover { color:var(--text); }
-  .lang-toggle { position:fixed; top:1rem; right:1rem; background:var(--card); border:1px solid var(--border); color:var(--muted); font-size:.8rem; padding:.3rem .6rem; border-radius:.3rem; cursor:pointer; }
-  .theme-toggle { position:fixed; top:1rem; right:3.5rem; background:var(--card); border:1px solid var(--border); color:var(--muted); padding:.3rem .5rem; border-radius:.3rem; cursor:pointer; display:inline-flex; align-items:center; }
-  .theme-toggle svg { width:14px; height:14px; }
   .hidden { display:none !important; }
   .state-msg { text-align:center; }
   .state-msg.success h1 { color:var(--success); }
   .state-msg.error h1 { color:var(--error); }
-  .icon { font-size:3rem; text-align:center; margin-bottom:1rem; }
+  .icon { font-size:3rem; text-align:center; margin-bottom:.6rem; }
+  @media (max-width:600px) {
+    .site-header { padding:.7rem 1rem; }
+    .page { padding-left:.9rem; padding-right:.9rem; }
+    .container { padding:1.3rem 1.2rem 1rem; }
+    .sh-back-label { display:none; }
+  }
 </style>
 </head>
 <body>
-<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Theme">
-  <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-  <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-</button>
-<button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+<header class="site-header">
+  <a class="sh-brand" href="/" id="brandLink" title="Retour au bottin">
+    <img class="sh-logo" src="/logo-rsn-blanc.webp" alt="Logo RSN" onerror="this.style.display='none'">
+    <span class="sh-title"><strong id="brandTitle">Bottin des membres</strong><span id="brandSub">Réseau santé numérique</span></span>
+  </a>
+  <div class="sh-controls">
+    <a class="sh-btn" href="/"><span aria-hidden="true">←</span><span class="sh-back-label" id="backLink">Retour au bottin</span></a>
+    <button class="sh-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="sh-btn" onclick="toggleTheme()" id="themeBtn" title="Theme" aria-label="Theme">
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="iconMoon" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
 
+<main class="page">
 <div class="container" id="loading">
   <p style="text-align:center;color:var(--muted)" id="loadingText">Chargement...</p>
 </div>
@@ -57,22 +88,23 @@
   <p id="explain">Votre adhésion au RSN arrive à échéance le <strong id="memberExpiry">…</strong>.</p>
   <div class="info"><span id="confirmHint">En confirmant ci-dessous, votre adhésion sera renouvelée pour 2 ans supplémentaires.</span></div>
   <button class="btn btn-primary" id="confirmBtn" onclick="confirmRenew()">Confirmer le renouvellement</button>
-  <a href="/" class="btn btn-secondary" style="text-decoration:none;text-align:center" id="cancelBtn">Annuler</a>
+  <a href="/" class="btn btn-secondary" id="cancelBtn">Annuler</a>
 </div>
 
 <div class="container hidden state-msg success" id="successCard">
   <div class="icon">✅</div>
   <h1 id="successTitle">Adhésion renouvelée !</h1>
   <p id="successMsg">Merci. Votre adhésion est renouvelée jusqu'au <strong id="newExpiry">…</strong>. Un courriel de confirmation vient de vous être envoyé.</p>
-  <a href="/" class="btn btn-primary" style="text-decoration:none;text-align:center" id="backBtn">Retour au bottin</a>
+  <a href="/" class="btn btn-primary" id="backBtn">Retour au bottin</a>
 </div>
 
 <div class="container hidden state-msg error" id="errorCard">
   <div class="icon">⚠️</div>
   <h1 id="errorTitle">Lien invalide ou expiré</h1>
   <p id="errorMsg">Ce lien de renouvellement n'est pas valide. Si vous pensez qu'il s'agit d'une erreur, contactez <a href="mailto:rsn.gestion@rimuhc.ca">rsn.gestion@rimuhc.ca</a>.</p>
-  <a href="/" class="btn btn-secondary" style="text-decoration:none;text-align:center" id="backBtn2">Retour au bottin</a>
+  <a href="/" class="btn btn-secondary" id="backBtn2">Retour au bottin</a>
 </div>
+</main>
 
 <script>
 // Priorité: ?lang= dans l'URL (vient du lien email) > localStorage > défaut 'fr'
@@ -104,6 +136,8 @@ var I18N = {
     errorTitle: 'Lien invalide ou expiré',
     errorMsg: "Ce lien de renouvellement n'est pas valide. Si vous pensez qu'il s'agit d'une erreur, contactez ",
     langBtn: 'EN',
+    brandTitle: 'Bottin des membres',
+    brandSub: 'Réseau santé numérique',
   },
   en: {
     loadingText: 'Loading...',
@@ -121,6 +155,8 @@ var I18N = {
     errorTitle: 'Invalid or expired link',
     errorMsg: 'This renewal link is not valid. If you think this is a mistake, please contact ',
     langBtn: 'FR',
+    brandTitle: 'Member Directory',
+    brandSub: 'Digital Health Network',
   }
 };
 function t(key) { return (I18N[lang] || I18N.fr)[key] || key; }
@@ -150,6 +186,10 @@ function applyI18n() {
   document.getElementById('backBtn2').textContent = t('backBtn');
   document.getElementById('errorTitle').textContent = t('errorTitle');
   document.getElementById('langBtn').textContent = t('langBtn');
+  document.getElementById('backLink').textContent = t('backBtn');
+  document.getElementById('brandLink').title = t('backBtn');
+  document.getElementById('brandTitle').textContent = t('brandTitle');
+  document.getElementById('brandSub').textContent = t('brandSub');
   // Hello + explain need re-rendering when lang changes (they hold dynamic data)
   if (memberData) renderConfirm();
   if (newRenewalDate) renderSuccess();
