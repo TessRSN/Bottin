@@ -61,6 +61,7 @@ C'est un bottin de personnes, soumis à la Loi 25 du Québec. Chaque membre déc
 | [Notion](https://notion.so) | La base de données des membres et celle des institutions. L'équipe du réseau y approuve les demandes, corrige une fiche ou change un libellé sans toucher au code. | gratuit |
 | [Vercel](https://vercel.com) | Héberge le site et ses douze petites fonctions serveur : export des données, pages de profil pour les moteurs de recherche, formulaires, liens par courriel, photos, sauvegardes, campagne. Deux tâches planifiées : l'une chaque matin, l'autre chaque semaine. | gratuit, forfait Hobby |
 | [Resend](https://resend.com) | Envoie tous les courriels : lien de modification, confirmation d'inscription, acceptation, rappels de renouvellement, campagne. | gratuit jusqu'à 100 courriels par jour |
+| [GoatCounter](https://www.goatcounter.com) | Statistiques de visite : nombre de visites, provenance, pages et fiches consultées. Sans témoins ni identifiant de visiteur, donc sans bandeau de consentement. | gratuit pour un usage raisonnable |
 | [ORCID](https://orcid.org) et [OpenAlex](https://openalex.org) | Sources publiques des suggestions de thèmes : mots-clés et publications d'un profil ORCID, thèmes et termes MeSH calculés par OpenAlex. Interrogés directement par le navigateur, sans compte. | gratuit |
 | [CARTO](https://carto.com/basemaps) et [OpenStreetMap](https://www.openstreetmap.org) | Le fond de carte. CARTO avec une clé gratuite ; OpenStreetMap en repli, sans clé. | gratuit |
 | [Nominatim](https://nominatim.org) (OpenStreetMap) | Transforme l'adresse d'une nouvelle institution en coordonnées pour la carte. | gratuit, usage modéré |
@@ -104,6 +105,8 @@ renew.html          renouvellement de l'adhésion
 backups.html        page d'administration des sauvegardes
 orcid-suggest.js    suggestions de thèmes (ORCID, OpenAlex)
 photo-cropper.js    recadrage de la photo de profil
+stats.js            statistiques de visite (GoatCounter) : code du site et règles d'envoi
+stats-count.js      script de GoatCounter, copié tel quel
 api/                fonctions serveur (Vercel) : export, join, profile, magic-link,
                     email-change, renew, photo, institutions, backups, backup-auto,
                     campaign, membership-report
@@ -183,6 +186,16 @@ Les pages de profil et le plan du site ne consomment aucune fonction supplément
 - Le slug (`prenom-nom`, sans accents) est calculé par le serveur et publié dans la colonne « Slug » de l'export. En cas d'homonymes, la fiche la plus ancienne garde l'adresse simple ; les suivantes reçoivent `-2`, `-3`.
 - La page est gardée en cache quelques minutes : un retrait de consentement est effectif en moins de dix minutes.
 - À adapter pour un autre réseau : `SITE` et `SITE_NAME` dans `lib/public-page.js`, l'adresse du plan de site dans `robots.txt`, et la validation Google Search Console (le fichier `google….html` à la racine et la balise `google-site-verification` de `index.html` sont ceux du RSN : remplacez-les par les vôtres).
+
+### Statistiques de visite
+
+Le bottin mesure sa fréquentation avec [GoatCounter](https://www.goatcounter.com), qui ne dépose aucun témoin et ne conserve que des totaux (par page, par provenance, par pays, par navigateur). Tout est dans `stats.js`.
+
+- Créer un site sur goatcounter.com, puis inscrire son code dans `CODE` et le domaine du bottin dans `HOST`. Tant que `CODE` est vide, rien n'est mesuré.
+- Seules les pages publiques chargent `stats.js` : l'accueil, l'adhésion et la demande de lien. `edit.html` et `renew.html` ne le chargent pas, parce que leur adresse porte un lien signé et que le script de GoatCounter transmet les paramètres de l'adresse. Pour la même raison, la page d'où l'on vient n'est transmise que s'il s'agit d'un autre site.
+- Une fiche ouverte depuis l'accueil ne recharge pas la page : elle est comptée comme une vue de `/membre/<slug>`.
+- Pour ne pas compter ses propres visites, ouvrir une fois l'accueil avec `#toggle-goatcounter` à la fin de l'adresse ; le réglage reste dans le navigateur.
+- `stats-count.js` est le script `count.js` de GoatCounter, copié dans le dépôt pour ne pas dépendre d'un script tiers à chaque visite.
 
 ### Mise en route
 

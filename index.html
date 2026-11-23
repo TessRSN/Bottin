@@ -733,6 +733,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="/stats.js" defer></script>
 </head>
 <body>
 
@@ -3644,6 +3645,8 @@ function showMemberPopup(name) {
     // (le titre deja pose par le serveur pour cette personne, plus precis, est conserve)
     const fullName = [m.prenom, m.nom].filter(Boolean).join(' ');
     if (m.consent === 'oui' && document.title.indexOf(fullName + ' — ') !== 0) document.title = fullName + ' — ' + SITE_TITLE_SHORT;
+    // Statistiques de visite : une fiche publique ouverte compte comme une vue de sa page (stats.js)
+    if (m.consent === 'oui' && window.rsnStats) window.rsnStats.view(memberPath(m), fullName + ' — ' + SITE_TITLE_SHORT);
 }
 function closeMemberPopup() {
     document.getElementById('memberOverlay').classList.remove('active');
