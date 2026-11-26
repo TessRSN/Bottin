@@ -88,6 +88,7 @@
         [data-theme="dark"] .card-link { color: #0f172a; }
         [data-theme="dark"] .card-link:hover { color: var(--rsn-accent); background: transparent; }
         [data-theme="dark"] .card-email a { color: var(--rsn-accent); }
+        [data-theme="dark"] .card-email-btn:hover { color: #0f172a; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -222,6 +223,11 @@
         .card-email { font-size: 0.8rem; margin-bottom: 0.4rem; }
         .card-email a { color: var(--rsn-accent); text-decoration: none; }
         .card-email a:hover { text-decoration: underline; }
+        /* Referencement 2026-11 : le courriel n'est ecrit dans la fiche qu'au clic (voir showMemberPopup) */
+        .card-email-btn { font: inherit; font-weight: 600; color: var(--rsn-accent); background: transparent; border: 1.5px solid var(--rsn-accent); border-radius: 999px; padding: 0.35rem 0.8rem; line-height: 1.2; cursor: pointer; transition: background 0.15s, color 0.15s; }
+        .card-email-btn:hover { background: var(--rsn-accent); color: #fff; }
+        .card-email-btn:focus-visible, .card-email a:focus-visible { outline: 2px solid var(--rsn-accent); outline-offset: 2px; border-radius: 4px; }
+        .card-email-btn:focus-visible { border-radius: 999px; }
         .card-details { display: flex; flex-direction: column; gap: 0.25rem; }
         .card-detail { font-size: 0.82rem; color: var(--rsn-text); display: flex; align-items: flex-start; gap: 0.4rem; }
         .card-detail .dl { font-weight: 600; color: var(--rsn-muted); min-width: 70px; flex-shrink: 0; }
@@ -499,6 +505,7 @@
         .card-top { display: flex; align-items: flex-start; gap: 0.75rem; }
         .avatar { position: relative; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--rsn-light); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 700; }
         .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .avatar .avatar-bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
         .avatar-muted { background: var(--rsn-border); color: var(--muted-strong); }
         .card-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
         .member-card .card-name { font-size: 1rem; color: var(--ink); }
@@ -1065,7 +1072,7 @@ const I18N = {
         // Table headers
         th_axis: 'Axe prioritaire',
         th_principle: 'Principe', th_action: "Champ d'action",
-        lbl_website: 'Site web',
+        lbl_website: 'Site web', lbl_show_email: 'Afficher le courriel',
         // Map
         map_geolocated: 'membres géolocalisés',
         map_coverage: 'Couverture',
@@ -1165,7 +1172,7 @@ const I18N = {
         lbl_no_institution: 'Institution not provided',
         th_axis: 'Primary axis',
         th_principle: 'Principle', th_action: 'Field of action',
-        lbl_website: 'Website',
+        lbl_website: 'Website', lbl_show_email: 'Show email',
         map_geolocated: 'geolocated members',
         map_coverage: 'Coverage',
         map_institutions_on: 'institutions out of',
@@ -1276,6 +1283,7 @@ function toggleLang() {
     if (allMembers.length) {
         if (typeof refreshFilterLabels === 'function') refreshFilterLabels();
         render();
+        refreshOpenMember(); // la fiche ouverte passe aussi dans la nouvelle langue
     }
     saveHash();
 }
@@ -3316,8 +3324,16 @@ function initialsOf(m) {
     const a = (m.prenom || m.name || '').trim().charAt(0), b = (m.nom || '').trim().charAt(0);
     return (a + b).toUpperCase() || '?';
 }
+// Referencement 2026-11 : sur une page de profil (/membre/<slug>), les photos des
+// cartes situees derriere la fiche sont posees en image de fond (decor) et non en
+// <img>. A l'ecran rien ne change, mais Google Images ne retient pas les images
+// de fond : il ne rattache donc plus au nom de la personne les visages des autres.
+// La photo de la fiche elle-meme reste une vraie <img>.
+const PROFILE_PAGE = /^\/membre\//.test(location.pathname);
 function avatarHtml(m, cls) {
-    const img = m.photo ? `<img src="${esc(m.photo)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const img = !m.photo ? ''
+        : PROFILE_PAGE ? `<span class="avatar-bg" style="background-image:url('${esc(encodeURI(m.photo))}')"></span>`
+        : `<img src="${esc(m.photo)}" alt="" loading="lazy" onerror="this.remove()">`;
     return `<span class="avatar${cls ? ' ' + cls : ''}" aria-hidden="true">${esc(initialsOf(m))}${img}</span>`;
 }
 const GRAPH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7.8l4 8.4M17 7.8l-4 8.4M8 6h8"/></svg>';
@@ -3592,9 +3608,14 @@ function buildNeighborsBlock(neighbors) {
     return wrap;
 }
 
+let openMemberName = null; // fiche actuellement ouverte (pour la retraduire au changement de langue)
+function refreshOpenMember() {
+    if (openMemberName && document.getElementById('memberOverlay').classList.contains('active')) showMemberPopup(openMemberName);
+}
 function showMemberPopup(name) {
     const m = allMembers.find(x => x.name === name);
     if (!m) return;
+    openMemberName = name;
     const tc = `tag-${m.typeNorm}`, cc = `type-${m.typeNorm}`;
     const expertiseText = m.themes || '';
     let links = [];
@@ -3624,11 +3645,23 @@ function showMemberPopup(name) {
     content.innerHTML = [
         cardHeaderHtml(m, tc, 'card-photo card-photo-lg'),
         `<div class="card-institution" style="margin:.5rem 0">${m.institutions.length>1 ? m.institutions.map(i=>esc(i)).join('<br>') : esc(m.institution || tr('lbl_no_institution'))}</div>`,
-        m.email ? `<div class="card-email"><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>` : '',
+        m.email ? `<div class="card-email"><button type="button" class="card-email-btn" data-email-reveal>${tr('lbl_show_email')}</button></div>` : '',
         `<div class="card-details" style="margin-top:.75rem">${details.join('')}</div>`,
         chipsHtml, lnkH
     ].join('');
     modal.appendChild(content);
+    // Referencement 2026-11 : le courriel n'est ecrit dans la page qu'au clic sur
+    // « Afficher le courriel ». Les moteurs de recherche executent la page sans
+    // cliquer : l'adresse ne se retrouve donc ni dans leurs extraits ni dans le
+    // texte indexe. Ne pas la mettre dans un attribut (data-*, title, href).
+    const emailBtn = content.querySelector('[data-email-reveal]');
+    if (emailBtn) emailBtn.addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = 'mailto:' + m.email;
+        a.textContent = m.email;
+        emailBtn.replaceWith(a);
+        a.focus();
+    });
     // Refonte 2026-11 : actions de la fiche (connexions, lien direct) et adresse /membre/prenom-nom
     if (m.consent === 'oui') { modal.appendChild(buildModalActions(m)); setMemberUrl(m); }
 
@@ -3649,6 +3682,7 @@ function showMemberPopup(name) {
     if (m.consent === 'oui' && window.rsnStats) window.rsnStats.view(memberPath(m), fullName + ' — ' + SITE_TITLE_SHORT);
 }
 function closeMemberPopup() {
+    openMemberName = null;
     document.getElementById('memberOverlay').classList.remove('active');
     if (/^\/membre\//.test(location.pathname)) setMemberUrl(null); // l'adresse revient a l'accueil
     document.title = SITE_TITLE;
@@ -4616,7 +4650,7 @@ function restoreHash() {
     if (!h) return;
     const p = new URLSearchParams(h);
     // Language
-    if (p.get('lang') === 'en' && currentLang === 'fr') { currentLang = 'en'; applyI18n(); }
+    if (p.get('lang') === 'en' && currentLang === 'fr') { currentLang = 'en'; applyI18n(); refreshOpenMember(); }
     // Search
     if (p.get('q')) document.getElementById('searchInput').value = p.get('q');
     // Filters
